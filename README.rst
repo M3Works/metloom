@@ -6,8 +6,8 @@ dataloom
 .. image:: https://img.shields.io/pypi/v/dataloom.svg
         :target: https://pypi.python.org/pypi/dataloom
 
-.. image:: https://img.shields.io/travis/micah-prime/dataloom.svg
-        :target: https://travis-ci.com/micah-prime/dataloom
+.. image:: https://img.shields.io/travis/M3Works/dataloom.svg
+        :target: https://travis-ci.com/M3Works/dataloom
 
 .. image:: https://readthedocs.org/projects/dataloom/badge/?version=latest
         :target: https://dataloom.readthedocs.io/en/latest/?version=latest

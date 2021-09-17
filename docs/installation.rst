@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/micah-prime/dataloom
+    $ git clone git://github.com/M3Works/dataloom
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/micah-prime/dataloom/tarball/master
+    $ curl -OJL https://github.com/M3Works/dataloom/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/micah-prime/dataloom
-.. _tarball: https://github.com/micah-prime/dataloom/tarball/master
+.. _Github repo: https://github.com/M3Works/dataloom
+.. _tarball: https://github.com/M3Works/dataloom/tarball/master
