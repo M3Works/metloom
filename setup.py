@@ -10,25 +10,29 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [ ]
+requirements = [
+    'geopandas>=0.9.0,<1.0.0',
+    'lxml==4.6.3',
+    'requests>2.0.0,<3.0.0',
+]
 
 test_requirements = ['pytest>=3', ]
 
 setup(
     author="M3Works",
     author_email='m3worksllc@gmail.com',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
-    description="Location Oriented Observed Meteorology",
+    description="Location Oriented Observed Meteorology (LOOM)",
     entry_points={
         'console_scripts': [
             'dataloom=dataloom.cli:main',
@@ -43,7 +47,7 @@ setup(
     packages=find_packages(include=['dataloom', 'dataloom.*']),
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/micah-prime/dataloom',
+    url='https://github.com/M3Works/dataloom',
     version='0.1.0',
     zip_safe=False,
 )
