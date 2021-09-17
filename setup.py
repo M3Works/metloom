@@ -12,7 +12,8 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'geopandas>=0.9.0,<1.0.0',
-    'lxml==4.6.3'
+    'lxml==4.6.3',
+    'requests>2.0.0,<3.0.0'
 ]
 
 test_requirements = ['pytest>=3', ]
