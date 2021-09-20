@@ -3,9 +3,11 @@ from dataclasses import dataclass
 
 @dataclass
 class SensorDescription:
+    # TODO: Could we add an accumulated boolean here so that we can do accumulated vs non accumulated gets?
     code: str = "-1"
     name: str = "basename"
     description: str = None
+    accumulated: bool = False
 
 
 class VariableBase:
@@ -32,8 +34,8 @@ class CdecStationVariables(VariableBase):
     Available sensors from CDEC.
     Exhaustive list: http://cdec4gov.water.ca.gov/reportapp/javareports?name=SensList
     """
-    PRECIPITATION = SensorDescription("2", "PRECIPITATION", "PRECIPITATION, ACCUMULATED")
-    SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT")
+    PRECIPITATION = SensorDescription("2", "PRECIPITATION", "PRECIPITATION, ACCUMULATED", True)
+    SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT", True)
     # TEMPERATURE = SensorDescription("4", "TEMPERATURE", "TEMPERATURE, AIR")
     TEMPERATURE = SensorDescription("30", "TEMPERATURE", "TEMPERATURE, AIR AVERAGE")
     #     PRECIPITATION_INC = 45, "PPT INC"

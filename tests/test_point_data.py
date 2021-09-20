@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from unittest.mock import patch, MagicMock
 from datetime import datetime
@@ -5,8 +6,11 @@ import geopandas as gpd
 import pandas as pd
 
 from dataloom.point_data import CDECStation
-from dataloom.dataframe_utils import join_df, append_df
 from dataloom.variables import CdecStationVariables
+
+
+def side_effect_error(*args):
+    raise ValueError("Testing error")
 
 
 class TestCDECStation(object):
@@ -33,6 +37,11 @@ class TestCDECStation(object):
     @pytest.fixture(scope="class")
     def tny_station(self):
         return CDECStation("TNY", "Tenaya Lake")
+
+    @pytest.fixture(scope="class")
+    def shape_obj(self):
+        fp = "/Users/micahsandusky/projects/m3works/data_from_aso/Tuol_subbasins/hetchy_subbasin.shp"
+        return gpd.read_file(fp)
 
     @pytest.fixture(scope="class")
     def tny_daily_expected(self):
@@ -113,8 +122,48 @@ class TestCDECStation(object):
             mock_get.call_count == 2
         pd.testing.assert_frame_equal(response, tny_daily_expected)
 
-    def test_points_from_geometry(self):
-        pass
+    def test_points_from_geometry(self, shape_obj):
+        expected_url = "https://cdec.water.ca.gov/dynamicapp/staSearch?sta=&sensor=3&collect=NONE+SPECIFIED&dur=&active=&loc_chk=on&lon1=-119.79991670734216&lon2=-119.19808316600002&lat1=37.73938783898927&lat2=38.18642497253648&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED&agency_num=160&display=sta"
+        with patch('dataloom.point_data.pd.read_html') as mock_table_read:
+            mock_table_read.return_value = [
+                pd.DataFrame.from_records(
+                    [('GIN', 'GIN FLAT', 'MERCED R', 'MARIPOSA', -119.773,
+                      37.767, 7050, 'CA Dept of Water Resources/DFM-Hydro-SMN',
+                      np.nan),
+                     ('DAN', 'DANA MEADOWS', 'TUOLUMNE R', 'TUOLUMNE',
+                     -119.257, 37.897, 9800,
+                     'CA Dept of Water Resources/DFM-Hydro-SMN', np.nan),
+                     ('TNY', 'TENAYA LAKE', 'MERCED R', 'MARIPOSA',
+                      -119.448, 37.838, 8150,
+                      'CA Dept of Water Resources/DFM-Hydro-SMN', np.nan),
+                     ('GFL', 'GIN FLAT (COURSE)', 'MERCED R', 'MARIPOSA',
+                     -119.773, 37.765, 7000, 'Yosemite National Park', np.nan),
+                     ('TUM', 'TUOLUMNE MEADOWS', 'TUOLUMNE R', 'TUOLUMNE',
+                      -119.350, 37.873, 8600,
+                      'CA Dept of Water Resources/DFM-Hydro-SMN', np.nan),
+                     ('SLI', 'SLIDE CANYON', 'TUOLUMNE R', 'TUOLUMNE',
+                      -119.43, 38.092, 9200,
+                      'CA Dept of Water Resources/DFM-Hydro-SMN', np.nan)
+                     ],
+                    columns=['ID', 'Station Name', 'River Basin', 'County',
+                             'Longitude', 'Latitude', 'ElevationFeet',
+                             'Operator', 'Map']
+                )
+            ]
+            result = CDECStation.points_from_geometry(
+                shape_obj, [CdecStationVariables.SWE]
+            )
+            mock_table_read.assert_called_with(expected_url)
+            assert len(result) == 3
+            assert [st.id for st in result] == ['DAN', 'TUM', 'SLI']
+
+    def test_points_from_geometry_fail(self, shape_obj):
+        with patch('dataloom.point_data.pd') as mock_pd:
+            mock_pd.read_html.side_effect = side_effect_error
+            result = CDECStation.points_from_geometry(
+                shape_obj, [CdecStationVariables.SWE]
+            )
+            assert result == []
 
 
 # def test_cdec_station():
@@ -130,10 +179,10 @@ class TestCDECStation(object):
 #     # TODO: test that varaible order doesn't affect the metadata
 #     fp = "/Users/micahsandusky/projects/m3works/data_from_aso/Tuol_subbasins/hetchy_subbasin.shp"
 #     obj = gpd.read_file(fp)
-#     points = CDECStation.points_from_geometry(obj, [CdecStationVariables.PRECIPITATION,
-#                                                     # CdecStationVariables.SWE
-#                                                     ]
-#                                               )
+#     points = CDECStation.points_from_geometry(obj, [
+#         # CdecStationVariables.PRECIPITATION,
+#         CdecStationVariables.SWE
+#     ])
 #     print(points)
 #
 #
