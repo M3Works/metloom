@@ -82,7 +82,6 @@ class TestCDECStation(object):
             raise ValueError("unknown scenario")
         return mock
 
-
     def test_get_metadata(self, tny_station):
         with patch("dataloom.point_data.requests") as mock_requests:
             mock_requests.get.side_effect = self.tny_side_effect
