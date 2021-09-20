@@ -7,6 +7,7 @@ import pytz
 import requests
 import logging
 
+from .dataframe_utils import join_df
 from .variables import VariableBase, CdecStationVariables, SensorDescription
 
 LOG = logging.getLogger("dataloom.point_data")
@@ -20,42 +21,6 @@ Where are the locations?
 Maybe a class for variables with a list of preferred codes for how to access the variables
 Or an enum. Could have met enum and snow enum (or class) for each point data class
 """
-
-
-def join_df(df, new_df, how="left", on=None):
-    """
-
-    Args:
-        df:
-        new_df:
-        how: method for merging
-
-    Returns:
-        The joined dataframes. This method prefers values from the first if columns are overlapping
-        and renames the overlapping values from the `new_df` to <column>_unused
-    """
-    if df is None:
-        result_df = new_df
-    elif new_df is None:
-        result_df = df
-    else:
-        try:
-            result_df = df.join(new_df, how=how, on=on, rsuffix="_unused")
-        except Exception as e:
-            LOG.error("failed joining dataframes.")
-            raise e
-
-    return result_df
-
-
-def append_df(df, new_df):
-    if df is None:
-        result_df = new_df
-    elif new_df is None:
-        result_df = df
-    else:
-        result_df = df.append(new_df)
-    return result_df
 
 
 class PointData:
