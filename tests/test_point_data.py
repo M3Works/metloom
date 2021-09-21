@@ -4,8 +4,9 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime
 import geopandas as gpd
 import pandas as pd
+import pytz
 
-from dataloom.point_data import CDECStation
+from dataloom.point_data import CDECStation, PointDataCollection
 from dataloom.variables import CdecStationVariables
 
 
@@ -40,12 +41,13 @@ class TestCDECStation(object):
 
     @pytest.fixture(scope="class")
     def shape_obj(self):
+        # TODO: file in repo please
         fp = "/Users/micahsandusky/projects/m3works/data_from_aso/Tuol_subbasins/hetchy_subbasin.shp"
         return gpd.read_file(fp)
 
     @pytest.fixture(scope="class")
     def tny_daily_expected(self):
-        points = gpd.points_from_xy([-119.0], [42.0])
+        points = gpd.points_from_xy([-119.0], [42.0], z=[1000.0])
         df = gpd.GeoDataFrame.from_dict(
             [
                 {'datetime': pd.Timestamp(
@@ -91,41 +93,9 @@ class TestCDECStation(object):
             raise ValueError("unknown scenario")
         return mock
 
-    def test_get_metadata(self, tny_station):
-        with patch("dataloom.point_data.requests") as mock_requests:
-            mock_requests.get.side_effect = self.tny_side_effect
-            metadata = tny_station.metadata
-            mock_get = mock_requests.get
-            mock_get.call_count == 1
-            mock_get.assert_called_with(
-                "http://cdec.water.ca.gov/cdecstation2/CDecServlet/"
-                "getStationInfo",
-                params={'stationID': 'TNY'}
-            )
-        expected = gpd.points_from_xy([-119.0], [42.0])[0]
-        assert expected == metadata
-
-    def test_get_daily_data(self, tny_station, tny_daily_expected):
-        with patch("dataloom.point_data.requests") as mock_requests:
-            mock_requests.get.side_effect = self.tny_side_effect
-            response = tny_station.get_daily_data(
-                datetime(2021, 5, 16), datetime(2021, 5, 18),
-                [CdecStationVariables.PRECIPITATION]
-            )
-            mock_get = mock_requests.get
-            mock_get.assert_any_call(
-                "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet",
-                params={'Stations': 'TNY', 'dur_code': 'D',
-                        'Start': '2021-05-16T00:00:00',
-                        'End': '2021-05-18T00:00:00', 'SensorNums': '2'}
-            )
-            mock_get.call_count == 2
-        pd.testing.assert_frame_equal(response, tny_daily_expected)
-
-    def test_points_from_geometry(self, shape_obj):
-        expected_url = "https://cdec.water.ca.gov/dynamicapp/staSearch?sta=&sensor=3&collect=NONE+SPECIFIED&dur=&active=&loc_chk=on&lon1=-119.79991670734216&lon2=-119.19808316600002&lat1=37.73938783898927&lat2=38.18642497253648&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED&agency_num=160&display=sta"
-        with patch('dataloom.point_data.pd.read_html') as mock_table_read:
-            mock_table_read.return_value = [
+    @pytest.fixture(scope="class")
+    def station_search_response(self):
+        return [
                 pd.DataFrame.from_records(
                     [('GIN', 'GIN FLAT', 'MERCED R', 'MARIPOSA', -119.773,
                       37.767, 7050, 'CA Dept of Water Resources/DFM-Hydro-SMN',
@@ -150,10 +120,57 @@ class TestCDECStation(object):
                              'Operator', 'Map']
                 )
             ]
+
+    def test_class_variables(self):
+        assert CDECStation.TZINFO == pytz.timezone("US/Pacific")
+
+    def test_get_metadata(self, tny_station):
+        with patch("dataloom.point_data.requests") as mock_requests:
+            mock_requests.get.side_effect = self.tny_side_effect
+            metadata = tny_station.metadata
+            mock_get = mock_requests.get
+            mock_get.call_count == 1
+            mock_get.assert_called_with(
+                "http://cdec.water.ca.gov/cdecstation2/CDecServlet/"
+                "getStationInfo",
+                params={'stationID': 'TNY'}
+            )
+        expected = gpd.points_from_xy([-119.0], [42.0], z=[1000.0])[0]
+        assert expected == metadata
+
+    def test_get_daily_data(self, tny_station, tny_daily_expected):
+        with patch("dataloom.point_data.requests") as mock_requests:
+            mock_requests.get.side_effect = self.tny_side_effect
+            response = tny_station.get_daily_data(
+                datetime(2021, 5, 16), datetime(2021, 5, 18),
+                [CdecStationVariables.PRECIPITATION]
+            )
+            mock_get = mock_requests.get
+            mock_get.assert_any_call(
+                "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet",
+                params={'Stations': 'TNY', 'dur_code': 'D',
+                        'Start': '2021-05-16T00:00:00',
+                        'End': '2021-05-18T00:00:00', 'SensorNums': '2'}
+            )
+            mock_get.call_count == 2
+        pd.testing.assert_frame_equal(response, tny_daily_expected)
+
+    def test_points_from_geometry(self, shape_obj, station_search_response):
+        expected_url = "https://cdec.water.ca.gov/dynamicapp/staSearch?" \
+                       "sta=&sensor=3&collect=NONE+SPECIFIED&dur=&active=" \
+                       "&loc_chk=on&lon1=-119.79991670734216" \
+                       "&lon2=-119.19808316600002&lat1=37.73938783898927" \
+                       "&lat2=38.18642497253648&elev1=-5" \
+                       "&elev2=99000&nearby=&basin=NONE+SPECIFIED" \
+                       "&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED" \
+                       "&agency_num=160&display=sta"
+        with patch('dataloom.point_data.pd.read_html') as mock_table_read:
+            mock_table_read.return_value = station_search_response
             result = CDECStation.points_from_geometry(
                 shape_obj, [CdecStationVariables.SWE]
             )
             mock_table_read.assert_called_with(expected_url)
+            # We filter down to 3 stations because of shapefile filter
             assert len(result) == 3
             assert [st.id for st in result] == ['DAN', 'TUM', 'SLI']
 
@@ -165,44 +182,17 @@ class TestCDECStation(object):
             )
             assert result == []
 
-
-# def test_cdec_station():
-#     st = CDECStation("TNY", None)
-#     data = st.get_daily_data(
-#         datetime(2020, 2, 1), datetime(2020, 2, 10),
-#         [st.ALLOWED_VARIABLES.PRECIPITATION, st.ALLOWED_VARIABLES.SWE]
-#     )
-#     st.metadata
-#
-#
-# def test_search_stations():
-#     # TODO: test that varaible order doesn't affect the metadata
-#     fp = "/Users/micahsandusky/projects/m3works/data_from_aso/Tuol_subbasins/hetchy_subbasin.shp"
-#     obj = gpd.read_file(fp)
-#     points = CDECStation.points_from_geometry(obj, [
-#         # CdecStationVariables.PRECIPITATION,
-#         CdecStationVariables.SWE
-#     ])
-#     print(points)
-#
-#
-# def test_stations():
-#     fp = "/Users/micahsandusky/projects/m3works/data_from_aso/Tuol_subbasins/hetchy_subbasin.shp"
-#     obj = gpd.read_file(fp)
-#     points = CDECStation.points_from_geometry(obj, [
-#         CDECStation.ALLOWED_VARIABLES.PRECIPITATION,
-#         CDECStation.ALLOWED_VARIABLES.TEMPERATURE
-#     ])
-#     df = None
-#     # TODO: this is only returning temperature
-#     for point in points:
-#         df_new = point.get_daily_data(
-#             datetime(2020, 2, 1), datetime(2020, 2, 10),
-#             [point.ALLOWED_VARIABLES.PRECIPITATION,
-#              point.ALLOWED_VARIABLES.TEMPERATURE]
-#         )
-#
-#         df = append_df(df, new_df=df_new)
-#     # sort by dates
-#     df.sort_index(level=0, inplace=True)
-#     print(df)
+    def test_point_collection_to_dataframe(self, shape_obj,
+                                           station_search_response):
+        with patch('dataloom.point_data.pd.read_html') as mock_table_read:
+            mock_table_read.return_value = station_search_response
+            result = CDECStation.points_from_geometry(
+                shape_obj, [CdecStationVariables.SWE]
+            )
+            assert isinstance(result, PointDataCollection)
+            points_df = result.to_dataframe()
+            for idp, point in enumerate(result):
+                point_row = points_df.iloc[idp]
+                assert point.name == point_row["name"]
+                assert point.id == point_row["id"]
+                assert point.metadata == point_row["geometry"]

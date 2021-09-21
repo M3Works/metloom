@@ -39,6 +39,10 @@ class PointData:
                         variables: List[SensorDescription]):
         raise NotImplementedError("get_hourly_data is not implemented")
 
+    def get_snow_course_data(self, start_date: datetime, end_date: datetime,
+                             variables: List[SensorDescription]):
+        raise NotImplementedError("get_snow_course_data is not implemented")
+
     def _get_metadata(self):
         raise NotImplementedError("_get_metadata is not implemented")
 
@@ -53,20 +57,84 @@ class PointData:
         raise NotImplementedError("points_from_geometry not implemented")
 
 
+class PointDataCollection:
+    def __init__(self, points: List[PointData] = None):
+        self.points = points or []
+        self._index = 0
+
+    def add_point(self, point: PointData):
+        self.points.append(point)
+
+    def to_dataframe(self):
+        names = []
+        ids = []
+        meta = []
+        for point in self.points:
+            names += [point.name]
+            ids += [point.id]
+            meta += [point.metadata]
+
+        obj = {"name": names, "id": ids}
+        return gpd.GeoDataFrame.from_dict(obj, geometry=meta)
+
+    def __len__(self):
+        return len(self.points)
+
+    def __iter__(self):
+        for item in self.points:
+            yield item
+
+
 class CDECStation(PointData):
     TZINFO = pytz.timezone("US/Pacific")
     # TODO: are these mappings static?
+    # TODO: should we tailor this to each station based on metadata sensor returns?
     ALLOWED_VARIABLES = CdecStationVariables
     CDEC_URL = "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet"
+    META_URL = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/" \
+               "getStationInfo"
 
     def __init__(self, station_id, name, metadata=None):
         super(CDECStation, self).__init__(station_id, name, metadata=metadata)
+        self._raw_metadata = None
 
     def _get_all_metadata(self):
-        url = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/getStationInfo"
-        resp = requests.get(url, params={'stationID': self.id})
-        resp.raise_for_status()
-        return resp.json()["STATION"]
+        if self._raw_metadata is None:
+            resp = requests.get(self.META_URL, params={'stationID': self.id})
+            resp.raise_for_status()
+            self._raw_metadata = resp.json()["STATION"]
+        return self._raw_metadata
+
+    def is_only_snow_course(self):
+        data = self._get_all_metadata()
+        manual_check = [
+            d["DUR_CODE"] == "M" for d in data if d['SENS_GRP'] == "snow"
+        ]
+        result = False
+        if len(manual_check) > 0 and all(manual_check):
+            result = True
+        if result and not self.is_only_manual():
+            # This would happen if all snow sensors have code "M"
+            # but there are other hourly or daily sensors
+            raise Exception(
+                f"We have not accounted for this scenario. Please talk to "
+                f"a Micah about how {self.id} violates their assumptions.")
+        return result
+
+    def is_partly_snow_course(self):
+        data = self._get_all_metadata()
+        return any(
+            [d["DUR_CODE"] == "M" for d in data if d['SENS_GRP'] == "snow"]
+        )
+
+    def is_only_manual(self):
+        data = self._get_all_metadata()
+        manual_check = [
+            d["DUR_CODE"] == "M" for d in data
+        ]
+        if len(manual_check) > 0 and all(manual_check):
+            return True
+        return False
 
     def _get_metadata(self):
         # TODO: Elevation
@@ -84,7 +152,9 @@ class CDECStation(PointData):
                 break
 
         return gpd.points_from_xy(
-            [chosen_sensor_data["LONGITUDE"]], [chosen_sensor_data["LATITUDE"]]
+            [chosen_sensor_data["LONGITUDE"]],
+            [chosen_sensor_data["LATITUDE"]],
+            z=[chosen_sensor_data["ELEVATION"]]
         )[0]
 
     def _data_request(self, params):
@@ -147,8 +217,17 @@ class CDECStation(PointData):
         """
         return self._get_data(start_date, end_date, variables, "H")
 
+    def get_snow_course_data(self, start_date: datetime, end_date: datetime,
+                             variables: List[SensorDescription]):
+        """
+        """
+        if not self.is_partly_snow_course():
+            raise ValueError(f"{self.id} is not a snow course")
+        return self._get_data(start_date, end_date, variables, "M")
+
     @staticmethod
     def _station_sensor_search(bounds, sensor: SensorDescription):
+        # TODO: filter to active status?
         url = f"https://cdec.water.ca.gov/dynamicapp/staSearch?sta=" \
               f"&sensor={sensor.code}" \
               f"&collect=NONE+SPECIFIED&dur=&active=&loc_chk=on" \
@@ -165,17 +244,17 @@ class CDECStation(PointData):
 
     @classmethod
     def points_from_geometry(cls, geometry: gpd.GeoDataFrame,
-                             variables: List[SensorDescription]):
+                             variables: List[SensorDescription],
+                             snow_courses=False
+                             ):
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
         search_df = None
-        # TODO: I think snowcourses are getting returned in this?
         for variable in variables:
             result_df = cls._station_sensor_search(bounds, variable)
             if result_df is not None:
                 result_df["index_id"] = result_df["ID"]
                 result_df.set_index("index_id")
-                # TODO: should this be an outer join?
                 search_df = join_df(search_df, result_df, how="outer")
         if search_df is None:
             return []
@@ -185,9 +264,17 @@ class CDECStation(PointData):
         ))
         filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]['geometry'])]
 
-        return [
-            cls(row[0], row[1], row[2]) for row in zip(
+        points = [
+            cls(row[0], row[1], metadata=row[2]) for row in zip(
                 filtered_gdf['ID'], filtered_gdf["Station Name"],
                 filtered_gdf["geometry"]
             )
         ]
+        if snow_courses:
+            return PointDataCollection(
+                [p for p in points if p.is_partly_snow_course()]
+            )
+        else:
+            return PointDataCollection(
+                [p for p in points if not p.is_only_snow_course()]
+            )

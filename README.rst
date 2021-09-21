@@ -28,6 +28,14 @@ Features
 
 * TODO
 
+In progress
+---------
+* QA/QC based on data source
+    Example needs QCd
+    ::
+        CDECStation("DAN", "Dana Meadows").get_snow_course_data(datetime(2021, 1, 1), datetime(2021, 5, 1), [CdecStationVariables.SWE, CdecStationVariables.SNOWDEPTH])
+        CDECStation("DAN", "Dana Meadows").get_daily_data(datetime(2021, 1, 1), datetime(2021, 5, 1), [CdecStationVariables.SWE, CdecStationVariables.SNOWDEPTH])
+
 Credits
 -------
 

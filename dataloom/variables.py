@@ -38,6 +38,7 @@ class CdecStationVariables(VariableBase):
     SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT", True)
     # TEMPERATURE = SensorDescription("4", "TEMPERATURE", "TEMPERATURE, AIR")
     TEMPERATURE = SensorDescription("30", "TEMPERATURE", "TEMPERATURE, AIR AVERAGE")
+    SNOWDEPTH = SensorDescription("18", "SNOWDEPTH", "SNOW DEPTH")
     #     PRECIPITATION_INC = 45, "PPT INC"
     #     TEMPERATURE = 4, "TEMP",
     #     TEMP_AVG = 30, "TEMP AV"
