@@ -23,8 +23,37 @@ Or an enum. Could have met enum and snow enum (or class) for each point data cla
 """
 
 
-class PointData:
+class PointDataCollection:
+    def __init__(self, points: List[object] = None):
+        self.points = points or []
+        self._index = 0
+
+    def add_point(self, point: object):
+        self.points.append(point)
+
+    def to_dataframe(self):
+        names = []
+        ids = []
+        meta = []
+        for point in self.points:
+            names += [point.name]
+            ids += [point.id]
+            meta += [point.metadata]
+
+        obj = {"name": names, "id": ids}
+        return gpd.GeoDataFrame.from_dict(obj, geometry=meta)
+
+    def __len__(self):
+        return len(self.points)
+
+    def __iter__(self):
+        for item in self.points:
+            yield item
+
+
+class PointData(object):
     ALLOWED_VARIABLES = VariableBase
+    ITERATOR_CLASS = PointDataCollection
 
     def __init__(self, station_id, name, metadata=None):
         self.id = station_id
@@ -57,35 +86,11 @@ class PointData:
         raise NotImplementedError("points_from_geometry not implemented")
 
 
-class PointDataCollection:
-    def __init__(self, points: List[PointData] = None):
-        self.points = points or []
-        self._index = 0
-
-    def add_point(self, point: PointData):
-        self.points.append(point)
-
-    def to_dataframe(self):
-        names = []
-        ids = []
-        meta = []
-        for point in self.points:
-            names += [point.name]
-            ids += [point.id]
-            meta += [point.metadata]
-
-        obj = {"name": names, "id": ids}
-        return gpd.GeoDataFrame.from_dict(obj, geometry=meta)
-
-    def __len__(self):
-        return len(self.points)
-
-    def __iter__(self):
-        for item in self.points:
-            yield item
-
-
-class CDECStation(PointData):
+class CDECPointData(PointData):
+    """
+    Sample data using CDEC API
+    API documentation here https://cdec.water.ca.gov/dynamicapp/
+    """
     TZINFO = pytz.timezone("US/Pacific")
     # TODO: are these mappings static?
     # TODO: should we tailor this to each station based on metadata sensor returns?
@@ -95,7 +100,7 @@ class CDECStation(PointData):
                "getStationInfo"
 
     def __init__(self, station_id, name, metadata=None):
-        super(CDECStation, self).__init__(station_id, name, metadata=metadata)
+        super(CDECPointData, self).__init__(station_id, name, metadata=metadata)
         self._raw_metadata = None
 
     def _get_all_metadata(self):
@@ -107,13 +112,14 @@ class CDECStation(PointData):
 
     def is_only_snow_course(self):
         data = self._get_all_metadata()
+        # TODO: is M monthly or manual?
         manual_check = [
             d["DUR_CODE"] == "M" for d in data if d['SENS_GRP'] == "snow"
         ]
         result = False
         if len(manual_check) > 0 and all(manual_check):
             result = True
-        if result and not self.is_only_manual():
+        if result and not self.is_only_monthly():
             # This would happen if all snow sensors have code "M"
             # but there are other hourly or daily sensors
             raise Exception(
@@ -127,7 +133,7 @@ class CDECStation(PointData):
             [d["DUR_CODE"] == "M" for d in data if d['SENS_GRP'] == "snow"]
         )
 
-    def is_only_manual(self):
+    def is_only_monthly(self):
         data = self._get_all_metadata()
         manual_check = [
             d["DUR_CODE"] == "M" for d in data
@@ -162,6 +168,14 @@ class CDECStation(PointData):
         resp.raise_for_status()
         return resp.json()
 
+    @classmethod
+    def _handle_df_tz(cls, val):
+        if pd.isna(val):
+            return val
+        else:
+            local = val.tz_localize(cls.TZINFO)
+            return local.tz_convert("UTC")
+
     def _get_data(self, start_date: datetime, end_date: datetime,
                   variables: List[SensorDescription], duration: str):
         # TODO: should we scrape the data like we do in firn?
@@ -174,17 +188,19 @@ class CDECStation(PointData):
             "End": end_date.isoformat()
         }
         df = None
-        final_columns = ["geometry", "site"]
+        final_columns = ["geometry", "site", "measurementDate"]
         for sensor in variables:
             params["SensorNums"] = sensor.code
             response_data = self._data_request(params)
             if response_data:
                 sensor_df = gpd.GeoDataFrame.from_dict(
                     response_data,
-                    geometry=[self.metadata] * len(response_data)
+                    geometry=[self.metadata] * len(response_data),
                 )
+                # this mapping is important. Sometimes obsDate is null
                 sensor_df.rename(columns={
                     "date": "datetime",
+                    "obsDate": "measurementDate",
                     "value": sensor.name,
                     "units": f"{sensor.name}_units",
                     "stationId": "site"
@@ -192,13 +208,18 @@ class CDECStation(PointData):
                     inplace=True)
                 final_columns += [sensor.name, f"{sensor.name}_units"]
                 sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
+                sensor_df["measurementDate"] = pd.to_datetime(
+                    sensor_df["measurementDate"]
+                )
+                sensor_df["datetime"] = sensor_df["datetime"].apply(
+                    self._handle_df_tz
+                )
+                sensor_df["measurementDate"] = sensor_df["measurementDate"]\
+                    .apply(self._handle_df_tz)
                 sensor_df.set_index("datetime", inplace=True)
                 df = join_df(df, sensor_df)
                 df = df.filter(final_columns)
-        # add a units column
         if df is not None and len(df.index) > 0:
-            df.index = df.index.tz_localize(self.TZINFO)
-            df.index = df.index.tz_convert("UTC")
             df.reset_index(inplace=True)
             df.set_index(keys=["datetime", "site"], inplace=True)
             df.index.set_names(["datetime", "site"], inplace=True)
@@ -220,6 +241,8 @@ class CDECStation(PointData):
     def get_snow_course_data(self, start_date: datetime, end_date: datetime,
                              variables: List[SensorDescription]):
         """
+        Another approach could be https://cdec.water.ca.gov/dynamicapp/snowQuery?course_num=PRK&month=April&start_date=2021&end_date=2021&data_wish=HTML
+        # TODO: verify approaches are the same
         """
         if not self.is_partly_snow_course():
             raise ValueError(f"{self.id} is not a snow course")
@@ -227,7 +250,12 @@ class CDECStation(PointData):
 
     @staticmethod
     def _station_sensor_search(bounds, sensor: SensorDescription):
+        """
+        Station search form https://cdec.water.ca.gov/dynamicapp/staSearch?
+        """
         # TODO: filter to active status?
+        # TODO: Can filter collection type for snowcourses. i.e. collect=MANUAL+ENTRY
+        # TODO: can also filter Duration for monthly when requesting snowcourse
         url = f"https://cdec.water.ca.gov/dynamicapp/staSearch?sta=" \
               f"&sensor={sensor.code}" \
               f"&collect=NONE+SPECIFIED&dur=&active=&loc_chk=on" \
@@ -271,10 +299,10 @@ class CDECStation(PointData):
             )
         ]
         if snow_courses:
-            return PointDataCollection(
+            return cls.ITERATOR_CLASS(
                 [p for p in points if p.is_partly_snow_course()]
             )
         else:
-            return PointDataCollection(
+            return cls.ITERATOR_CLASS(
                 [p for p in points if not p.is_only_snow_course()]
             )
