@@ -5,9 +5,11 @@ from datetime import datetime
 import geopandas as gpd
 import pandas as pd
 import pytz
+from os import path
 
 from dataloom.point_data import CDECPointData, PointDataCollection
 from dataloom.variables import CdecStationVariables
+
 
 
 def side_effect_error(*args):
@@ -40,9 +42,13 @@ class TestCDECStation(object):
         return CDECPointData("TNY", "Tenaya Lake")
 
     @pytest.fixture(scope="class")
-    def shape_obj(self):
-        # TODO: file in repo please
-        fp = "/Users/micahsandusky/projects/m3works/data_from_aso/Tuol_subbasins/hetchy_subbasin.shp"
+    def data_dir(self):
+        this_dir = path.dirname(__file__)
+        return path.join(this_dir, "data")
+
+    @pytest.fixture(scope="class")
+    def shape_obj(self, data_dir):
+        fp = path.join(data_dir, "testing.shp")
         return gpd.read_file(fp)
 
     @pytest.fixture(scope="class")
@@ -166,9 +172,9 @@ class TestCDECStation(object):
                        "sta=&sensor_chk=on&sensor=3" \
                        "&collect=NONE+SPECIFIED&dur=" \
                        "&active_chk=on&active=Y" \
-                       "&loc_chk=on&lon1=-119.79991670734216" \
-                       "&lon2=-119.19808316600002&lat1=37.73938783898927" \
-                       "&lat2=38.18642497253648" \
+                       "&loc_chk=on&lon1=-119.8" \
+                       "&lon2=-119.2&lat1=37.7" \
+                       "&lat2=38.2" \
                        "&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED" \
                        "&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED" \
                        "&agency_num=160&display=sta"
@@ -178,9 +184,10 @@ class TestCDECStation(object):
                 shape_obj, [CdecStationVariables.SWE]
             )
             mock_table_read.assert_called_with(expected_url)
-            # We filter down to 3 stations because of shapefile filter
-            assert len(result) == 3
-            assert [st.id for st in result] == ['DAN', 'TUM', 'SLI']
+            assert len(result) == 5
+            assert [st.id for st in result] == [
+                'GIN', 'DAN', 'TNY', 'TUM', 'SLI'
+            ]
 
     def test_points_from_geometry_fail(self, shape_obj):
         with patch('dataloom.point_data.pd') as mock_pd:
