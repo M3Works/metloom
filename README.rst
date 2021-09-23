@@ -12,7 +12,7 @@ dataloom
 .. image:: https://readthedocs.org/projects/dataloom/badge/?version=latest
         :target: https://dataloom.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
-.. image:: https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/micah-prime/04da387b53bdb4a3aa31253789550a9f/raw/dataloom__pull_##.json
+.. image:: https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/micah-prime/04da387b53bdb4a3aa31253789550a9f/raw/dataloom__heads_main.json
         :target: https://github.com/M3Works/dataloom
         :alt: Code Coverage
 
