@@ -50,18 +50,37 @@ jobs:
                 python3 -m pip install .
           - name: Test with pytest
             run: |
-              python3 -m pytest --cov=dataloom --cov-fail-under=80
+              python3 -m pytest
           - if: ${{ matrix.python-version == '3.9' }}
-            name: Coverage
+            name: Extract coverage
             run: |
-                coverage report -m
-                coverage-badge > coverage.svg
+                # Run coverage save the results
+                python3 -m pytest --cov=dataloom --cov-fail-under=80
+                SUMMARY=`coverage report -m | grep TOTAL`
+                # Save results as ENV var
+                COVERAGE=$(python -c "print('$SUMMARY'.split(' ')[-1])")
+                echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+                # var REF = 'refs/pull/27/merge.json';
+                REF=${{ github.ref }}
+                # console.log('github.ref: ' + REF);
+                echo "github.ref: $REF"
+                # var PATHS = REF.split('/');
+                IFS='/' read -ra PATHS <<< "$REF"
+                # var BRANCH_NAME = PATHS[1] + PATHS[2];
+                BRANCH_NAME="${PATHS[1]}_${PATHS[2]}"
+                # console.log(BRANCH_NAME); // 'pull_27'
+                echo $BRANCH_NAME
+                # process.env.BRANCH = 'pull_27';
                 echo "BRANCH=$(echo ${BRANCH_NAME})" >> $GITHUB_ENV
           - if: ${{ matrix.python-version == '3.9' }}
-            name: Archive code coverage results
-            uses: actions/upload-artifact@v2
+            name: Create the Badge
+            uses: schneegans/dynamic-badges-action@v1.0.0
             with:
-                name: code-coverage-report-${{ env.BRANCH }}
-                path: coverage.svg
+                auth: ${{ secrets.GIST_SECRET }}
+                gistID: 04da387b53bdb4a3aa31253789550a9f
+                filename: snowexsql__${{ env.BRANCH }}.json
+                label: Coverage
+                message: ${{ env.COVERAGE }}
+                color: green
 
 
