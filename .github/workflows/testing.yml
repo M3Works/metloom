@@ -78,7 +78,7 @@ jobs:
             with:
                 auth: ${{ secrets.GIST_SECRET }}
                 gistID: 04da387b53bdb4a3aa31253789550a9f
-                filename: snowexsql__${{ env.BRANCH }}.json
+                filename: dataloom__${{ env.BRANCH }}.json
                 label: Coverage
                 message: ${{ env.COVERAGE }}
                 color: green
