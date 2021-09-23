@@ -13,6 +13,7 @@ class SensorDescription:
 class VariableBase:
     PRECIPITATION = SensorDescription()
     SWE = SensorDescription()
+    SNOW_DEPTH = SensorDescription()
 
     @staticmethod
     def _validate_sensor(sensor: SensorDescription):
@@ -32,27 +33,32 @@ class VariableBase:
 class CdecStationVariables(VariableBase):
     """
     Available sensors from CDEC.
-    Exhaustive list: http://cdec4gov.water.ca.gov/reportapp/javareports?name=SensList
+    Exhaustive list:
+    http://cdec4gov.water.ca.gov/reportapp/javareports?name=SensList
     """
-    PRECIPITATION = SensorDescription("2", "PRECIPITATION", "PRECIPITATION, ACCUMULATED", True)
+    PRECIPITATION = SensorDescription("2", "PRECIPITATION",
+                                      "PRECIPITATION, ACCUMULATED", True)
     SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT", True)
-
     # TEMPERATURE = SensorDescription("4", "TEMPERATURE", "TEMPERATURE, AIR")
-    TEMPERATURE = SensorDescription("30", "TEMPERATURE", "TEMPERATURE, AIR AVERAGE")
+    TEMPERATURE = SensorDescription("30", "TEMPERATURE",
+                                    "TEMPERATURE, AIR AVERAGE")
     SNOWDEPTH = SensorDescription("18", "SNOWDEPTH", "SNOW DEPTH")
-    # FNF = SensorDescription("65", "FULL NATURAL FLOW", "FLOW, FULL NATURAL")
-    FLOW_MEAN = SensorDescription("41", "MEAN FLOW", "FLOW, MEAN DAILY")
-    FNF = SensorDescription("8", "FULL NATURAL FLOW", "FULL NATURAL FLOW")
-    FNFACC = SensorDescription("290", "ACCUMULATED FLOW", "FULL NATURAL FLOW, ACCUMULATED")
-    # 290	FNF ACC	Q8	FULL NATURAL FLOW, ACCUMULATED	AF
-    # 8	FNF	QM	FULL NATURAL FLOW	CFS
+    MEANDAILYFLOW = SensorDescription("41", "MEAN FLOW", "FLOW, MEAN DAILY")  # seems like the most useful
+    RIVERDISCHARGE = SensorDescription("20", "River Discharge",
+                                       "FLOW, RIVER DISCHARGE")  # hourly?
+    RESERVOIRINFLOW = SensorDescription("76", "Reservoir Inflow",
+                                        "RESERVOIR INFLOW")
+    FORESCASTAJ10 = SensorDescription("260", "A-J 10% Exceedance Forecast",
+                                      "A-J 10% FORECAST EXCEEDANCE")
+    FORESCASTAJ50 = SensorDescription("261", "A-J 50% Exceedance Forecast",
+                                      "A-J 50% FORECAST EXCEEDANCE")
+    FORESCASTAJ90 = SensorDescription("262", "A-J 90% Exceedance Forecast",
+                                      "A-J 90% FORECAST EXCEEDANCE")
+    # 263	WY 10%	Y1	WY 10% FORECAST EXCEEDANCE	AF
+    # 264	WY 50%	Y5	WY 50% FORECAST EXCEEDANCE	AF
+    # 265	WY 90%	Y9	WY 90% FORECAST EXCEEDANCE	AF
     # SWEADJ = SensorDescription("82", "SWE", "WATER CONTENT(REVISED)")
     # 82	SNO ADJ	SM	SNOW, WATER CONTENT(REVISED)	INCHES
-    # 41	M FLOW	QR	FLOW, MEAN DAILY	CFS
-    # 65	MON FNF	QF	FLOW, FULL NATURAL	AF
-    # 66	MON FLO	QQ	FLOW, MONTHLY VOLUME	AF
-    # 67	EST ACR	QV	FLOW, ESTIMATED ACCRETIONS	AF
-    # 76	INFLOW	QI	RESERVOIR INFLOW	CFS
     # 237	SNWCMIN	S5	SNOW WATER CONTENT, MIN	INCHES
     # 238	SNWCMAX	S6	SNOW WATER CONTENT, MAX	INCHES
     # 80	PPT ADJ	PF	PRECIPITATION, REVISED	INCHES

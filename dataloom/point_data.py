@@ -85,6 +85,12 @@ class PointData(object):
                              variables: List[SensorDescription]):
         raise NotImplementedError("points_from_geometry not implemented")
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.id!r}, {self.name!r})'
+
+    def __str__(self):
+        return f'{self.name} ({self.id})'
+
 
 class CDECPointData(PointData):
     """
@@ -176,6 +182,34 @@ class CDECPointData(PointData):
             local = val.tz_localize(cls.TZINFO)
             return local.tz_convert("UTC")
 
+    def _sensor_response_to_df(self, response_data, sensor, final_columns):
+        sensor_df = gpd.GeoDataFrame.from_dict(
+            response_data,
+            geometry=[self.metadata] * len(response_data),
+        )
+        # this mapping is important. Sometimes obsDate is null
+        sensor_df.rename(columns={
+            "date": "datetime",
+            "obsDate": "measurementDate",
+            "value": sensor.name,
+            "units": f"{sensor.name}_units",
+            "stationId": "site"
+        },
+            inplace=True)
+        final_columns += [sensor.name, f"{sensor.name}_units"]
+        sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
+        sensor_df["measurementDate"] = pd.to_datetime(
+            sensor_df["measurementDate"]
+        )
+        sensor_df["datetime"] = sensor_df["datetime"].apply(
+            self._handle_df_tz
+        )
+        sensor_df["measurementDate"] = sensor_df["measurementDate"] \
+            .apply(self._handle_df_tz)
+        sensor_df.set_index("datetime", inplace=True)
+        sensor_df = sensor_df.filter(final_columns)
+        return sensor_df
+
     def _get_data(self, start_date: datetime, end_date: datetime,
                   variables: List[SensorDescription], duration: str):
         # TODO: should we scrape the data like we do in firn?
@@ -193,32 +227,11 @@ class CDECPointData(PointData):
             params["SensorNums"] = sensor.code
             response_data = self._data_request(params)
             if response_data:
-                sensor_df = gpd.GeoDataFrame.from_dict(
-                    response_data,
-                    geometry=[self.metadata] * len(response_data),
+                sensor_df = self._sensor_response_to_df(
+                    response_data, sensor, final_columns
                 )
-                # this mapping is important. Sometimes obsDate is null
-                sensor_df.rename(columns={
-                    "date": "datetime",
-                    "obsDate": "measurementDate",
-                    "value": sensor.name,
-                    "units": f"{sensor.name}_units",
-                    "stationId": "site"
-                },
-                    inplace=True)
-                final_columns += [sensor.name, f"{sensor.name}_units"]
-                sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
-                sensor_df["measurementDate"] = pd.to_datetime(
-                    sensor_df["measurementDate"]
-                )
-                sensor_df["datetime"] = sensor_df["datetime"].apply(
-                    self._handle_df_tz
-                )
-                sensor_df["measurementDate"] = sensor_df["measurementDate"]\
-                    .apply(self._handle_df_tz)
-                sensor_df.set_index("datetime", inplace=True)
                 df = join_df(df, sensor_df)
-                df = df.filter(final_columns)
+
         if df is not None and len(df.index) > 0:
             df.reset_index(inplace=True)
             df.set_index(keys=["datetime", "site"], inplace=True)
@@ -249,18 +262,29 @@ class CDECPointData(PointData):
         return self._get_data(start_date, end_date, variables, "M")
 
     @staticmethod
-    def _station_sensor_search(bounds, sensor: SensorDescription):
+    def _station_sensor_search(bounds, sensor: SensorDescription, dur=None):
         """
         Station search form https://cdec.water.ca.gov/dynamicapp/staSearch?
         """
+        # TODO: do we want this buffer?
+        buffer = 0.00
         # TODO: filter to active status?
         # TODO: Can filter collection type for snowcourses. i.e. collect=MANUAL+ENTRY
         # TODO: can also filter Duration for monthly when requesting snowcourse
+        # &collect_chk=on&collect=MANUAL+ENTRY
+        # &dur_chk=on&dur=H
+        # &active_chk=on&active=Y
+        # &collect_chk=on&collect=NONE+SPECIFIED
+        # f"&sensor_chk=on&sensor={sensor.code}" \
+        dur_str = f"&dur_chk=on&dur={dur}" if dur else "&dur="
         url = f"https://cdec.water.ca.gov/dynamicapp/staSearch?sta=" \
-              f"&sensor={sensor.code}" \
-              f"&collect=NONE+SPECIFIED&dur=&active=&loc_chk=on" \
-              f"&lon1={bounds['minx']}&lon2={bounds['maxx']}" \
-              f"&lat1={bounds['miny']}&lat2={bounds['maxy']}" \
+              f"&sensor_chk=on&sensor={sensor.code}" \
+              f"&collect=NONE+SPECIFIED" \
+              f"{dur_str}" \
+              f"&active_chk=on&active=Y" \
+              f"&loc_chk=on" \
+              f"&lon1={bounds['minx']-buffer}&lon2={bounds['maxx']+buffer}" \
+              f"&lat1={bounds['miny']-buffer}&lat2={bounds['maxy']+buffer}" \
               f"&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED" \
               f"&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED&agency_num=160" \
               f"&display=sta"

@@ -163,11 +163,13 @@ class TestCDECStation(object):
 
     def test_points_from_geometry(self, shape_obj, station_search_response):
         expected_url = "https://cdec.water.ca.gov/dynamicapp/staSearch?" \
-                       "sta=&sensor=3&collect=NONE+SPECIFIED&dur=&active=" \
+                       "sta=&sensor_chk=on&sensor=3" \
+                       "&collect=NONE+SPECIFIED&dur=" \
+                       "&active_chk=on&active=Y" \
                        "&loc_chk=on&lon1=-119.79991670734216" \
                        "&lon2=-119.19808316600002&lat1=37.73938783898927" \
-                       "&lat2=38.18642497253648&elev1=-5" \
-                       "&elev2=99000&nearby=&basin=NONE+SPECIFIED" \
+                       "&lat2=38.18642497253648" \
+                       "&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED" \
                        "&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED" \
                        "&agency_num=160&display=sta"
         with patch('dataloom.point_data.pd.read_html') as mock_table_read:
