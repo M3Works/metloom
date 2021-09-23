@@ -47,10 +47,10 @@ jobs:
           - name: Install dependencies
             run: |
                 python3 -m pip install -r requirements_dev.txt
-                python3 -m setup.py install
+                python3 -m pip install .
           - name: Test with pytest
             run: |
-              pytest --cov=dataloom --cov-fail-under=80
+              python3 -m pytest --cov=dataloom --cov-fail-under=80
           - if: ${{ matrix.python-version == '3.9' }}
             name: Coverage
             run: |
