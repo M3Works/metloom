@@ -50,7 +50,7 @@ jobs:
                 python3 -m pip install .
           - name: Test with pytest
             run: |
-              python3 -m pytest
+              pytest -s
           - if: ${{ matrix.python-version == '3.9' }}
             name: Extract coverage
             run: |
