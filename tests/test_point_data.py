@@ -195,7 +195,7 @@ class TestCDECStation(object):
             result = CDECPointData.points_from_geometry(
                 shape_obj, [CdecStationVariables.SWE]
             )
-            assert result == []
+            assert result.points == []
 
     def test_point_collection_to_dataframe(self, shape_obj,
                                            station_search_response):

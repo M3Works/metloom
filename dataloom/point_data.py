@@ -12,26 +12,35 @@ from .variables import VariableBase, CdecStationVariables, SensorDescription
 
 LOG = logging.getLogger("dataloom.point_data")
 
-"""
-Maybe a pandas table read on https://cdec.water.ca.gov/reportapp/javareports?name=COURSES.202104
-for snow survey?
-Where are the locations?
-
-
-Maybe a class for variables with a list of preferred codes for how to access the variables
-Or an enum. Could have met enum and snow enum (or class) for each point data class
-"""
-
 
 class PointDataCollection:
+    """
+    Iterator class for a collection of PointData objects.
+    This allows conversion to a GeoDataFrame
+    """
     def __init__(self, points: List[object] = None):
+        """
+
+        Args:
+            points: List of point data objects
+        """
         self.points = points or []
         self._index = 0
 
-    def add_point(self, point: object):
+    def add_point(self, point):
+        """
+        Append point to collection of PointData objects
+
+        Args:
+            point: PointData object
+        """
         self.points.append(point)
 
     def to_dataframe(self):
+        """
+        Returns:
+            GeoDataFrame of points. Columns are ['name', 'id', 'geometry']
+        """
         names = []
         ids = []
         meta = []
@@ -56,33 +65,115 @@ class PointData(object):
     ITERATOR_CLASS = PointDataCollection
 
     def __init__(self, station_id, name, metadata=None):
+        """
+
+        Args:
+            station_id: code used within datasource API to access station
+            name: station name. This will be used in the GeoDataFrames
+            metadata: Optional shapely point. This will bypass the
+                _get_metadata method if provided
+        """
         self.id = station_id
         self.name = name
         self._metadata = metadata
 
     def get_daily_data(self, start_date: datetime, end_date: datetime,
                        variables: List[SensorDescription]):
+        """
+        Get daily measurement data
+        Args:
+            start_date: datetime object for start of data collection period
+            end_date: datetime object for end of data collection period
+            variables: List of dataloom.variables.SensorDescription object
+                from self.ALLOWED_VARIABLES
+        Returns:
+            GeoDataFrame of data. The dataframe should be indexed on
+            ['datetime', 'site'] and have columns
+            ['geometry', 'site', 'measurementDate']. Additionally, for each
+            variables, it should have column f'{variable.name}' and
+            f'{variable.name}_UNITS'
+            See CDECPointData._get_data for example implementation and
+            TestCDECStation.tny_daily_expected for example dataframe.
+            Datetimes should be in UTC
+        """
         raise NotImplementedError("get_daily_data is not implemented")
 
     def get_hourly_data(self, start_date: datetime, end_date: datetime,
                         variables: List[SensorDescription]):
+        """
+        Get hourly measurement data
+        Args:
+            start_date: datetime object for start of data collection period
+            end_date: datetime object for end of data collection period
+            variables: List of dataloom.variables.SensorDescription object
+                from self.ALLOWED_VARIABLES
+        Returns:
+            GeoDataFrame of data. The dataframe should be indexed on
+            ['datetime', 'site'] and have columns
+            ['geometry', 'site', 'measurementDate']. Additionally, for each
+            variables, it should have column f'{variable.name}' and
+            f'{variable.name}_UNITS'
+            See CDECPointData._get_data for example implementation and
+            TestCDECStation.tny_daily_expected for example dataframe.
+            Datetimes should be in UTC
+        """
         raise NotImplementedError("get_hourly_data is not implemented")
 
     def get_snow_course_data(self, start_date: datetime, end_date: datetime,
                              variables: List[SensorDescription]):
+        """
+        Get snow course data
+        Args:
+            start_date: datetime object for start of data collection period
+            end_date: datetime object for end of data collection period
+            variables: List of dataloom.variables.SensorDescription object
+                from self.ALLOWED_VARIABLES
+        Returns:
+            GeoDataFrame of data. The dataframe should be indexed on
+            ['datetime', 'site'] and have columns
+            ['geometry', 'site', 'measurementDate']. Additionally, for each
+            variables, it should have column f'{variable.name}' and
+            f'{variable.name}_UNITS'
+            See CDECPointData._get_data for example implementation and
+            TestCDECStation.tny_daily_expected for example dataframe.
+            Datetimes should be in UTC
+        """
         raise NotImplementedError("get_snow_course_data is not implemented")
 
     def _get_metadata(self):
+        """
+        Method to get a shapely Point object to describe the
+        Returns:
+            shapely.point.Point object in Longitude, Latitude
+        """
         raise NotImplementedError("_get_metadata is not implemented")
 
     @property
     def metadata(self):
+        """
+        metadata property
+        Returns:
+            shapely.point.Point object in Longitude, Latitude with z in ft
+        """
         if self._metadata is None:
             self._metadata = self._get_metadata()
         return self._metadata
 
     def points_from_geometry(self, geometry: gpd.GeoDataFrame,
-                             variables: List[SensorDescription]):
+                             variables: List[SensorDescription],
+                             snow_courses=False):
+        """
+        Find a collection of points with measurements for certain variables
+        contained within a shapefile. Any point in the shapefile with
+        measurements for any of the variables should be included
+        Args:
+            geometry: GeoDataFrame for shapefile from gpd.read_file
+            variables: List of SensorDescription
+            snow_courses: boolean for including only snowcourse data or no
+                snowcourse data
+        Returns:
+            PointDataCollection
+        """
         raise NotImplementedError("points_from_geometry not implemented")
 
     def __repr__(self):
@@ -94,11 +185,10 @@ class PointData(object):
 
 class CDECPointData(PointData):
     """
-    Sample data using CDEC API
+    Implement PointData methods for CDEC data source
     API documentation here https://cdec.water.ca.gov/dynamicapp/
     """
     TZINFO = pytz.timezone("US/Pacific")
-    # TODO: are these mappings static?
     # TODO: should we tailor this to each station based on metadata sensor returns?
     ALLOWED_VARIABLES = CdecStationVariables
     CDEC_URL = "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet"
@@ -106,10 +196,21 @@ class CDECPointData(PointData):
                "getStationInfo"
 
     def __init__(self, station_id, name, metadata=None):
-        super(CDECPointData, self).__init__(station_id, name, metadata=metadata)
+        """
+        See docstring for PointData.__init__
+        """
+        super(CDECPointData, self).__init__(
+            station_id, name, metadata=metadata
+        )
         self._raw_metadata = None
 
     def _get_all_metadata(self):
+        """
+        Get all the raw metadata for a station. This is a list of sensor
+        descriptions for the station
+        Returns:
+            A list of dictionaries describing the sensors at a station
+        """
         if self._raw_metadata is None:
             resp = requests.get(self.META_URL, params={'stationID': self.id})
             resp.raise_for_status()
@@ -117,8 +218,10 @@ class CDECPointData(PointData):
         return self._raw_metadata
 
     def is_only_snow_course(self):
+        """
+        Determine if a station only has snow course measurements
+        """
         data = self._get_all_metadata()
-        # TODO: is M monthly or manual?
         manual_check = [
             d["DUR_CODE"] == "M" for d in data if d['SENS_GRP'] == "snow"
         ]
@@ -134,12 +237,20 @@ class CDECPointData(PointData):
         return result
 
     def is_partly_snow_course(self):
+        """
+        Determine if any of the snow sensors at a station are on a monthly
+        interval
+        Assumption: Monthly snow sensor measurements are snow courses
+        """
         data = self._get_all_metadata()
         return any(
             [d["DUR_CODE"] == "M" for d in data if d['SENS_GRP'] == "snow"]
         )
 
     def is_only_monthly(self):
+        """
+        determine if all sensors for a station are on a monthly interval
+        """
         data = self._get_all_metadata()
         manual_check = [
             d["DUR_CODE"] == "M" for d in data
@@ -149,7 +260,9 @@ class CDECPointData(PointData):
         return False
 
     def _get_metadata(self):
-        # TODO: Elevation
+        """
+        See docstring for PointData._get_metadata
+        """
         data = self._get_all_metadata()
         # TODO: Should this be sensor specific?
         metadata_by_name = {d["SENS_LONG_NAME"]: d for d in data}
@@ -170,12 +283,22 @@ class CDECPointData(PointData):
         )[0]
 
     def _data_request(self, params):
+        """
+        Make get request to CDEC and return JSON
+        Args:
+            params: dictionary of request parameters
+        Returns:
+            dictionary of response values
+        """
         resp = requests.get(self.CDEC_URL, params=params)
         resp.raise_for_status()
         return resp.json()
 
     @classmethod
     def _handle_df_tz(cls, val):
+        """
+        Covert one entry from a df from cls.TZINFO to UTC
+        """
         if pd.isna(val):
             return val
         else:
@@ -183,6 +306,16 @@ class CDECPointData(PointData):
             return local.tz_convert("UTC")
 
     def _sensor_response_to_df(self, response_data, sensor, final_columns):
+        """
+        Convert the response data from the API to a GeoDataFrame
+        Format and map columns in the dataframe
+        Args:
+            response_data: JSON list response from CDEC API
+            sensor: SensorDescription obj
+            final_columns: List of columns used for filtering
+        Returns:
+            GeoDataFrame
+        """
         sensor_df = gpd.GeoDataFrame.from_dict(
             response_data,
             geometry=[self.metadata] * len(response_data),
@@ -212,9 +345,16 @@ class CDECPointData(PointData):
 
     def _get_data(self, start_date: datetime, end_date: datetime,
                   variables: List[SensorDescription], duration: str):
-        # TODO: should we scrape the data like we do in firn?
-        # Example would be the table here https://cdec.water.ca.gov/dynamicapp/QueryDaily?s=CVM&end=2021-09-17
-        # The data is cleaner, but it is probably a more brittle approach
+        """
+        Args:
+            start_date: datetime object for start of data collection period
+            end_date: datetime object for end of data collection period
+            variables: List of dataloom.variables.SensorDescription object
+                from self.ALLOWED_VARIABLES
+            duration: CDEC duration code ['M', 'H', 'D']
+        Returns:
+            GeoDataFrame of data, indexed on datetime, site
+        """
         params = {
             "Stations": self.id,
             "dur_code": duration,
@@ -241,45 +381,53 @@ class CDECPointData(PointData):
     def get_daily_data(self, start_date: datetime, end_date: datetime,
                        variables: List[SensorDescription]):
         """
-        Example query: https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet?Stations=TNY&SensorNums=3&dur_code=D&Start=2021-05-16&End=2021-05-16
+        See docstring for PointData.get_daily_data
+        Example query:
+        https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet?
+        Stations=TNY&SensorNums=3&dur_code=D&Start=2021-05-16&End=2021-05-16
         """
         return self._get_data(start_date, end_date, variables, "D")
 
     def get_hourly_data(self, start_date: datetime, end_date: datetime,
                         variables: List[SensorDescription]):
         """
+        See docstring for PointData.get_hourly_data
         """
         return self._get_data(start_date, end_date, variables, "H")
 
     def get_snow_course_data(self, start_date: datetime, end_date: datetime,
                              variables: List[SensorDescription]):
         """
-        Another approach could be https://cdec.water.ca.gov/dynamicapp/snowQuery?course_num=PRK&month=April&start_date=2021&end_date=2021&data_wish=HTML
-        # TODO: verify approaches are the same
+        See docstring for PointData.get_snow_course_data
         """
         if not self.is_partly_snow_course():
             raise ValueError(f"{self.id} is not a snow course")
         return self._get_data(start_date, end_date, variables, "M")
 
     @staticmethod
-    def _station_sensor_search(bounds, sensor: SensorDescription, dur=None):
+    def _station_sensor_search(bounds, sensor: SensorDescription, dur=None,
+                               collect=None):
         """
         Station search form https://cdec.water.ca.gov/dynamicapp/staSearch?
+        Search for stations using the CDEC station search utility
+        Args:
+            bounds: dictionary of Longitude and Latitidue bounds with keys
+                minx, maxx, miny, maxy
+            sensor: SensorDescription object
+            dur: optional CDEC duration code ['M', 'H', 'D']
+            collect: optional CDEC collection type string i.e. 'MANUAL+ENTRY'
+        Returns:
+            Pandas Dataframe of table result or None if no table found
+
         """
         # TODO: do we want this buffer?
         buffer = 0.00
-        # TODO: filter to active status?
-        # TODO: Can filter collection type for snowcourses. i.e. collect=MANUAL+ENTRY
-        # TODO: can also filter Duration for monthly when requesting snowcourse
-        # &collect_chk=on&collect=MANUAL+ENTRY
-        # &dur_chk=on&dur=H
-        # &active_chk=on&active=Y
-        # &collect_chk=on&collect=NONE+SPECIFIED
-        # f"&sensor_chk=on&sensor={sensor.code}" \
         dur_str = f"&dur_chk=on&dur={dur}" if dur else "&dur="
+        collect_str = f"&collect_chk=on&collect={collect}" if collect \
+            else "&collect=NONE+SPECIFIED"
         url = f"https://cdec.water.ca.gov/dynamicapp/staSearch?sta=" \
               f"&sensor_chk=on&sensor={sensor.code}" \
-              f"&collect=NONE+SPECIFIED" \
+              f"{collect_str}" \
               f"{dur_str}" \
               f"&active_chk=on&active=Y" \
               f"&loc_chk=on" \
@@ -290,7 +438,7 @@ class CDECPointData(PointData):
               f"&display=sta"
         try:
             return pd.read_html(url)[0]
-        except ValueError as e:
+        except ValueError:
             LOG.error(f"No tables for {url}")
             return None
 
@@ -299,21 +447,35 @@ class CDECPointData(PointData):
                              variables: List[SensorDescription],
                              snow_courses=False
                              ):
+        """
+        See docstring for PointData.points_from_geometry
+        """
+        # Assume station search result is in 4326
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
         search_df = None
+        station_search_kwargs = {}
+        # Filter to manual, monthly measurements if looking for snow courses
+        if snow_courses:
+            station_search_kwargs["dur"] = "M"
+            station_search_kwargs["collect"] = "MANUAL+ENTRY"
         for variable in variables:
-            result_df = cls._station_sensor_search(bounds, variable)
+            result_df = cls._station_sensor_search(
+                bounds, variable, **station_search_kwargs
+            )
             if result_df is not None:
                 result_df["index_id"] = result_df["ID"]
                 result_df.set_index("index_id")
                 search_df = join_df(search_df, result_df, how="outer")
+        # return empty collection if we didn't find any points
         if search_df is None:
-            return []
+            return cls.ITERATOR_CLASS([])
         gdf = gpd.GeoDataFrame(search_df, geometry=gpd.points_from_xy(
             search_df["Longitude"], search_df["Latitude"],
             z=search_df["ElevationFeet"]
         ))
+        # filter to points within shapefile
+        # TODO: do we want to make this optional?
         filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]['geometry'])]
 
         points = [
@@ -322,6 +484,7 @@ class CDECPointData(PointData):
                 filtered_gdf["geometry"]
             )
         ]
+        # filter to snow courses or not snowcourses depending on desired result
         if snow_courses:
             return cls.ITERATOR_CLASS(
                 [p for p in points if p.is_partly_snow_course()]

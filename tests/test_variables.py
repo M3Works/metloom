@@ -15,7 +15,7 @@ class TestCDECStationVariables:
             (2, CdecStationVariables.PRECIPITATION),
             ("2", CdecStationVariables.PRECIPITATION),
             ("3", CdecStationVariables.SWE),
-            (30, CdecStationVariables.TEMPERATURE)
+            (30, CdecStationVariables.AVGTEMP)
         ]
     )
     def test_from_code(self, code, expected):
