@@ -7,7 +7,8 @@ import pandas as pd
 import pytz
 from os import path
 
-from dataloom.point_data import CDECPointData, PointDataCollection
+from dataloom.point_data import (
+    CDECPointData, PointDataCollection, PointData)
 from dataloom.variables import CdecStationVariables
 
 
@@ -134,7 +135,10 @@ class TestCDECStation(object):
             ]
 
     def test_class_variables(self):
-        assert CDECPointData.TZINFO == pytz.timezone("US/Pacific")
+        assert CDECPointData("no", "no").tzinfo == pytz.timezone("US/Pacific")
+        # Base implementation should fail
+        with pytest.raises(AttributeError):
+            PointData("foo", "bar").tzinfo
 
     def test_get_metadata(self, tny_station):
         with patch("dataloom.point_data.requests") as mock_requests:

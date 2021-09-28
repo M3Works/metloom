@@ -76,6 +76,7 @@ class PointData(object):
         self.id = station_id
         self.name = name
         self._metadata = metadata
+        self.desired_tzinfo = "UTC"
 
     def get_daily_data(self, start_date: datetime, end_date: datetime,
                        variables: List[SensorDescription]):
@@ -148,6 +149,20 @@ class PointData(object):
         """
         raise NotImplementedError("_get_metadata is not implemented")
 
+    def _handle_df_tz(self, val):
+        """
+        Covert one entry from a df from cls.TZINFO to UTC
+        """
+        if pd.isna(val):
+            return val
+        else:
+            local = val.tz_localize(self.tzinfo)
+            return local.tz_convert(self.desired_tzinfo)
+
+    @property
+    def tzinfo(self):
+        return self._tzinfo
+
     @property
     def metadata(self):
         """
@@ -176,6 +191,29 @@ class PointData(object):
         """
         raise NotImplementedError("points_from_geometry not implemented")
 
+    def validate_sensor_df(self, gdf: gpd.GeoDataFrame):
+        """
+        Validate that the GeoDataFrame returned is formatted correctly.
+        The goal of this method is to ensure base classes are returning a
+        consistent format of dataframe
+        """
+        expected_columns = ["measurementDate", "geometry"]
+        expected_indexes = ["datetime", "site"]
+        assert isinstance(gdf, gpd.GeoDataFrame)
+        columns = gdf.columns
+        index_names = gdf.index.names
+        # check for required indexes
+        for ei in expected_indexes:
+            assert ei in index_names
+        # check for expected columns
+        for column in expected_columns:
+            assert column in columns
+        remaining_columns = [c for c in columns if c not in expected_columns]
+        # make sure all variables have a units column as well
+        for rc in remaining_columns:
+            if "_units" not in rc:
+                assert f"{rc}_units" in remaining_columns
+
     def __repr__(self):
         return f'{self.__class__.__name__}({self.id!r}, {self.name!r})'
 
@@ -188,7 +226,6 @@ class CDECPointData(PointData):
     Implement PointData methods for CDEC data source
     API documentation here https://cdec.water.ca.gov/dynamicapp/
     """
-    TZINFO = pytz.timezone("US/Pacific")
     # TODO: should we tailor this to each station based on metadata sensor returns?
     ALLOWED_VARIABLES = CdecStationVariables
     CDEC_URL = "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet"
@@ -203,6 +240,7 @@ class CDECPointData(PointData):
             station_id, name, metadata=metadata
         )
         self._raw_metadata = None
+        self._tzinfo = pytz.timezone("US/Pacific")
 
     def _get_all_metadata(self):
         """
@@ -294,17 +332,6 @@ class CDECPointData(PointData):
         resp.raise_for_status()
         return resp.json()
 
-    @classmethod
-    def _handle_df_tz(cls, val):
-        """
-        Covert one entry from a df from cls.TZINFO to UTC
-        """
-        if pd.isna(val):
-            return val
-        else:
-            local = val.tz_localize(cls.TZINFO)
-            return local.tz_convert("UTC")
-
     def _sensor_response_to_df(self, response_data, sensor, final_columns):
         """
         Convert the response data from the API to a GeoDataFrame
@@ -339,6 +366,7 @@ class CDECPointData(PointData):
         )
         sensor_df["measurementDate"] = sensor_df["measurementDate"] \
             .apply(self._handle_df_tz)
+        # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
         return sensor_df
@@ -376,6 +404,7 @@ class CDECPointData(PointData):
             df.reset_index(inplace=True)
             df.set_index(keys=["datetime", "site"], inplace=True)
             df.index.set_names(["datetime", "site"], inplace=True)
+        self.validate_sensor_df(df)
         return df
 
     def get_daily_data(self, start_date: datetime, end_date: datetime,
