@@ -77,3 +77,14 @@ class CdecStationVariables(VariableBase):
     FORESCASTAJ90 = SensorDescription("262", "A-J 90% Exceedance Forecast",
                                       "A-J 90% FORECAST EXCEEDANCE")
     SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")
+
+
+class SnotelVariables(VariableBase):
+    """
+    Available sensors from SNOTEL
+    """
+    SNOWDEPTH = SensorDescription("SNWD", "SNOWDEPTH")
+    SWE = SensorDescription("WTEQ", "SWE")
+    TEMP = SensorDescription("TOBS", "AIR TEMP")
+    AVGTEMP = SensorDescription("TAVG", "AVG AIR TEMP")
+    PRECIPITATION = SensorDescription("PRCPSA", "PRECIPITATON")

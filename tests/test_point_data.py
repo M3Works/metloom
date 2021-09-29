@@ -1,23 +1,62 @@
 import numpy as np
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from copy import deepcopy
 import geopandas as gpd
 import pandas as pd
 import pytz
 from os import path
+from climata import snotel
 
-from dataloom.point_data import (
-    CDECPointData, PointDataCollection, PointData)
-from dataloom.variables import CdecStationVariables
-
+from dataloom.pointdata import (
+    CDECPointData, PointDataCollection, PointData, SnotelPointData
+)
+from dataloom.variables import (
+    CdecStationVariables, SnotelVariables
+)
 
 
 def side_effect_error(*args):
     raise ValueError("Testing error")
 
 
-class TestCDECStation(object):
+class TestPointData(object):
+    @pytest.fixture(scope="class")
+    def data_dir(self):
+        this_dir = path.dirname(__file__)
+        return path.join(this_dir, "data")
+
+    @pytest.fixture(scope="class")
+    def shape_obj(self, data_dir):
+        fp = path.join(data_dir, "testing.shp")
+        return gpd.read_file(fp)
+
+    @staticmethod
+    def expected_response(dates, vals, var, unit, station, points):
+        obj = []
+        for dt, v in zip(dates, vals):
+            obj.append({
+                'datetime': pd.Timestamp(
+                    dt, tz='UTC'),
+                'measurementDate': pd.Timestamp(
+                    dt, tz='UTC'),
+                var: v, f'{var}_units': unit,
+                'site': station.id
+            })
+        df = gpd.GeoDataFrame.from_dict(
+            obj, geometry=[points] * len(dates),
+        )
+        # needed to reorder the columns for the pd testing compare
+        df = df.filter([
+            "datetime", "geometry", "site", "measurementDate", var,
+            f"{var}_units"]
+        )
+        df.set_index(keys=["datetime", "site"], inplace=True)
+        return df
+
+
+class TestCDECStation(TestPointData):
     @staticmethod
     def cdec_daily_response():
         return [
@@ -41,16 +80,6 @@ class TestCDECStation(object):
     @pytest.fixture(scope="function")
     def tny_station(self):
         return CDECPointData("TNY", "Tenaya Lake")
-
-    @pytest.fixture(scope="class")
-    def data_dir(self):
-        this_dir = path.dirname(__file__)
-        return path.join(this_dir, "data")
-
-    @pytest.fixture(scope="class")
-    def shape_obj(self, data_dir):
-        fp = path.join(data_dir, "testing.shp")
-        return gpd.read_file(fp)
 
     @pytest.fixture(scope="class")
     def tny_daily_expected(self):
@@ -141,7 +170,7 @@ class TestCDECStation(object):
             PointData("foo", "bar").tzinfo
 
     def test_get_metadata(self, tny_station):
-        with patch("dataloom.point_data.requests") as mock_requests:
+        with patch("dataloom.pointdata.cdec.requests") as mock_requests:
             mock_requests.get.side_effect = self.tny_side_effect
             metadata = tny_station.metadata
             mock_get = mock_requests.get
@@ -155,7 +184,7 @@ class TestCDECStation(object):
         assert expected == metadata
 
     def test_get_daily_data(self, tny_station, tny_daily_expected):
-        with patch("dataloom.point_data.requests") as mock_requests:
+        with patch("dataloom.pointdata.cdec.requests") as mock_requests:
             mock_requests.get.side_effect = self.tny_side_effect
             response = tny_station.get_daily_data(
                 datetime(2021, 5, 16), datetime(2021, 5, 18),
@@ -182,7 +211,7 @@ class TestCDECStation(object):
                        "&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED" \
                        "&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED" \
                        "&agency_num=160&display=sta"
-        with patch('dataloom.point_data.pd.read_html') as mock_table_read:
+        with patch('dataloom.pointdata.cdec.pd.read_html') as mock_table_read:
             mock_table_read.return_value = station_search_response
             result = CDECPointData.points_from_geometry(
                 shape_obj, [CdecStationVariables.SWE]
@@ -194,7 +223,7 @@ class TestCDECStation(object):
             ]
 
     def test_points_from_geometry_fail(self, shape_obj):
-        with patch('dataloom.point_data.pd') as mock_pd:
+        with patch('dataloom.pointdata.cdec.pd') as mock_pd:
             mock_pd.read_html.side_effect = side_effect_error
             result = CDECPointData.points_from_geometry(
                 shape_obj, [CdecStationVariables.SWE]
@@ -203,7 +232,7 @@ class TestCDECStation(object):
 
     def test_point_collection_to_dataframe(self, shape_obj,
                                            station_search_response):
-        with patch('dataloom.point_data.pd.read_html') as mock_table_read:
+        with patch('dataloom.pointdata.cdec.pd.read_html') as mock_table_read:
             mock_table_read.return_value = station_search_response
             result = CDECPointData.points_from_geometry(
                 shape_obj, [CdecStationVariables.SWE]
@@ -215,3 +244,174 @@ class TestCDECStation(object):
                 assert point.name == point_row["name"]
                 assert point.id == point_row["id"]
                 assert point.metadata == point_row["geometry"]
+
+
+class MockSnotelIO(snotel.SnotelIO):
+    """
+    Mock the data structure that the climata.snotel classes return
+    """
+    def __init__(self, mock_obj, *args, **kwargs):
+        """
+        Args:
+            mock_obj: a list of dictionaries that will be stored
+        """
+        self.mock_dict = mock_obj
+        super(MockSnotelIO, self).__init__(*args, **kwargs)
+
+    def load(self):
+        self.data = self.mock_dict
+        transformed = []
+        # store the nested 'data' attribute as the same class
+        # to allow attribute level access of variables
+        if len(self.data) > 0 and self.data[0].get("data", False):
+            for row in self.data:
+                inner_data = MockSnotelIO(row["data"])
+                new_row = deepcopy(row)
+                new_row["data"] = inner_data
+                transformed += [new_row]
+            self.data = transformed
+
+
+class TestSnotelPointData(TestPointData):
+
+    @pytest.fixture(scope="function")
+    def station(self):
+        return SnotelPointData("538:CO:SNTL", "TestSite")
+
+    @pytest.fixture(scope="class")
+    def points(self):
+        return gpd.points_from_xy(
+            [-107.67552], [37.9339], z=[9800.0]
+        )[0]
+
+    @pytest.fixture(scope="class")
+    def meta_response_dict(self):
+        return {
+            "actonId": "07M27S", "beginDate": "1979-10-01 00:00:00",
+             "countyName": "Ouray", "elevation": 9800.0,
+             "endDate": "2100-01-01 00:00:00", "fipsCountryCd": "US",
+             "fipsCountyCd": "091", "fipsStateNumber": "08",
+             "huc": "140200060201", "hud": "14020006",
+             "latitude": 37.9339, "longitude": -107.67552,
+             "name": "Idarado", "shefId": "IDRC2",
+             "stationTriplet": "538:CO:SNTL"}
+
+    @pytest.fixture(scope="class")
+    def mock_meta_response(self, meta_response_dict):
+        return MockSnotelIO(
+            [{"stationDataTimeZone": -8.0, **meta_response_dict}]
+        )
+
+    @pytest.fixture(scope="class")
+    def mock_coursemeta_response(self, meta_response_dict):
+        return MockSnotelIO([meta_response_dict])
+
+    @pytest.fixture(scope="function")
+    def standard_snotel_return(self):
+        return [{
+            "elementCd": SnotelVariables.SWE.code,
+            "storedunitcd": "in"
+        }]
+
+    def test_metadata(self, mock_meta_response):
+        with patch(
+            'dataloom.pointdata.snotel.snotel.StationMetaIO'
+        ) as mock_snotel:
+            mock_snotel.return_value = mock_meta_response
+            obj = SnotelPointData("538:CO:SNTL", "eh")
+            assert obj.metadata == gpd.points_from_xy(
+                [-107.67552], [37.9339], z=[9800.0]
+            )[0]
+            assert obj.tzinfo == timezone(timedelta(hours=-8.0))
+
+    @pytest.mark.parametrize(
+        'mocked_class, date_name, dts, expected_dts, vals, d1, d2, fn_name',
+        [
+            (
+                "snotel.StationHourlyDataIO", 'dateTime',
+                ['2020-03-20 00:00', '2020-03-20 01:00', '2020-03-20 02:00'],
+                ['2020-03-20 08:00', '2020-03-20 09:00', '2020-03-20 10:00'],
+                [13.19, 13.17, 13.14], datetime(2020, 3, 20, 0),
+                datetime(2020, 3, 20, 2), "get_hourly_data"
+            ),
+            (
+                "snotel.StationDailyDataIO", 'date',
+                ['2020-03-20', '2020-03-21', '2020-03-22'],
+                ['2020-03-20 08:00', '2020-03-21 08:00', '2020-03-22 08:00'],
+                [13.19, 13.17, 13.14], datetime(2020, 3, 20),
+                datetime(2020, 3, 22), "get_daily_data"
+            ),
+            (
+                "StationMonthlyDataIO", 'date',
+                ['2020-01-28', '2020-02-27'],
+                ['2020-01-28 00:00', '2020-02-27 00:00'],
+                [13.19, 13.17], datetime(2020, 1, 20),
+                datetime(2020, 3, 15), "get_snow_course_data"
+            ),
+        ]
+    )
+    def test_get_data_methods(self, mocked_class, date_name, dts, expected_dts,
+                              vals, d1, d2, fn_name,
+                              station, standard_snotel_return,
+                              mock_meta_response, mock_coursemeta_response,
+                              points):
+        with patch(f'dataloom.pointdata.snotel.{mocked_class}') \
+                as mock_snotel, \
+                patch('dataloom.pointdata.snotel.snotel.StationMetaIO') \
+                as mock_meta:
+            if "snow_course" in fn_name:
+                mock_meta.return_value = mock_coursemeta_response
+            else:
+                mock_meta.return_value = mock_meta_response
+            standard_snotel_return[0]["data"] = [
+                {date_name: dt, 'flag': 'V', 'value': v}
+                for dt, v, in zip(dts, vals)]
+            mock_snotel.return_value = MockSnotelIO(standard_snotel_return)
+
+            vrs = [
+                SnotelVariables.SWE
+            ]
+            fn = getattr(station, fn_name)
+            result = fn(d1, d2, vrs)
+            expected = self.expected_response(
+                expected_dts, vals, SnotelVariables.SWE.name, "in", station,
+                points
+            )
+            pd.testing.assert_frame_equal(result, expected)
+
+    def test_points_from_geometry(self, shape_obj):
+        with patch('dataloom.pointdata.snotel.LoomStationIO') as mock_search:
+            mock_search.return_value = MockSnotelIO(
+                [{"actonId": None, "beginDate": "1930-02-01 00:00:00",
+                  "countyName": "Tuolumne", "elevation": 6500.0,
+                  "endDate": "2100-01-01 00:00:00", "fipsCountryCd": "US",
+                  "fipsCountyCd": "109", "fipsStateNumber": "06",
+                  "huc": "180400090302", "latitude": 37.995,
+                  "longitude": -119.78, "name": "Fake1",
+                  "shefId": None, "stationTriplet": "FFF:CA:SNOW"},
+                 {"actonId": None, "beginDate": "1948-02-01 00:00:00",
+                  "countyName": "Tuolumne", "elevation": 9300.0,
+                  "endDate": "2100-01-01 00:00:00", "fipsCountryCd": "US",
+                  "fipsCountyCd": "109", "fipsStateNumber": "06",
+                  "huc": "180400090402", "hud": "18040009",
+                  "latitude": 38.18333, "longitude": -119.61667,
+                  "name": "Fake2", "shefId": None,
+                  "stationTriplet": "BBB:CA:SNOW"}]
+            )
+            result = SnotelPointData.points_from_geometry(
+                shape_obj, [SnotelVariables.SWE], snow_courses=True
+            )
+            ids = [point.id for point in result]
+            names = [point.name for point in result]
+            assert ids == ["FFF:CA:SNOW", "BBB:CA:SNOW"]
+            assert names == ["Fake1", "Fake2"]
+
+    def test_points_from_geometry_fail(self, shape_obj):
+        with patch('dataloom.pointdata.snotel.LoomStationIO') as mock_search:
+            mock_search.return_value = MockSnotelIO(
+                []
+            )
+            result = SnotelPointData.points_from_geometry(
+                shape_obj, [SnotelVariables.SWE], snow_courses=True
+            )
+            assert len(result) == 0
