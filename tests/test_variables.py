@@ -11,12 +11,13 @@ class TestBaseVariables:
 
 class TestCDECStationVariables:
     @pytest.mark.parametrize(
-        'code, expected', [
+        "code, expected",
+        [
             (2, CdecStationVariables.PRECIPITATION),
             ("2", CdecStationVariables.PRECIPITATION),
             ("3", CdecStationVariables.SWE),
-            (30, CdecStationVariables.AVGTEMP)
-        ]
+            (30, CdecStationVariables.AVGTEMP),
+        ],
     )
     def test_from_code(self, code, expected):
         assert CdecStationVariables.from_code(code) == expected
