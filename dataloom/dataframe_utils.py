@@ -6,8 +6,9 @@ import pandas as pd
 LOG = getLogger("dataloom.dataframe_utils")
 
 
-def join_df(df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame],
-            how="left", on=None):
+def join_df(
+    df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame], how="left", on=None
+):
     """
     join two dataframes handling None
     Args:

@@ -6,6 +6,7 @@ class SensorDescription:
     """
     data class for describing a snow sensor
     """
+
     code: str = "-1"  # code used within the applicable API
     name: str = "basename"  # desired name for the sensor
     description: str = None  # description of the sensor
@@ -21,6 +22,7 @@ class VariableBase:
     Variables in this base class should ideally be implemented by all classes
     and cannot be directly used from the base class.
     """
+
     PRECIPITATION = SensorDescription()
     SWE = SensorDescription()
     SNOWDEPTH = SensorDescription()
@@ -53,29 +55,31 @@ class CdecStationVariables(VariableBase):
     Exhaustive list:
     http://cdec4gov.water.ca.gov/reportapp/javareports?name=SensList
     """
-    PRECIPITATION = SensorDescription("2", "PRECIPITATION",
-                                      "PRECIPITATION, ACCUMULATED", True)
+
+    PRECIPITATION = SensorDescription(
+        "2", "PRECIPITATION", "PRECIPITATION, ACCUMULATED", True
+    )
     SNOWDEPTH = SensorDescription("18", "SNOWDEPTH", "SNOW DEPTH")
     SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT", True)
     TEMP = SensorDescription("4", "AIR TEMP", "TEMPERATURE, AIR")
-    AVGTEMP = SensorDescription("30", "AVG AIR TEMP",
-                                "TEMPERATURE, AIR AVERAGE")
-    MINTEMP = SensorDescription("32", "MIN AIR TEMP",
-                                "TEMPERATURE, AIR MINIMUM")
-    MAXTEMP = SensorDescription("31", "MAX AIR TEMP",
-                                "TEMPERATURE, AIR MAXIMUM")
+    AVGTEMP = SensorDescription("30", "AVG AIR TEMP", "TEMPERATURE, AIR AVERAGE")
+    MINTEMP = SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")
+    MAXTEMP = SensorDescription("31", "MAX AIR TEMP", "TEMPERATURE, AIR MAXIMUM")
     # seems like the most useful
     MEANDAILYFLOW = SensorDescription("41", "MEAN FLOW", "FLOW, MEAN DAILY")
-    RIVERDISCHARGE = SensorDescription("20", "River Discharge",
-                                       "FLOW, RIVER DISCHARGE")  # hourly?
-    RESERVOIRINFLOW = SensorDescription("76", "Reservoir Inflow",
-                                        "RESERVOIR INFLOW")
-    FORESCASTAJ10 = SensorDescription("260", "A-J 10% Exceedance Forecast",
-                                      "A-J 10% FORECAST EXCEEDANCE")
-    FORESCASTAJ50 = SensorDescription("261", "A-J 50% Exceedance Forecast",
-                                      "A-J 50% FORECAST EXCEEDANCE")
-    FORESCASTAJ90 = SensorDescription("262", "A-J 90% Exceedance Forecast",
-                                      "A-J 90% FORECAST EXCEEDANCE")
+    RIVERDISCHARGE = SensorDescription(
+        "20", "River Discharge", "FLOW, RIVER DISCHARGE"
+    )  # hourly?
+    RESERVOIRINFLOW = SensorDescription("76", "Reservoir Inflow", "RESERVOIR INFLOW")
+    FORESCASTAJ10 = SensorDescription(
+        "260", "A-J 10% Exceedance Forecast", "A-J 10% FORECAST EXCEEDANCE"
+    )
+    FORESCASTAJ50 = SensorDescription(
+        "261", "A-J 50% Exceedance Forecast", "A-J 50% FORECAST EXCEEDANCE"
+    )
+    FORESCASTAJ90 = SensorDescription(
+        "262", "A-J 90% Exceedance Forecast", "A-J 90% FORECAST EXCEEDANCE"
+    )
     SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")
 
 
@@ -83,6 +87,7 @@ class SnotelVariables(VariableBase):
     """
     Available sensors from SNOTEL
     """
+
     SNOWDEPTH = SensorDescription("SNWD", "SNOWDEPTH")
     SWE = SensorDescription("WTEQ", "SWE")
     TEMP = SensorDescription("TOBS", "AIR TEMP")

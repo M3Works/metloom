@@ -5,8 +5,7 @@ import geopandas as gpd
 import pandas as pd
 import logging
 
-from ..variables import (
-    VariableBase, SensorDescription)
+from ..variables import VariableBase, SensorDescription
 
 LOG = logging.getLogger("dataloom.pointdata.base")
 
@@ -16,6 +15,7 @@ class PointDataCollection:
     Iterator class for a collection of PointData objects.
     This allows conversion to a GeoDataFrame
     """
+
     def __init__(self, points: List[object] = None):
         """
 
@@ -76,8 +76,12 @@ class PointData(object):
         self._metadata = metadata
         self.desired_tzinfo = "UTC"
 
-    def get_daily_data(self, start_date: datetime, end_date: datetime,
-                       variables: List[SensorDescription]):
+    def get_daily_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
         """
         Get daily measurement data
         Args:
@@ -97,8 +101,12 @@ class PointData(object):
         """
         raise NotImplementedError("get_daily_data is not implemented")
 
-    def get_hourly_data(self, start_date: datetime, end_date: datetime,
-                        variables: List[SensorDescription]):
+    def get_hourly_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
         """
         Get hourly measurement data
         Args:
@@ -118,8 +126,12 @@ class PointData(object):
         """
         raise NotImplementedError("get_hourly_data is not implemented")
 
-    def get_snow_course_data(self, start_date: datetime, end_date: datetime,
-                             variables: List[SensorDescription]):
+    def get_snow_course_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
         """
         Get snow course data
         Args:
@@ -175,9 +187,12 @@ class PointData(object):
             self._metadata = self._get_metadata()
         return self._metadata
 
-    def points_from_geometry(self, geometry: gpd.GeoDataFrame,
-                             variables: List[SensorDescription],
-                             snow_courses=False):
+    def points_from_geometry(
+        self,
+        geometry: gpd.GeoDataFrame,
+        variables: List[SensorDescription],
+        snow_courses=False,
+    ):
         """
         Find a collection of points with measurements for certain variables
         contained within a shapefile. Any point in the shapefile with
@@ -216,10 +231,10 @@ class PointData(object):
                 assert f"{rc}_units" in remaining_columns
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.id!r}, {self.name!r})'
+        return f"{self.__class__.__name__}({self.id!r}, {self.name!r})"
 
     def __str__(self):
-        return f'{self.name} ({self.id})'
+        return f"{self.name} ({self.id})"
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):

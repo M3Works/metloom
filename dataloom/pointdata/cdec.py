@@ -19,18 +19,16 @@ class CDECPointData(PointData):
     Implement PointData methods for CDEC data source
     API documentation here https://cdec.water.ca.gov/dynamicapp/
     """
+
     ALLOWED_VARIABLES = CdecStationVariables
     CDEC_URL = "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet"
-    META_URL = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/" \
-               "getStationInfo"
+    META_URL = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/" "getStationInfo"
 
     def __init__(self, station_id, name, metadata=None):
         """
         See docstring for PointData.__init__
         """
-        super(CDECPointData, self).__init__(
-            station_id, name, metadata=metadata
-        )
+        super(CDECPointData, self).__init__(station_id, name, metadata=metadata)
         self._raw_metadata = None
         self._tzinfo = pytz.timezone("US/Pacific")
 
@@ -42,7 +40,7 @@ class CDECPointData(PointData):
             A list of dictionaries describing the sensors at a station
         """
         if self._raw_metadata is None:
-            resp = requests.get(self.META_URL, params={'stationID': self.id})
+            resp = requests.get(self.META_URL, params={"stationID": self.id})
             resp.raise_for_status()
             self._raw_metadata = resp.json()["STATION"]
         return self._raw_metadata
@@ -52,9 +50,7 @@ class CDECPointData(PointData):
         Determine if a station only has snow course measurements
         """
         data = self._get_all_metadata()
-        manual_check = [
-            d["DUR_CODE"] == "M" for d in data if d['SENS_GRP'] == "snow"
-        ]
+        manual_check = [d["DUR_CODE"] == "M" for d in data if d["SENS_GRP"] == "snow"]
         result = False
         if len(manual_check) > 0 and all(manual_check):
             result = True
@@ -63,7 +59,8 @@ class CDECPointData(PointData):
             # but there are other hourly or daily sensors
             raise Exception(
                 f"We have not accounted for this scenario. Please talk to "
-                f"a Micah about how {self.id} violates their assumptions.")
+                f"a Micah about how {self.id} violates their assumptions."
+            )
         return result
 
     def is_partly_snow_course(self):
@@ -73,18 +70,14 @@ class CDECPointData(PointData):
         Assumption: Monthly snow sensor measurements are snow courses
         """
         data = self._get_all_metadata()
-        return any(
-            [d["DUR_CODE"] == "M" for d in data if d['SENS_GRP'] == "snow"]
-        )
+        return any([d["DUR_CODE"] == "M" for d in data if d["SENS_GRP"] == "snow"])
 
     def is_only_monthly(self):
         """
         determine if all sensors for a station are on a monthly interval
         """
         data = self._get_all_metadata()
-        manual_check = [
-            d["DUR_CODE"] == "M" for d in data
-        ]
+        manual_check = [d["DUR_CODE"] == "M" for d in data]
         if len(manual_check) > 0 and all(manual_check):
             return True
         return False
@@ -100,8 +93,11 @@ class CDECPointData(PointData):
         chosen_sensor_data = data[0]
         # try to replace it with a desired sensor
         # TODO: Change this
-        for choice in ["SNOW, WATER CONTENT", "SNOW DEPTH",
-                       "PRECIPITATION, ACCUMULATED"]:
+        for choice in [
+            "SNOW, WATER CONTENT",
+            "SNOW DEPTH",
+            "PRECIPITATION, ACCUMULATED",
+        ]:
             if metadata_by_name.get(choice) is not None:
                 chosen_sensor_data = metadata_by_name[choice]
                 break
@@ -109,7 +105,7 @@ class CDECPointData(PointData):
         return gpd.points_from_xy(
             [chosen_sensor_data["LONGITUDE"]],
             [chosen_sensor_data["LATITUDE"]],
-            z=[chosen_sensor_data["ELEVATION"]]
+            z=[chosen_sensor_data["ELEVATION"]],
         )[0]
 
     def _data_request(self, params):
@@ -140,31 +136,35 @@ class CDECPointData(PointData):
             geometry=[self.metadata] * len(response_data),
         )
         # this mapping is important. Sometimes obsDate is null
-        sensor_df.rename(columns={
-            "date": "datetime",
-            "obsDate": "measurementDate",
-            "value": sensor.name,
-            "units": f"{sensor.name}_units",
-            "stationId": "site"
-        },
-            inplace=True)
+        sensor_df.rename(
+            columns={
+                "date": "datetime",
+                "obsDate": "measurementDate",
+                "value": sensor.name,
+                "units": f"{sensor.name}_units",
+                "stationId": "site",
+            },
+            inplace=True,
+        )
         final_columns += [sensor.name, f"{sensor.name}_units"]
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
-        sensor_df["measurementDate"] = pd.to_datetime(
-            sensor_df["measurementDate"]
-        )
-        sensor_df["datetime"] = sensor_df["datetime"].apply(
+        sensor_df["measurementDate"] = pd.to_datetime(sensor_df["measurementDate"])
+        sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
+        sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
             self._handle_df_tz
         )
-        sensor_df["measurementDate"] = sensor_df["measurementDate"] \
-            .apply(self._handle_df_tz)
         # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
         return sensor_df
 
-    def _get_data(self, start_date: datetime, end_date: datetime,
-                  variables: List[SensorDescription], duration: str):
+    def _get_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+        duration: str,
+    ):
         """
         Args:
             start_date: datetime object for start of data collection period
@@ -179,7 +179,7 @@ class CDECPointData(PointData):
             "Stations": self.id,
             "dur_code": duration,
             "Start": start_date.isoformat(),
-            "End": end_date.isoformat()
+            "End": end_date.isoformat(),
         }
         df = None
         final_columns = ["geometry", "site", "measurementDate"]
@@ -199,8 +199,12 @@ class CDECPointData(PointData):
         self.validate_sensor_df(df)
         return df
 
-    def get_daily_data(self, start_date: datetime, end_date: datetime,
-                       variables: List[SensorDescription]):
+    def get_daily_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
         """
         See docstring for PointData.get_daily_data
         Example query:
@@ -209,15 +213,23 @@ class CDECPointData(PointData):
         """
         return self._get_data(start_date, end_date, variables, "D")
 
-    def get_hourly_data(self, start_date: datetime, end_date: datetime,
-                        variables: List[SensorDescription]):
+    def get_hourly_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
         """
         See docstring for PointData.get_hourly_data
         """
         return self._get_data(start_date, end_date, variables, "H")
 
-    def get_snow_course_data(self, start_date: datetime, end_date: datetime,
-                             variables: List[SensorDescription]):
+    def get_snow_course_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
         """
         See docstring for PointData.get_snow_course_data
         """
@@ -226,8 +238,9 @@ class CDECPointData(PointData):
         return self._get_data(start_date, end_date, variables, "M")
 
     @staticmethod
-    def _station_sensor_search(bounds, sensor: SensorDescription, dur=None,
-                               collect=None):
+    def _station_sensor_search(
+        bounds, sensor: SensorDescription, dur=None, collect=None
+    ):
         """
         Station search form https://cdec.water.ca.gov/dynamicapp/staSearch?
         Search for stations using the CDEC station search utility
@@ -244,19 +257,24 @@ class CDECPointData(PointData):
         # TODO: do we want this buffer?
         buffer = 0.00
         dur_str = f"&dur_chk=on&dur={dur}" if dur else "&dur="
-        collect_str = f"&collect_chk=on&collect={collect}" if collect \
+        collect_str = (
+            f"&collect_chk=on&collect={collect}"
+            if collect
             else "&collect=NONE+SPECIFIED"
-        url = f"https://cdec.water.ca.gov/dynamicapp/staSearch?sta=" \
-              f"&sensor_chk=on&sensor={sensor.code}" \
-              f"{collect_str}" \
-              f"{dur_str}" \
-              f"&active_chk=on&active=Y" \
-              f"&loc_chk=on" \
-              f"&lon1={bounds['minx']-buffer}&lon2={bounds['maxx']+buffer}" \
-              f"&lat1={bounds['miny']-buffer}&lat2={bounds['maxy']+buffer}" \
-              f"&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED" \
-              f"&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED&agency_num=160" \
-              f"&display=sta"
+        )
+        url = (
+            f"https://cdec.water.ca.gov/dynamicapp/staSearch?sta="
+            f"&sensor_chk=on&sensor={sensor.code}"
+            f"{collect_str}"
+            f"{dur_str}"
+            f"&active_chk=on&active=Y"
+            f"&loc_chk=on"
+            f"&lon1={bounds['minx']-buffer}&lon2={bounds['maxx']+buffer}"
+            f"&lat1={bounds['miny']-buffer}&lat2={bounds['maxy']+buffer}"
+            f"&elev1=-5&elev2=99000&nearby=&basin=NONE+SPECIFIED"
+            f"&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED&agency_num=160"
+            f"&display=sta"
+        )
         try:
             return pd.read_html(url)[0]
         except ValueError:
@@ -264,10 +282,12 @@ class CDECPointData(PointData):
             return None
 
     @classmethod
-    def points_from_geometry(cls, geometry: gpd.GeoDataFrame,
-                             variables: List[SensorDescription],
-                             snow_courses=False
-                             ):
+    def points_from_geometry(
+        cls,
+        geometry: gpd.GeoDataFrame,
+        variables: List[SensorDescription],
+        snow_courses=False,
+    ):
         """
         See docstring for PointData.points_from_geometry
         """
@@ -291,25 +311,29 @@ class CDECPointData(PointData):
         # return empty collection if we didn't find any points
         if search_df is None:
             return cls.ITERATOR_CLASS([])
-        gdf = gpd.GeoDataFrame(search_df, geometry=gpd.points_from_xy(
-            search_df["Longitude"], search_df["Latitude"],
-            z=search_df["ElevationFeet"]
-        ))
+        gdf = gpd.GeoDataFrame(
+            search_df,
+            geometry=gpd.points_from_xy(
+                search_df["Longitude"],
+                search_df["Latitude"],
+                z=search_df["ElevationFeet"],
+            ),
+        )
         # filter to points within shapefile
         # TODO: do we want to make this optional?
-        filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]['geometry'])]
+        filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
 
         points = [
-            cls(row[0], row[1], metadata=row[2]) for row in zip(
-                filtered_gdf['ID'], filtered_gdf["Station Name"],
-                filtered_gdf["geometry"]
+            cls(row[0], row[1], metadata=row[2])
+            for row in zip(
+                filtered_gdf["ID"],
+                filtered_gdf["Station Name"],
+                filtered_gdf["geometry"],
             )
         ]
         # filter to snow courses or not snowcourses depending on desired result
         if snow_courses:
-            return cls.ITERATOR_CLASS(
-                [p for p in points if p.is_partly_snow_course()]
-            )
+            return cls.ITERATOR_CLASS([p for p in points if p.is_partly_snow_course()])
         else:
             return cls.ITERATOR_CLASS(
                 [p for p in points if not p.is_only_snow_course()]
