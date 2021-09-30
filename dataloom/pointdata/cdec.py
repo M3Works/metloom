@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytz
 import requests
@@ -135,6 +136,7 @@ class CDECPointData(PointData):
             response_data,
             geometry=[self.metadata] * len(response_data),
         )
+        sensor_df.replace(-9999.0, np.nan, inplace=True)
         # this mapping is important. Sometimes obsDate is null
         sensor_df.rename(
             columns={

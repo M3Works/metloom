@@ -13,10 +13,10 @@ class TestCDECStationVariables:
     @pytest.mark.parametrize(
         "code, expected",
         [
-            (2, CdecStationVariables.PRECIPITATION),
-            ("2", CdecStationVariables.PRECIPITATION),
+            (2, CdecStationVariables.PRECIPITATIONACCUM),
+            ("2", CdecStationVariables.PRECIPITATIONACCUM),
             ("3", CdecStationVariables.SWE),
-            (30, CdecStationVariables.AVGTEMP),
+            (30, CdecStationVariables.TEMPAVG),
         ],
     )
     def test_from_code(self, code, expected):

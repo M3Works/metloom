@@ -56,31 +56,18 @@ class CdecStationVariables(VariableBase):
     http://cdec4gov.water.ca.gov/reportapp/javareports?name=SensList
     """
 
+    PRECIPITATIONACCUM = SensorDescription(
+        "2", "ACCUMULATED PRECIPITATION", "PRECIPITATION, ACCUMULATED", True
+    )
     PRECIPITATION = SensorDescription(
-        "2", "PRECIPITATION", "PRECIPITATION, ACCUMULATED", True
+        "45", "PRECIPITATION", "PRECIPITATION, INCREMENTAL", False
     )
     SNOWDEPTH = SensorDescription("18", "SNOWDEPTH", "SNOW DEPTH")
     SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT", True)
     TEMP = SensorDescription("4", "AIR TEMP", "TEMPERATURE, AIR")
-    AVGTEMP = SensorDescription("30", "AVG AIR TEMP", "TEMPERATURE, AIR AVERAGE")
-    MINTEMP = SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")
-    MAXTEMP = SensorDescription("31", "MAX AIR TEMP", "TEMPERATURE, AIR MAXIMUM")
-    # seems like the most useful
-    MEANDAILYFLOW = SensorDescription("41", "MEAN FLOW", "FLOW, MEAN DAILY")
-    RIVERDISCHARGE = SensorDescription(
-        "20", "River Discharge", "FLOW, RIVER DISCHARGE"
-    )  # hourly?
-    RESERVOIRINFLOW = SensorDescription("76", "Reservoir Inflow", "RESERVOIR INFLOW")
-    FORESCASTAJ10 = SensorDescription(
-        "260", "A-J 10% Exceedance Forecast", "A-J 10% FORECAST EXCEEDANCE"
-    )
-    FORESCASTAJ50 = SensorDescription(
-        "261", "A-J 50% Exceedance Forecast", "A-J 50% FORECAST EXCEEDANCE"
-    )
-    FORESCASTAJ90 = SensorDescription(
-        "262", "A-J 90% Exceedance Forecast", "A-J 90% FORECAST EXCEEDANCE"
-    )
-    SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")
+    TEMPAVG = SensorDescription("30", "AVG AIR TEMP", "TEMPERATURE, AIR AVERAGE")
+    TEMPMIN = SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")
+    TEMPMAX = SensorDescription("31", "MAX AIR TEMP", "TEMPERATURE, AIR MAXIMUM")
 
 
 class SnotelVariables(VariableBase):
@@ -91,5 +78,13 @@ class SnotelVariables(VariableBase):
     SNOWDEPTH = SensorDescription("SNWD", "SNOWDEPTH")
     SWE = SensorDescription("WTEQ", "SWE")
     TEMP = SensorDescription("TOBS", "AIR TEMP")
-    AVGTEMP = SensorDescription("TAVG", "AVG AIR TEMP")
-    PRECIPITATION = SensorDescription("PRCPSA", "PRECIPITATON")
+    TEMPAVG = SensorDescription("TAVG", "AVG AIR TEMP",
+                                "AIR TEMPERATURE AVERAGE")
+    TEMPMIN = SensorDescription("TMIN", "MIN AIR TEMP",
+                                "AIR TEMPERATURE MINIMUM")
+    TEMPMAX = SensorDescription("TMAX", "MAX AIR TEMP",
+                                "AIR TEMPERATURE MAXIMUM")
+    PRECIPITATION = SensorDescription("PRCPSA", "PRECIPITATON",
+                                      "PRECIPITATION INCREMENT SNOW-ADJUSTED")
+    PRECIPITATIONACCUM = SensorDescription("PREC", "ACCUMULATED PRECIPITATION",
+                                           "PRECIPITATION ACCUMULATION")

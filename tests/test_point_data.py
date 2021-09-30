@@ -111,8 +111,8 @@ class TestCDECStation(TestPointData):
                     "measurementDate": pd.Timestamp(
                         "2021-05-16 07:00:00+0000", tz="UTC"
                     ),
-                    "PRECIPITATION": -0.11,
-                    "PRECIPITATION_units": "INCHES",
+                    "ACCUMULATED PRECIPITATION": -0.11,
+                    "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "site": "TNY",
                 },
                 {
@@ -120,8 +120,8 @@ class TestCDECStation(TestPointData):
                     "measurementDate": pd.Timestamp(
                         "2021-05-17 07:00:00+0000", tz="UTC"
                     ),
-                    "PRECIPITATION": -0.10,
-                    "PRECIPITATION_units": "INCHES",
+                    "ACCUMULATED PRECIPITATION": -0.10,
+                    "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "site": "TNY",
                 },
                 {
@@ -129,8 +129,8 @@ class TestCDECStation(TestPointData):
                     "measurementDate": pd.Timestamp(
                         "2021-05-18 07:00:00+0000", tz="UTC"
                     ),
-                    "PRECIPITATION": -0.10,
-                    "PRECIPITATION_units": "INCHES",
+                    "ACCUMULATED PRECIPITATION": -0.10,
+                    "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "site": "TNY",
                 },
             ],
@@ -143,8 +143,8 @@ class TestCDECStation(TestPointData):
                 "geometry",
                 "site",
                 "measurementDate",
-                "PRECIPITATION",
-                "PRECIPITATION_units",
+                "ACCUMULATED PRECIPITATION",
+                "ACCUMULATED PRECIPITATION_units",
             ]
         )
         df.set_index(keys=["datetime", "site"], inplace=True)
@@ -283,7 +283,7 @@ class TestCDECStation(TestPointData):
             response = tny_station.get_daily_data(
                 datetime(2021, 5, 16),
                 datetime(2021, 5, 18),
-                [CdecStationVariables.PRECIPITATION],
+                [CdecStationVariables.PRECIPITATIONACCUM],
             )
             mock_get = mock_requests.get
             mock_get.assert_any_call(
