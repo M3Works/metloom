@@ -8,7 +8,7 @@ from climata import snotel
 from climata.base import FilterOpt, DateOpt, as_list
 from wq.io.exceptions import NoData
 
-from .base import PointData, PointDataCollection
+from .base import PointData
 from ..variables import SnotelVariables, VariableBase, SensorDescription
 from ..dataframe_utils import join_df
 
@@ -237,7 +237,6 @@ class SnotelPointData(PointData):
         bounds = projected_geom.bounds.iloc[0]
         # TODO: network may need to change to get streamflow
         network = "SNOW" if snow_courses else "SNTL"
-        all_stations = []
         df = None
         for variable in variables:
             # this search is default AND on all parameters
@@ -270,4 +269,4 @@ class SnotelPointData(PointData):
                 filtered_gdf['geometry']
             )
         ]
-        return PointDataCollection(points)
+        return cls.ITERATOR_CLASS(points)
