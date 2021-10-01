@@ -1,6 +1,6 @@
 import pytest
 
-from dataloom.variables import VariableBase, CdecStationVariables
+from metloom.variables import VariableBase, CdecStationVariables
 
 
 class TestBaseVariables:

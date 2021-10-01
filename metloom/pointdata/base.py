@@ -7,7 +7,7 @@ import logging
 
 from ..variables import VariableBase, SensorDescription
 
-LOG = logging.getLogger("dataloom.pointdata.base")
+LOG = logging.getLogger("metloom.pointdata.base")
 
 
 class PointDataCollection:
@@ -87,7 +87,7 @@ class PointData(object):
         Args:
             start_date: datetime object for start of data collection period
             end_date: datetime object for end of data collection period
-            variables: List of dataloom.variables.SensorDescription object
+            variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
         Returns:
             GeoDataFrame of data. The dataframe should be indexed on
@@ -112,7 +112,7 @@ class PointData(object):
         Args:
             start_date: datetime object for start of data collection period
             end_date: datetime object for end of data collection period
-            variables: List of dataloom.variables.SensorDescription object
+            variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
         Returns:
             GeoDataFrame of data. The dataframe should be indexed on
@@ -137,7 +137,7 @@ class PointData(object):
         Args:
             start_date: datetime object for start of data collection period
             end_date: datetime object for end of data collection period
-            variables: List of dataloom.variables.SensorDescription object
+            variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
         Returns:
             GeoDataFrame of data. The dataframe should be indexed on

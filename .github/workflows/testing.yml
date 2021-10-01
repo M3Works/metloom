@@ -54,7 +54,7 @@ jobs:
             name: Extract coverage
             run: |
                 # Run coverage save the results
-                python3 -m pytest --cov=dataloom --cov-fail-under=80
+                python3 -m pytest --cov=metloom --cov-fail-under=80
                 SUMMARY=`coverage report -m | grep TOTAL`
                 # Save results as ENV var
                 COVERAGE=$(python -c "print('$SUMMARY'.split(' ')[-1])")
@@ -77,7 +77,7 @@ jobs:
             with:
                 auth: ${{ secrets.GIST_SECRET }}
                 gistID: 04da387b53bdb4a3aa31253789550a9f
-                filename: dataloom__${{ env.BRANCH }}.json
+                filename: metloom__${{ env.BRANCH }}.json
                 label: Coverage
                 message: ${{ env.COVERAGE }}
                 color: green

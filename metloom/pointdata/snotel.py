@@ -13,7 +13,7 @@ from ..variables import SnotelVariables, VariableBase, SensorDescription
 from ..dataframe_utils import join_df
 
 
-LOG = logging.getLogger("dataloom.pointdata.snotel")
+LOG = logging.getLogger("metloom.pointdata.snotel")
 
 
 class LoomStationIO(snotel.StationIO):

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from dataloom.dataframe_utils import join_df, append_df
+from metloom.dataframe_utils import join_df, append_df
 
 df1 = pd.DataFrame.from_records([{"foo": 12.0}, {"foo": 11.0}])
 df2 = pd.DataFrame.from_records([{"bar": 1.0}, {"bar": 1.0}])
