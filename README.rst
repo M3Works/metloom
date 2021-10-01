@@ -39,15 +39,8 @@ Features
 * Sampling of daily, hourly, and snow course data
 * Searching for stations from a datasource within a shapefile
 * Current data sources:
-    * CDEC (https://cdec.water.ca.gov/)
-
-In progress
----------
-* QA/QC based on data source
-    Example needs QCd
-    ::
-        CDECStation("DAN", "Dana Meadows").get_snow_course_data(datetime(2021, 1, 1), datetime(2021, 5, 1), [CdecStationVariables.SWE, CdecStationVariables.SNOWDEPTH])
-        CDECStation("DAN", "Dana Meadows").get_daily_data(datetime(2021, 1, 1), datetime(2021, 5, 1), [CdecStationVariables.SWE, CdecStationVariables.SNOWDEPTH])
+    * `CDEC <https://cdec.water.ca.gov/>`_
+    * `SNOTEL <https://www.nrcs.usda.gov/wps/portal/wcc/home/dataAccessHelp/webService/webServiceReference/>`_
 
 Requirements
 -------
@@ -56,6 +49,7 @@ python >= 3.7
 Install
 -------
 .. code-block:: bash
+
     python3 -m pip install dataloom
 
 
@@ -94,9 +88,10 @@ Not all of the available variables for each datasource are implemented
 within this package. It is easy to extend the classes to add more variables
 
 .. code-block:: python
+
     from datetime import datetime
     from dataloom.variables import CDECStationVariables:
-    from dataloom.point_data import CDECPointData
+    from dataloom.pointdata import CDECPointData
 
 
     class MyVariables(CDEcStationVariables):
