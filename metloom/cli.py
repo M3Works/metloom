@@ -1,4 +1,4 @@
-"""Console script for dataloom."""
+"""Console script for metloom."""
 import argparse
 import sys
 import geopandas as gpd

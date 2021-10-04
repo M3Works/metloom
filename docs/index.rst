@@ -1,4 +1,4 @@
-Welcome to dataloom's documentation!
+Welcome to metloom's documentation!
 ======================================
 
 .. toctree::
