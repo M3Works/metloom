@@ -19,6 +19,8 @@
 #
 import os
 import sys
+from datetime import datetime
+
 sys.path.insert(0, os.path.abspath('..'))
 
 import dataloom
@@ -31,7 +33,7 @@ import dataloom
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinxcontrib.apidoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -47,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'dataloom'
-copyright = "2021, M3Works"
+copyright = f'{datetime.now().year} M3Works'
 author = "M3Works"
 
 # The version info for the project you're documenting, acts as replacement
