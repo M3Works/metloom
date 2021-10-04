@@ -1,0 +1,85 @@
+# Configuration for unit testing
+# Built from example here https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: Testing and Coverage
+
+on:
+  pull_request:
+    branches: [ main, integration ]
+    paths-ignore:
+        - '**.md'
+        - '**.rst'
+
+jobs:
+    flake8:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v2
+
+            -   name: Set up Python
+                uses: actions/setup-python@v2
+                with:
+                    python-version: '3.7'
+
+            -   name: Install dependencies
+                run: |
+                    python3 -m pip install --upgrade pip
+                    python3 -m pip install flake8
+            -   name: Lint with flake8
+                run: |
+                    # stop the build if there are Python syntax errors or undefined names
+                    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+                    # use flake8 to check formatting, based on example here https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html
+                    flake8 . --count --select=C,E,F,W,B,B950 --max-complexity=10 --max-line-length=88 --statistics --extend-ignore=E203
+    test:
+        needs: [flake8]
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            python-version: [3.7, 3.8, 3.9]
+
+        steps:
+          - uses: actions/checkout@v2
+          - name: Set up Python ${{ matrix.python-version }}
+            uses: actions/setup-python@v2
+            with:
+              python-version: ${{ matrix.python-version }}
+          - name: Install dependencies
+            run: |
+                python3 -m pip install -r requirements_dev.txt
+                python3 -m pip install .
+          - name: Test with pytest
+            run: |
+              pytest -s
+          - if: ${{ matrix.python-version == '3.9' }}
+            name: Extract coverage
+            run: |
+                # Run coverage save the results
+                python3 -m pytest --cov=dataloom --cov-fail-under=80
+                SUMMARY=`coverage report -m | grep TOTAL`
+                # Save results as ENV var
+                COVERAGE=$(python -c "print('$SUMMARY'.split(' ')[-1])")
+                echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+                # var REF = 'refs/pull/27/merge.json';
+                REF=${{ github.ref }}
+                # console.log('github.ref: ' + REF);
+                echo "github.ref: $REF"
+                # var PATHS = REF.split('/');
+                IFS='/' read -ra PATHS <<< "$REF"
+                # var BRANCH_NAME = PATHS[1] + PATHS[2];
+                BRANCH_NAME="${PATHS[1]}_${PATHS[2]}"
+                # console.log(BRANCH_NAME); // 'pull_27'
+                echo $BRANCH_NAME
+                # process.env.BRANCH = 'pull_27';
+                echo "BRANCH=$(echo ${BRANCH_NAME})" >> $GITHUB_ENV
+          - if: ${{ matrix.python-version == '3.9' }}
+            name: Create the Badge
+            uses: schneegans/dynamic-badges-action@v1.0.0
+            with:
+                auth: ${{ secrets.GIST_SECRET }}
+                gistID: 04da387b53bdb4a3aa31253789550a9f
+                filename: dataloom__${{ env.BRANCH }}.json
+                label: Coverage
+                message: ${{ env.COVERAGE }}
+                color: green
+
+
