@@ -36,6 +36,7 @@ setup(
     description="Location Oriented Observed Meteorology (LOOM)",
     entry_points={
         'console_scripts': [
+            'metloom=metloom.cli:main'
         ],
     },
     install_requires=requirements,

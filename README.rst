@@ -58,8 +58,9 @@ Local install for dev
 The recommendation is to use virtualenv, but other local python
 environment isolation tools will work (pipenv, conda)
 .. code-block:: bash
+    python3 -m pip install --upgrade pip
     python3 -m pip install -r requirements_dev
-    python3 setup.py install
+    python3 -m pip install .
 
 Testing
 -------
