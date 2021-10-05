@@ -41,7 +41,7 @@ Features
     * `SNOTEL <https://www.nrcs.usda.gov/wps/portal/wcc/home/dataAccessHelp/webService/webServiceReference/>`_
 
 Requirements
--------
+------------
 python >= 3.7
 
 Install
@@ -52,10 +52,11 @@ Install
 
 
 Local install for dev
--------
+---------------------
 The recommendation is to use virtualenv, but other local python
 environment isolation tools will work (pipenv, conda)
 .. code-block:: bash
+
     python3 -m pip install --upgrade pip
     python3 -m pip install -r requirements_dev
     python3 -m pip install .
@@ -76,13 +77,13 @@ opening a pull request.
     pytest --cov=metloom
 
 Documentation
--------
+-------------
 readthedocs coming soon
 
 https://metloom.readthedocs.io.
 
 Extending classes for your own variables
--------
+----------------------------------------
 Not all of the available variables for each datasource are implemented
 within this package. It is easy to extend the classes to add more variables
 
