@@ -5,11 +5,9 @@ metloom
 
 .. image:: https://img.shields.io/pypi/v/metloom.svg
         :target: https://pypi.python.org/pypi/metloom
-
-.. image:: https://img.shields.io/github/workflow/status/M3Works/metloom/metloom
-    :target: https://github.com/M3Works/metloom/actions/workflows/testing.yml
-    :alt: Testing Status
-
+.. image:: https://github.com/M3Works/metloom/actions/workflows/testing.yml/badge.svg
+        :target: https://github.com/M3Works/metloom/actions/workflows/testing.yml
+        :alt: Testing Status
 .. image:: https://readthedocs.org/projects/metloom/badge/?version=latest
         :target: https://metloom.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
