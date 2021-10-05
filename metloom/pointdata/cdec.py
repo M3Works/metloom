@@ -12,7 +12,7 @@ from .base import PointData
 from ..variables import CdecStationVariables, SensorDescription
 from ..dataframe_utils import join_df
 
-LOG = logging.getLogger("dataloom.pointdata.cdec")
+LOG = logging.getLogger("metloom.pointdata.cdec")
 
 
 class CDECPointData(PointData):
@@ -171,7 +171,7 @@ class CDECPointData(PointData):
         Args:
             start_date: datetime object for start of data collection period
             end_date: datetime object for end of data collection period
-            variables: List of dataloom.variables.SensorDescription object
+            variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
             duration: CDEC duration code ['M', 'H', 'D']
         Returns:

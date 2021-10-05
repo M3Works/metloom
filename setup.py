@@ -36,18 +36,19 @@ setup(
     description="Location Oriented Observed Meteorology (LOOM)",
     entry_points={
         'console_scripts': [
+            'metloom=metloom.cli:main'
         ],
     },
     install_requires=requirements,
     license="BSD license",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='dataloom',
-    name='dataloom',
-    packages=find_packages(include=['dataloom', 'dataloom.*']),
+    keywords='metloom',
+    name='metloom',
+    packages=find_packages(include=['metloom', 'metloom.*']),
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/M3Works/dataloom',
+    url='https://github.com/M3Works/metloom',
     version='0.1.0',
     zip_safe=False,
 )

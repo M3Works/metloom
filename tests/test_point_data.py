@@ -9,13 +9,13 @@ import pytz
 from os import path
 from climata import snotel
 
-from dataloom.pointdata import (
+from metloom.pointdata import (
     CDECPointData,
     PointDataCollection,
     PointData,
     SnotelPointData,
 )
-from dataloom.variables import CdecStationVariables, SnotelVariables
+from metloom.variables import CdecStationVariables, SnotelVariables
 
 
 def side_effect_error(*args):
@@ -265,7 +265,7 @@ class TestCDECStation(TestPointData):
             PointData("foo", "bar").tzinfo
 
     def test_get_metadata(self, tny_station):
-        with patch("dataloom.pointdata.cdec.requests") as mock_requests:
+        with patch("metloom.pointdata.cdec.requests") as mock_requests:
             mock_requests.get.side_effect = self.tny_side_effect
             metadata = tny_station.metadata
             mock_get = mock_requests.get
@@ -278,7 +278,7 @@ class TestCDECStation(TestPointData):
         assert expected == metadata
 
     def test_get_daily_data(self, tny_station, tny_daily_expected):
-        with patch("dataloom.pointdata.cdec.requests") as mock_requests:
+        with patch("metloom.pointdata.cdec.requests") as mock_requests:
             mock_requests.get.side_effect = self.tny_side_effect
             response = tny_station.get_daily_data(
                 datetime(2021, 5, 16),
@@ -312,7 +312,7 @@ class TestCDECStation(TestPointData):
             "&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED"
             "&agency_num=160&display=sta"
         )
-        with patch("dataloom.pointdata.cdec.pd.read_html") as mock_table_read:
+        with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
             mock_table_read.return_value = station_search_response
             result = CDECPointData.points_from_geometry(
                 shape_obj, [CdecStationVariables.SWE]
@@ -322,7 +322,7 @@ class TestCDECStation(TestPointData):
             assert [st.id for st in result] == ["GIN", "DAN", "TNY", "TUM", "SLI"]
 
     def test_points_from_geometry_fail(self, shape_obj):
-        with patch("dataloom.pointdata.cdec.pd") as mock_pd:
+        with patch("metloom.pointdata.cdec.pd") as mock_pd:
             mock_pd.read_html.side_effect = side_effect_error
             result = CDECPointData.points_from_geometry(
                 shape_obj, [CdecStationVariables.SWE]
@@ -330,7 +330,7 @@ class TestCDECStation(TestPointData):
             assert result.points == []
 
     def test_point_collection_to_dataframe(self, shape_obj, station_search_response):
-        with patch("dataloom.pointdata.cdec.pd.read_html") as mock_table_read:
+        with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
             mock_table_read.return_value = station_search_response
             result = CDECPointData.points_from_geometry(
                 shape_obj, [CdecStationVariables.SWE]
@@ -413,7 +413,7 @@ class TestSnotelPointData(TestPointData):
         return [{"elementCd": SnotelVariables.SWE.code, "storedunitcd": "in"}]
 
     def test_metadata(self, mock_meta_response):
-        with patch("dataloom.pointdata.snotel.snotel.StationMetaIO") as mock_snotel:
+        with patch("metloom.pointdata.snotel.snotel.StationMetaIO") as mock_snotel:
             mock_snotel.return_value = mock_meta_response
             obj = SnotelPointData("538:CO:SNTL", "eh")
             assert (
@@ -473,8 +473,8 @@ class TestSnotelPointData(TestPointData):
         mock_coursemeta_response,
         points,
     ):
-        with patch(f"dataloom.pointdata.snotel.{mocked_class}") as mock_snotel, patch(
-            "dataloom.pointdata.snotel.snotel.StationMetaIO"
+        with patch(f"metloom.pointdata.snotel.{mocked_class}") as mock_snotel, patch(
+            "metloom.pointdata.snotel.snotel.StationMetaIO"
         ) as mock_meta:
             if "snow_course" in fn_name:
                 mock_meta.return_value = mock_coursemeta_response
@@ -494,7 +494,7 @@ class TestSnotelPointData(TestPointData):
             pd.testing.assert_frame_equal(result, expected)
 
     def test_points_from_geometry(self, shape_obj):
-        with patch("dataloom.pointdata.snotel.LoomStationIO") as mock_search:
+        with patch("metloom.pointdata.snotel.LoomStationIO") as mock_search:
             mock_search.return_value = MockSnotelIO(
                 [
                     {
@@ -541,7 +541,7 @@ class TestSnotelPointData(TestPointData):
             assert names == ["Fake1", "Fake2"]
 
     def test_points_from_geometry_fail(self, shape_obj):
-        with patch("dataloom.pointdata.snotel.LoomStationIO") as mock_search:
+        with patch("metloom.pointdata.snotel.LoomStationIO") as mock_search:
             mock_search.return_value = MockSnotelIO([])
             result = SnotelPointData.points_from_geometry(
                 shape_obj, [SnotelVariables.SWE], snow_courses=True

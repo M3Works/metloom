@@ -1,4 +1,4 @@
-"""Top-level package for dataloom."""
+"""Top-level package for metloom."""
 
 __author__ = """M3Works"""
 __email__ = "m3worksllc@gmail.com"

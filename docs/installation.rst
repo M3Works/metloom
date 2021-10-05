@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install dataloom, run this command in your terminal:
+To install metloom, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install dataloom
+    $ pip install metloom
 
-This is the preferred method to install dataloom, as it will always install the most recent stable release.
+This is the preferred method to install metloom, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,26 +26,26 @@ you through the process.
 From sources
 ------------
 
-The sources for dataloom can be downloaded from the `Github repo`_.
+The sources for metloom can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/M3Works/dataloom
+    $ git clone git://github.com/M3Works/metloom
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/M3Works/dataloom/tarball/master
+    $ curl -OJL https://github.com/M3Works/metloom/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ python setup.py install
+    $ pip install .
 
 
-.. _Github repo: https://github.com/M3Works/dataloom
-.. _tarball: https://github.com/M3Works/dataloom/tarball/master
+.. _Github repo: https://github.com/M3Works/metloom
+.. _tarball: https://github.com/M3Works/metloom/tarball/master

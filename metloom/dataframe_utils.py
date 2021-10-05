@@ -3,7 +3,7 @@ from typing import Optional
 
 import pandas as pd
 
-LOG = getLogger("dataloom.dataframe_utils")
+LOG = getLogger("metloom.dataframe_utils")
 
 
 def join_df(
