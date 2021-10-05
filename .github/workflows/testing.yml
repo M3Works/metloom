@@ -8,7 +8,9 @@ on:
     paths-ignore:
         - '**.md'
         - '**.rst'
-
+  push:
+    branches:
+      - main
 jobs:
     flake8:
         runs-on: ubuntu-latest
