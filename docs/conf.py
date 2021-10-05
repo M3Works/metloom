@@ -52,6 +52,11 @@ project = 'metloom'
 copyright = f'{datetime.now().year} M3Works'
 author = "M3Works"
 
+# API
+project_dir = os.path.abspath(os.path.dirname(os.getcwd()))
+apidoc_module_dir = os.path.join(project_dir, project)
+apidoc_output_dir = os.path.abspath('./')
+
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
 # the built documents.
