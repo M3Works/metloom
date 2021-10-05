@@ -8,6 +8,12 @@ on:
     paths-ignore:
         - '**.md'
         - '**.rst'
+  push:
+    branches:
+      - main
+    paths-ignore:
+        - '**.md'
+        - '**.rst'
 
 jobs:
     flake8:
