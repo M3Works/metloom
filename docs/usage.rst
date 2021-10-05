@@ -2,6 +2,6 @@
 Usage
 =====
 
-To use dataloom in a project::
+To use metloom in a project::
 
-    import dataloom
+    import metloom
