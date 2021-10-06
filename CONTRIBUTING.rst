@@ -125,4 +125,6 @@ $ bump2version patch # possible: major / minor / patch
 $ git push
 $ git push --tags
 
-Travis will then deploy to PyPI if tests pass.
+Once a tag is pushed and merged through to the main branch,
+use github to create a release. Github actions will publish a release
+to pypi.

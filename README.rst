@@ -19,7 +19,7 @@ metloom
 Location Oriented Observed Meteorology
 
 metloom is a python library created with the goal of consistent, simple sampling of
-meteorology and snow related point measurments from a variety of datasources accross the
+meteorology and snow related point measurments from a variety of datasources across the
 Western US.
 
 Warning - This software is provided as is (see the license), so use at your own risk.
@@ -81,6 +81,15 @@ Documentation
 readthedocs coming soon
 
 https://metloom.readthedocs.io.
+
+Usage Notes
+-----------
+See usage documentation https://metloom.readthedocs.io/en/latest/usage.html
+
+**NOTES:**
+PointData methods that get point data return a GeoDataFrame indexed
+on *both* datetime and station code. To reset the index simply run
+``df.reset_index(inplace=True)``
 
 Extending classes for your own variables
 ----------------------------------------
