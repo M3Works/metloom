@@ -126,19 +126,22 @@ class SeriesSnotelClient(BaseSnotelClient):
     @staticmethod
     def _parse_data(raw_data):
         data = raw_data[0]
+        mapped_data = []
         collection_dates = getattr(data, "collectionDates", None)
+        if len(data["values"]) == 0:
+            return mapped_data
         if collection_dates:
             date_list = [pd.to_datetime(d) for d in collection_dates]
         else:
             date_list = pd.date_range(data["beginDate"], data["endDate"])
 
-        mapped_data = []
         for date_obj, flag, value in zip(date_list, data["flags"], data["values"]):
-            mapped_data.append({
-                "datetime": date_obj,
-                "flag": flag,
-                "value": float(value) if value is not None else None
-            })
+            if date_obj is not None:
+                mapped_data.append({
+                    "datetime": date_obj,
+                    "flag": flag,
+                    "value": float(value) if value is not None else None
+                })
         return mapped_data
 
     def get_data(self, element_cd: str, **extra_params):

@@ -93,10 +93,13 @@ class SnotelPointData(PointData):
     def _fetch_data_for_variables(self, client: SeriesSnotelClient,
                                   variables: List[SensorDescription],
                                   duration: str):
-        result_map = {
-            variable: client.get_data(element_cd=variable.code)
-            for variable in variables
-        }
+        result_map = {}
+        for variable in variables:
+            data = client.get_data(element_cd=variable.code)
+            if len(data) > 0:
+                result_map[variable] = data
+            else:
+                LOG.warning(f"No {variable.name} found for {self.name}")
         return self._snotel_response_to_df(result_map, duration)
 
     def get_daily_data(
