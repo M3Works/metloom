@@ -242,8 +242,9 @@ class TestSnotelPointData(TestPointData):
         )
         ids = [point.id for point in result]
         names = [point.name for point in result]
-        assert ids == ["FFF:CA:SNOW", "BBB:CA:SNOW"]
-        assert names == ["Fake1", "Fake2"]
+        assert len(names) == 2
+        assert set(ids) == {"FFF:CA:SNOW", "BBB:CA:SNOW"}
+        assert set(names) == {"Fake1", "Fake2"}
 
     def test_points_from_geometry_fail(self, shape_obj, mock_zeep_client):
         mock_zeep_client.return_value.service.getStations.return_value = []
