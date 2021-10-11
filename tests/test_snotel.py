@@ -1,4 +1,3 @@
-from copy import deepcopy
 from datetime import timezone, timedelta, datetime
 from unittest.mock import patch, MagicMock
 from collections import OrderedDict
@@ -9,7 +8,6 @@ import pytest
 
 from metloom.pointdata import SnotelPointData
 from metloom.variables import SnotelVariables
-from metloom.pointdata import snotel_client
 from tests.test_point_data import TestPointData
 
 
@@ -120,18 +118,28 @@ class TestSnotelPointData(TestPointData):
         duration = kwargs["duration"]
         if duration == "SEMIMONTHLY":
             return [
-                MockZeepObject({'beginDate': '2020-01-20 00:00:00', 'collectionDates': ['2020-01-28', '2020-02-27'], 'duration': 'SEMIMONTHLY', 'endDate': '2020-03-14 00:00:00', 'flags': ['V', 'V'], 'stationTriplet': '538:CO:SNTL', 'values': [13.19, 13.17]})
+                MockZeepObject({
+                    'beginDate': '2020-01-20 00:00:00',
+                    'collectionDates': ['2020-01-28', '2020-02-27'],
+                    'duration': 'SEMIMONTHLY',
+                    'endDate': '2020-03-14 00:00:00',
+                    'flags': ['V', 'V'], 'stationTriplet': '538:CO:SNTL',
+                    'values': [13.19, 13.17]})
             ]
         if duration == "DAILY":
             return [MockZeepObject({
-                'beginDate': '2020-03-20 00:00:00', 'collectionDates': [], 'duration': 'DAILY', 'endDate': '2020-03-22 00:00:00', 'flags': ['V', 'V', 'V'], 'stationTriplet': '538:CO:SNTL',
+                'beginDate': '2020-03-20 00:00:00',
+                'collectionDates': [], 'duration': 'DAILY',
+                'endDate': '2020-03-22 00:00:00', 'flags': ['V', 'V', 'V'],
+                'stationTriplet': '538:CO:SNTL',
                 'values': [13.19, 13.17, 13.14]})]
 
     @staticmethod
     def snotel_hourly_sideeffect(*args, **kwargs):
         return [
             {
-                'beginDate': '2020-01-02 00:00', 'endDate': '2020-01-20 00:00', 'stationTriplet': '538:CO:SNTL',
+                'beginDate': '2020-01-02 00:00', 'endDate': '2020-01-20 00:00',
+                'stationTriplet': '538:CO:SNTL',
                 'values': [
                     {
                         'dateTime': '2020-03-20 00:00',
@@ -147,29 +155,38 @@ class TestSnotelPointData(TestPointData):
                         'value': 13.14
                     }]}]
 
-
     @pytest.fixture(scope="class")
     def mock_elements(self):
-        return [MockZeepObject({'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-          'duration': 'DAILY', 'elementCd': 'WTEQ',
-          'endDate': '2100-01-01 00:00:00', 'heightDepth': None, 'ordinal': 1,
-          'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-          'storedUnitCd': 'in'}),
-         MockZeepObject({'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-          'duration': 'SEMIMONTHLY', 'elementCd': 'WTEQ',
-          'endDate': '2100-01-01 00:00:00', 'heightDepth': None, 'ordinal': 1,
-          'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-          'storedUnitCd': 'in'}),
-         MockZeepObject({'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
-          'duration': 'HOURLY', 'elementCd': 'WTEQ',
-          'endDate': '2100-01-01 00:00:00', 'heightDepth': None, 'ordinal': 1,
-          'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-          'storedUnitCd': 'in'}),
-         MockZeepObject({'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-          'duration': 'MONTHLY', 'elementCd': 'WTEQ',
-          'endDate': '2100-01-01 00:00:00', 'heightDepth': None, 'ordinal': 1,
-          'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-          'storedUnitCd': 'in'})]
+        return [
+            MockZeepObject(
+                {
+                    'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
+                    'duration': 'DAILY', 'elementCd': 'WTEQ',
+                    'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
+                    'ordinal': 1,
+                    'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
+                    'storedUnitCd': 'in'}),
+            MockZeepObject(
+                {'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
+                 'duration': 'SEMIMONTHLY', 'elementCd': 'WTEQ',
+                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
+                 'ordinal': 1,
+                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
+                 'storedUnitCd': 'in'}),
+            MockZeepObject(
+                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
+                 'duration': 'HOURLY', 'elementCd': 'WTEQ',
+                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
+                 'ordinal': 1,
+                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
+                 'storedUnitCd': 'in'}),
+            MockZeepObject(
+                {'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
+                 'duration': 'MONTHLY', 'elementCd': 'WTEQ',
+                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
+                 'ordinal': 1,
+                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
+                 'storedUnitCd': 'in'})]
 
     @pytest.fixture(scope="class")
     def mock_zeep_client(self, mock_elements):
@@ -178,7 +195,8 @@ class TestSnotelPointData(TestPointData):
             # setup the individual services
             mock_service.getStationMetadata.side_effect = self.snotel_meta_sideeffect
             mock_service.getStationElements.return_value = mock_elements
-            mock_service.getStations.return_value = ["FFF:CA:SNOW", "BBB:CA:SNOW"]
+            mock_service.getStations.return_value = ["FFF:CA:SNOW",
+                                                     "BBB:CA:SNOW"]
             mock_service.getData.side_effect = self.snotel_data_sideeffect
             mock_service.getHourlyData.side_effect = self.snotel_hourly_sideeffect
             # assign service to client
@@ -225,7 +243,8 @@ class TestSnotelPointData(TestPointData):
             ),
         ],
     )
-    def test_get_data_methods(self, station_id, dts, expected_dts, vals, d1, d2,
+    def test_get_data_methods(self, station_id, dts, expected_dts, vals, d1,
+                              d2,
                               fn_name, points, mock_zeep_client):
         station = SnotelPointData(station_id, "TestSite")
         vrs = [SnotelVariables.SWE]

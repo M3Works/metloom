@@ -7,7 +7,7 @@ from functools import reduce
 
 
 from .base import PointData
-from ..variables import SnotelVariables, VariableBase, SensorDescription
+from ..variables import SnotelVariables, SensorDescription
 from ..dataframe_utils import join_df, append_df
 
 from .snotel_client import (

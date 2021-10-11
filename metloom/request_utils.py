@@ -1,5 +1,6 @@
 """
-Taken from https://stackoverflow.com/questions/15445981/how-do-i-disable-the-security-certificate-check-in-python-requests
+Taken from
+stackoverflow.com/questions/15445981/how-do-i-disable-the-security-certificate-check-in-python-requests
 This is necessary to make requests to Snotel without exceptions
 as we are not able to do the SSL verification
 """
@@ -21,7 +22,9 @@ def no_ssl_verification():
         # verify=False persist beyond the end of this context manager.
         opened_adapters.add(self.get_adapter(url))
 
-        settings = old_merge_environment_settings(self, url, proxies, stream, verify, cert)
+        settings = old_merge_environment_settings(
+            self, url, proxies, stream, verify, cert
+        )
         settings['verify'] = False
 
         return settings
@@ -38,5 +41,5 @@ def no_ssl_verification():
         for adapter in opened_adapters:
             try:
                 adapter.close()
-            except:
+            except Exception:
                 pass

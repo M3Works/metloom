@@ -339,5 +339,3 @@ class TestCDECStation(TestPointData):
                 assert point.name == point_row["name"]
                 assert point.id == point_row["id"]
                 assert point.metadata == point_row["geometry"]
-
-
