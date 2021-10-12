@@ -6,6 +6,15 @@ from metloom.request_utils import no_ssl_verification
 
 
 class BaseSnotelClient:
+    """
+    Base snotel client class. Used for interacting with SNOTEL SOAP client.
+    This is just a base class and not meant for direct use.
+
+    Example use with extended class::
+
+        MetaDataSnotelClient('TNY:CA:SNOW').get_data()
+
+    """
 
     URL = "https://www.wcc.nrcs.usda.gov/awdbWebService/services?wsdl"
     # map allowed params to API filter params
@@ -40,6 +49,9 @@ class BaseSnotelClient:
                 self.params[key] = value
 
     def _get_params(self, **kwargs):
+        """
+        map input parameter keys to keys expected by the SOAP client
+        """
         params = {}
         for key, value in kwargs.items():
             mapped_key = self.PARAMS_MAP.get(key)
@@ -54,6 +66,9 @@ class BaseSnotelClient:
 
     @classmethod
     def _make_request(cls, **params):
+        """
+        Make the request to the SOAP client for the implemented service.
+        """
         with no_ssl_verification():
             client = zeep.Client(
                 cls.URL,
@@ -63,11 +78,17 @@ class BaseSnotelClient:
         return response
 
     def get_data(self):
+        """
+        Make the actual request and return data.
+        """
         data = self._make_request(**self.params)
         return data
 
 
 class MetaDataSnotelClient(BaseSnotelClient):
+    """
+    Read metadata from the metadata service for a particular station triplet
+    """
     SERVICE_NAME = "getStationMetadata"
 
     def __init__(self, station_triplet: str, **kwargs):
@@ -76,12 +97,22 @@ class MetaDataSnotelClient(BaseSnotelClient):
         )
 
     def get_data(self):
+        """
+        Returns a dictionary of metadata values
+        """
         data = self._make_request(**self.params)
         # change ordered dict of values to regular dict
         return dict(data.__values__)
 
 
 class ElementSnotelClient(BaseSnotelClient):
+    """
+    Get all station elements for a station triplet. Station triplets
+    are descriptions of each sensor on the station
+
+    get_data returns a list of zeep objects. Zeep objects are indexible
+    or attributes can be accessed with getattr or ``.``
+    """
     SERVICE_NAME = "getStationElements"
 
     def __init__(self, station_triplet: str, **kwargs):
@@ -91,6 +122,11 @@ class ElementSnotelClient(BaseSnotelClient):
 
 
 class PointSearchSnotelClient(BaseSnotelClient):
+    """
+    Search for stations based on criteria. This search is default logical
+    ``AND`` meaning all criteria need to be true.
+    get_data returns a list of string station triplets
+    """
     SERVICE_NAME = 'getStations'
     DEFAULT_PARAMS = {
         'logicalAnd': 'true',
@@ -108,6 +144,9 @@ class PointSearchSnotelClient(BaseSnotelClient):
 
 
 class SeriesSnotelClient(BaseSnotelClient):
+    """
+    Base extension for services that return timseries data.
+    """
     SERVICE_NAME = "getData"
     DURATION = "DAILY"
     DEFAULT_PARAMS = {
@@ -124,6 +163,10 @@ class SeriesSnotelClient(BaseSnotelClient):
 
     @staticmethod
     def _parse_data(raw_data):
+        """
+        Parse the return data to return a consistent format for timeseries
+        data
+        """
         data = raw_data[0]
         mapped_data = []
         collection_dates = getattr(data, "collectionDates", None)
@@ -144,22 +187,40 @@ class SeriesSnotelClient(BaseSnotelClient):
         return mapped_data
 
     def get_data(self, element_cd: str, **extra_params):
+        """
+        get the timeseires data
+
+        Args:
+            element_cd: the variable code from the allowed variable codes
+                in the API
+            extra_params: kwargs for any extra parameters. These override
+                the default parameters
+        """
         extra_params.update(element_cd=element_cd)
         mapped_params = self._get_params(**extra_params)
-        params = {**mapped_params, **self.params}
+        params = {**self.params, **mapped_params}
         data = self._make_request(**params)
         return self._parse_data(data)
 
 
 class DailySnotelDataClient(SeriesSnotelClient):
+    """
+    Class for getting daily data
+    """
     pass
 
 
 class SemiMonthlySnotelClient(SeriesSnotelClient):
+    """
+    Class for getting semi monthly (snow course) data
+    """
     DURATION = "SEMIMONTHLY"
 
 
 class HourlySnotelDataClient(SeriesSnotelClient):
+    """
+    Class for getting hourly data
+    """
     DURATION = None
     SERVICE_NAME = "getHourlyData"
     DEFAULT_PARAMS = {
@@ -168,6 +229,9 @@ class HourlySnotelDataClient(SeriesSnotelClient):
 
     @staticmethod
     def _parse_data(raw_data):
+        """
+        Clean the hourly data to be consistent with timeseries results
+        """
         data = raw_data[0]
         mapped_data = []
         for row in data["values"]:
