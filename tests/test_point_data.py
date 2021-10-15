@@ -41,6 +41,7 @@ class TestPointData(object):
                     var: v,
                     f"{var}_units": unit,
                     "site": station.id,
+                    "datasource": "NRCS"
                 }
             )
         df = gpd.GeoDataFrame.from_dict(
@@ -49,7 +50,9 @@ class TestPointData(object):
         )
         # needed to reorder the columns for the pd testing compare
         df = df.filter(
-            ["datetime", "geometry", "site", "measurementDate", var, f"{var}_units"]
+            [
+                "datetime", "geometry", "site", "measurementDate",
+                var, f"{var}_units", "datasource"]
         )
         df.set_index(keys=["datetime", "site"], inplace=True)
         return df
@@ -111,6 +114,7 @@ class TestCDECStation(TestPointData):
                     "ACCUMULATED PRECIPITATION": -0.11,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "site": "TNY",
+                    "datasource": "CDEC"
                 },
                 {
                     "datetime": pd.Timestamp("2021-05-17 07:00:00+0000", tz="UTC"),
@@ -120,6 +124,7 @@ class TestCDECStation(TestPointData):
                     "ACCUMULATED PRECIPITATION": -0.10,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "site": "TNY",
+                    "datasource": "CDEC"
                 },
                 {
                     "datetime": pd.Timestamp("2021-05-18 07:00:00+0000", tz="UTC"),
@@ -129,6 +134,7 @@ class TestCDECStation(TestPointData):
                     "ACCUMULATED PRECIPITATION": -0.10,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "site": "TNY",
+                    "datasource": "CDEC"
                 },
             ],
             geometry=[points[0]] * 3,
@@ -142,6 +148,7 @@ class TestCDECStation(TestPointData):
                 "measurementDate",
                 "ACCUMULATED PRECIPITATION",
                 "ACCUMULATED PRECIPITATION_units",
+                "datasource"
             ]
         )
         df.set_index(keys=["datetime", "site"], inplace=True)
@@ -339,3 +346,4 @@ class TestCDECStation(TestPointData):
                 assert point.name == point_row["name"]
                 assert point.id == point_row["id"]
                 assert point.metadata == point_row["geometry"]
+                assert point.DATASOURCE == point_row["datasource"]

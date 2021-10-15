@@ -30,6 +30,7 @@ class SnotelPointData(PointData):
     """
 
     ALLOWED_VARIABLES = SnotelVariables
+    DATASOURCE = "NRCS"
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -84,6 +85,7 @@ class SnotelPointData(PointData):
             df = join_df(df, sensor_df)
 
         if df is not None and len(df.index) > 0:
+            df["datasource"] = [self.DATASOURCE] * len(df.index)
             df.reset_index(inplace=True)
             df.set_index(keys=["datetime", "site"], inplace=True)
             df.index.set_names(["datetime", "site"], inplace=True)
