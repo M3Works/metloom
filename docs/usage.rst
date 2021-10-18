@@ -2,10 +2,6 @@
 Usage
 =====
 
-To use metloom in a project::
-
-    from metloom import pointdata
-
 Use metloom to find data for a station::
 
     from datetime import datetime
@@ -33,3 +29,25 @@ Use metloom to find snow courses within a geometry::
     points = CDECPointData.points_from_geometry(obj, vrs, snow_courses=True)
     df = points.to_dataframe()
     print(df)
+
+Not all of the available variables for each datasource are implemented
+within this package. It is easy to extend the classes to add more variables
+
+.. code-block:: python
+
+    from datetime import datetime
+    from metloom.variables import CDECStationVariables:
+    from metloom.pointdata import CDECPointData
+
+
+    class MyVariables(CDEcStationVariables):
+        DEWPT = SensorDescription("36", "Dew Point", "TEMPERATURE, DEW POINT")
+
+
+    class MyCDECPointData(CDECPointData):
+        ALLOWED_VARIABLES = MyVariables
+
+
+    MyCDECPointData("TNY", "Tenaya Lake").get_daily_data(
+        datetime(2020, 1, 3), datetime(2020, 1, 7), [MyVariables.DEWPT]
+    )

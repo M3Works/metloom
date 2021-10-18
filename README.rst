@@ -83,8 +83,8 @@ readthedocs coming soon
 
 https://metloom.readthedocs.io.
 
-Usage Notes
------------
+Usage
+-----
 See usage documentation https://metloom.readthedocs.io/en/latest/usage.html
 
 **NOTES:**
@@ -92,29 +92,40 @@ PointData methods that get point data return a GeoDataFrame indexed
 on *both* datetime and station code. To reset the index simply run
 ``df.reset_index(inplace=True)``
 
-Extending classes for your own variables
-----------------------------------------
-Not all of the available variables for each datasource are implemented
-within this package. It is easy to extend the classes to add more variables
+Usage Examples
+==============
+
+Use metloom to find data for a station
 
 .. code-block:: python
 
     from datetime import datetime
-    from metloom.variables import CDECStationVariables:
-    from metloom.pointdata import CDECPointData
+    from metloom.pointdata import SnotelPointData
 
-
-    class MyVariables(CDEcStationVariables):
-        DEWPT = SensorDescription("36", "Dew Point", "TEMPERATURE, DEW POINT")
-
-
-    class MyCDECPointData(CDECPointData):
-        ALLOWED_VARIABLES = MyVariables
-
-
-    MyCDECPointData("TNY", "Tenaya Lake").get_daily_data(
-        datetime(2020, 1, 3), datetime(2020, 1, 7), [MyVariables.DEWPT]
+    snotel_point = SnotelPointData("713:CO:SNTL", "MyStation")
+    df = snotel_point.get_daily_data(
+        datetime(2020, 1, 2), datetime(2020, 1, 20),
+        [snotel_point.ALLOWED_VARIABLES.SWE]
     )
+    print(df)
+
+Use metloom to find snow courses within a geometry
+
+.. code-block:: python
+
+    from metloom.pointdata import CDECPointData
+    import geopandas as gpd
+
+    fp = <path to shape file>
+    obj = gpd.read_file(fp)
+
+    vrs = [
+        CdecStationVariables.SWE,
+        CdecStationVariables.SNOWDEPTH
+    ]
+    points = CDECPointData.points_from_geometry(obj, vrs, snow_courses=True)
+    df = points.to_dataframe()
+    print(df)
 
 
 Credits
