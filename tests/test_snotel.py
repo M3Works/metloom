@@ -206,8 +206,8 @@ class TestSnotelPointData(TestPointData):
     def test_metadata(self, mock_zeep_client):
         obj = SnotelPointData("538:CO:SNTL", "eh")
         assert (
-            obj.metadata
-            == gpd.points_from_xy([-107.67552], [37.9339], z=[9800.0])[0]
+            obj.metadata == gpd.points_from_xy(
+                [-107.67552], [37.9339], z=[9800.0])[0]
         )
         assert obj.tzinfo == timezone(timedelta(hours=-8.0))
 
