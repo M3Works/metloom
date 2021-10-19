@@ -23,7 +23,7 @@ class CDECPointData(PointData):
 
     ALLOWED_VARIABLES = CdecStationVariables
     CDEC_URL = "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet"
-    META_URL = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/" "getStationInfo"
+    META_URL = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/getStationInfo"
     DATASOURCE = "CDEC"
 
     def __init__(self, station_id, name, metadata=None):
@@ -193,7 +193,7 @@ class CDECPointData(PointData):
                 sensor_df = self._sensor_response_to_df(
                     response_data, sensor, final_columns
                 )
-                df = join_df(df, sensor_df)
+                df = join_df(df, sensor_df, filter_unused=True)
 
         if df is not None and len(df.index) > 0:
             # Set the datasource

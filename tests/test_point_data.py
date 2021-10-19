@@ -60,12 +60,12 @@ class TestPointData(object):
 
 class TestCDECStation(TestPointData):
     @staticmethod
-    def cdec_daily_response():
+    def cdec_daily_precip_response():
         return [
             {
                 "stationId": "TNY",
                 "durCode": "D",
-                "SENSOR_NUM": 3,
+                "SENSOR_NUM": 2,
                 "sensorType": "SNOW WC",
                 "date": "2021-5-16 00:00",
                 "obsDate": "2021-5-16 00:00",
@@ -76,7 +76,7 @@ class TestCDECStation(TestPointData):
             {
                 "stationId": "TNY",
                 "durCode": "D",
-                "SENSOR_NUM": 3,
+                "SENSOR_NUM": 2,
                 "sensorType": "SNOW WC",
                 "date": "2021-5-17 00:00",
                 "obsDate": "2021-5-17 00:00",
@@ -87,13 +87,51 @@ class TestCDECStation(TestPointData):
             {
                 "stationId": "TNY",
                 "durCode": "D",
-                "SENSOR_NUM": 3,
+                "SENSOR_NUM": 2,
                 "sensorType": "SNOW WC",
                 "date": "2021-5-18 00:00",
                 "obsDate": "2021-5-18 00:00",
                 "value": -0.10,
                 "dataFlag": " ",
                 "units": "INCHES",
+            },
+        ]
+
+    @staticmethod
+    def cdec_daily_temp_response():
+        return [
+            {
+                "stationId": "TNY",
+                "durCode": "D",
+                "SENSOR_NUM": 30,
+                "sensorType": "SNOW WC",
+                "date": "2021-5-16 00:00",
+                "obsDate": "2021-5-16 00:00",
+                "value": 2.1,
+                "dataFlag": " ",
+                "units": "DEG F",
+            },
+            {
+                "stationId": "TNY",
+                "durCode": "D",
+                "SENSOR_NUM": 30,
+                "sensorType": "SNOW WC",
+                "date": "2021-5-17 00:00",
+                "obsDate": "2021-5-17 00:00",
+                "value": 2.4,
+                "dataFlag": " ",
+                "units": "DEG F",
+            },
+            {
+                "stationId": "TNY",
+                "durCode": "D",
+                "SENSOR_NUM": 30,
+                "sensorType": "SNOW WC",
+                "date": "2021-5-18 00:00",
+                "obsDate": "2021-5-18 00:00",
+                "value": 2.2,
+                "dataFlag": " ",
+                "units": "DEG F",
             },
         ]
 
@@ -113,6 +151,8 @@ class TestCDECStation(TestPointData):
                     ),
                     "ACCUMULATED PRECIPITATION": -0.11,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
+                    "AVG AIR TEMP": 2.1,
+                    "AVG AIR TEMP_units": "DEG F",
                     "site": "TNY",
                     "datasource": "CDEC"
                 },
@@ -123,6 +163,8 @@ class TestCDECStation(TestPointData):
                     ),
                     "ACCUMULATED PRECIPITATION": -0.10,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
+                    "AVG AIR TEMP": 2.4,
+                    "AVG AIR TEMP_units": "DEG F",
                     "site": "TNY",
                     "datasource": "CDEC"
                 },
@@ -133,6 +175,8 @@ class TestCDECStation(TestPointData):
                     ),
                     "ACCUMULATED PRECIPITATION": -0.10,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
+                    "AVG AIR TEMP": 2.2,
+                    "AVG AIR TEMP_units": "DEG F",
                     "site": "TNY",
                     "datasource": "CDEC"
                 },
@@ -148,6 +192,8 @@ class TestCDECStation(TestPointData):
                 "measurementDate",
                 "ACCUMULATED PRECIPITATION",
                 "ACCUMULATED PRECIPITATION_units",
+                "AVG AIR TEMP",
+                "AVG AIR TEMP_units",
                 "datasource"
             ]
         )
@@ -157,9 +203,12 @@ class TestCDECStation(TestPointData):
     @classmethod
     def tny_side_effect(cls, url, **kwargs):
         mock = MagicMock()
-        if kwargs["params"].get("dur_code") == "D":
-            mock.json.return_value = cls.cdec_daily_response()
-        elif kwargs["params"].get("dur_code") == "H":
+        params = kwargs["params"]
+        if params.get("dur_code") == "D" and params.get('SensorNums') == "2":
+            mock.json.return_value = cls.cdec_daily_precip_response()
+        elif params.get("dur_code") == "D" and params.get('SensorNums') == "30":
+            mock.json.return_value = cls.cdec_daily_temp_response()
+        elif params.get("dur_code") == "H":
             raise NotImplementedError()
         elif "getStationInfo" in url:
             mock.json.return_value = {
@@ -275,7 +324,7 @@ class TestCDECStation(TestPointData):
             mock_get = mock_requests.get
             assert mock_get.call_count == 1
             mock_get.assert_called_with(
-                "http://cdec.water.ca.gov/cdecstation2/CDecServlet/" "getStationInfo",
+                "http://cdec.water.ca.gov/cdecstation2/CDecServlet/getStationInfo",
                 params={"stationID": "TNY"},
             )
         expected = gpd.points_from_xy([-119.0], [42.0], z=[1000.0])[0]
@@ -283,13 +332,15 @@ class TestCDECStation(TestPointData):
 
     def test_get_daily_data(self, tny_station, tny_daily_expected):
         with patch("metloom.pointdata.cdec.requests") as mock_requests:
-            mock_requests.get.side_effect = self.tny_side_effect
+            mock_get = mock_requests.get
+            mock_get.side_effect = self.tny_side_effect
             response = tny_station.get_daily_data(
                 datetime(2021, 5, 16),
                 datetime(2021, 5, 18),
-                [CdecStationVariables.PRECIPITATIONACCUM],
+                [CdecStationVariables.PRECIPITATIONACCUM,
+                 CdecStationVariables.TEMPAVG],
             )
-            mock_get = mock_requests.get
+            # mock_get = mock_requests.get
             mock_get.assert_any_call(
                 "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet",
                 params={
@@ -297,10 +348,10 @@ class TestCDECStation(TestPointData):
                     "dur_code": "D",
                     "Start": "2021-05-16T00:00:00",
                     "End": "2021-05-18T00:00:00",
-                    "SensorNums": "2",
+                    "SensorNums": "30",
                 },
             )
-            assert mock_get.call_count == 2
+            assert mock_get.call_count == 3
         pd.testing.assert_frame_equal(response, tny_daily_expected)
 
     def test_points_from_geometry(self, shape_obj, station_search_response):

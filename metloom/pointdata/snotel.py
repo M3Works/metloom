@@ -82,7 +82,7 @@ class SnotelPointData(PointData):
             # set index so joining works
             sensor_df.set_index("datetime", inplace=True)
             sensor_df = sensor_df.filter(final_columns)
-            df = join_df(df, sensor_df)
+            df = join_df(df, sensor_df, filter_unused=True)
 
         if df is not None and len(df.index) > 0:
             df["datasource"] = [self.DATASOURCE] * len(df.index)
