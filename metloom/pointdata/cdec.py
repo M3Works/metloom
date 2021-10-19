@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List
 
 import geopandas as gpd
@@ -32,7 +32,8 @@ class CDECPointData(PointData):
         """
         super(CDECPointData, self).__init__(station_id, name, metadata=metadata)
         self._raw_metadata = None
-        self._tzinfo = pytz.timezone("US/Pacific")
+        # CDEC has datetimes that aren't found in US/Pacific. Use this instead
+        self._tzinfo = timezone(timedelta(hours=-8.0))
 
     def _get_all_metadata(self):
         """

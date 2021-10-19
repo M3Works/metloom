@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import geopandas as gpd
 import pandas as pd
 import pytz
@@ -145,9 +145,9 @@ class TestCDECStation(TestPointData):
         df = gpd.GeoDataFrame.from_dict(
             [
                 {
-                    "datetime": pd.Timestamp("2021-05-16 07:00:00+0000", tz="UTC"),
+                    "datetime": pd.Timestamp("2021-05-16 08:00:00+0000", tz="UTC"),
                     "measurementDate": pd.Timestamp(
-                        "2021-05-16 07:00:00+0000", tz="UTC"
+                        "2021-05-16 08:00:00+0000", tz="UTC"
                     ),
                     "ACCUMULATED PRECIPITATION": -0.11,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
@@ -157,9 +157,9 @@ class TestCDECStation(TestPointData):
                     "datasource": "CDEC"
                 },
                 {
-                    "datetime": pd.Timestamp("2021-05-17 07:00:00+0000", tz="UTC"),
+                    "datetime": pd.Timestamp("2021-05-17 08:00:00+0000", tz="UTC"),
                     "measurementDate": pd.Timestamp(
-                        "2021-05-17 07:00:00+0000", tz="UTC"
+                        "2021-05-17 08:00:00+0000", tz="UTC"
                     ),
                     "ACCUMULATED PRECIPITATION": -0.10,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
@@ -169,9 +169,9 @@ class TestCDECStation(TestPointData):
                     "datasource": "CDEC"
                 },
                 {
-                    "datetime": pd.Timestamp("2021-05-18 07:00:00+0000", tz="UTC"),
+                    "datetime": pd.Timestamp("2021-05-18 08:00:00+0000", tz="UTC"),
                     "measurementDate": pd.Timestamp(
-                        "2021-05-18 07:00:00+0000", tz="UTC"
+                        "2021-05-18 08:00:00+0000", tz="UTC"
                     ),
                     "ACCUMULATED PRECIPITATION": -0.10,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
@@ -312,7 +312,7 @@ class TestCDECStation(TestPointData):
         ]
 
     def test_class_variables(self):
-        assert CDECPointData("no", "no").tzinfo == pytz.timezone("US/Pacific")
+        assert CDECPointData("no", "no").tzinfo == timezone(timedelta(hours=-8.0))
         # Base implementation should fail
         with pytest.raises(AttributeError):
             PointData("foo", "bar").tzinfo
@@ -398,3 +398,15 @@ class TestCDECStation(TestPointData):
                 assert point.id == point_row["id"]
                 assert point.metadata == point_row["geometry"]
                 assert point.DATASOURCE == point_row["datasource"]
+
+    def test_can_parse_dates(self, tny_station):
+        df = pd.DataFrame.from_records([
+            {"datetime": "2021-03-14 01:00:00"},
+            # This time does not exist in US/Pacific, but does in CDEC
+            {"datetime": "2021-03-14 02:00:00"},
+            {"datetime": "2021-03-14 03:00:00"},
+        ])
+        df["datetime"] = pd.to_datetime(df["datetime"])
+        df.set_index("datetime", inplace=True)
+        df.index = df.index.tz_localize(tny_station.tzinfo)
+        df.tz_convert("UTC")
