@@ -216,6 +216,8 @@ class PointData(object):
         The goal of this method is to ensure base classes are returning a
         consistent format of dataframe
         """
+        if gdf is None:
+            return
         expected_columns = ["measurementDate", "geometry", "datasource"]
         expected_indexes = ["datetime", "site"]
         assert isinstance(gdf, gpd.GeoDataFrame)

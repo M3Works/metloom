@@ -151,11 +151,15 @@ class CDECPointData(PointData):
         )
         final_columns += [sensor.name, f"{sensor.name}_units"]
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
-        sensor_df["measurementDate"] = pd.to_datetime(sensor_df["measurementDate"])
         sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
-        sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
-            self._handle_df_tz
-        )
+        if "measurementDate" in sensor_df.columns:
+            sensor_df["measurementDate"] = pd.to_datetime(sensor_df["measurementDate"])
+            sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
+                self._handle_df_tz
+            )
+        else:
+            LOG.warning(f"measurementDate not found for {self.name} for"
+                        f"sensor {sensor.code}")
         # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
