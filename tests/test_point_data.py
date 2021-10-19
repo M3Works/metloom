@@ -4,7 +4,6 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta, timezone
 import geopandas as gpd
 import pandas as pd
-import pytz
 from os import path
 
 from metloom.pointdata import (
