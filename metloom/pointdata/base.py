@@ -42,12 +42,14 @@ class PointDataCollection:
         names = []
         ids = []
         meta = []
+        datasource = []
         for point in self.points:
             names += [point.name]
             ids += [point.id]
             meta += [point.metadata]
+            datasource += [point.DATASOURCE]
 
-        obj = {"name": names, "id": ids}
+        obj = {"name": names, "id": ids, "datasource": datasource}
         return gpd.GeoDataFrame.from_dict(obj, geometry=meta)
 
     def __len__(self):
@@ -61,6 +63,7 @@ class PointDataCollection:
 class PointData(object):
     ALLOWED_VARIABLES = VariableBase
     ITERATOR_CLASS = PointDataCollection
+    DATASOURCE = None
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -213,7 +216,9 @@ class PointData(object):
         The goal of this method is to ensure base classes are returning a
         consistent format of dataframe
         """
-        expected_columns = ["measurementDate", "geometry"]
+        if gdf is None:
+            return
+        expected_columns = ["measurementDate", "geometry", "datasource"]
         expected_indexes = ["datetime", "site"]
         assert isinstance(gdf, gpd.GeoDataFrame)
         columns = gdf.columns
