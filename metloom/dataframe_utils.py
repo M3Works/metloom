@@ -7,7 +7,8 @@ LOG = getLogger("metloom.dataframe_utils")
 
 
 def join_df(
-    df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame], how="left", on=None
+    df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame], how="left",
+    on=None, filter_unused=False
 ):
     """
     join two dataframes handling None
@@ -16,6 +17,8 @@ def join_df(
         new_df: optional dataframe
         how: method for merging
         on: optional kwarg for DataFrame.join
+        filter_unused: boolean, whether to filter out columns with _unused in
+            then name
 
     Returns:
         The joined dataframes. This method prefers values from the first if
@@ -29,6 +32,10 @@ def join_df(
     else:
         try:
             result_df = df.join(new_df, how=how, on=on, rsuffix="_unused")
+            if filter_unused:
+                columns = result_df.columns
+                final_columns = [c for c in columns if "_unused" not in c]
+                result_df = result_df.filter(final_columns)
         except Exception as e:
             LOG.error("failed joining dataframes.")
             raise e

@@ -1,10 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import pytz
 import requests
 import logging
 
@@ -23,7 +22,8 @@ class CDECPointData(PointData):
 
     ALLOWED_VARIABLES = CdecStationVariables
     CDEC_URL = "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet"
-    META_URL = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/" "getStationInfo"
+    META_URL = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/getStationInfo"
+    DATASOURCE = "CDEC"
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -31,7 +31,8 @@ class CDECPointData(PointData):
         """
         super(CDECPointData, self).__init__(station_id, name, metadata=metadata)
         self._raw_metadata = None
-        self._tzinfo = pytz.timezone("US/Pacific")
+        # CDEC has datetimes that aren't found in US/Pacific. Use this instead
+        self._tzinfo = timezone(timedelta(hours=-8.0))
 
     def _get_all_metadata(self):
         """
@@ -150,11 +151,15 @@ class CDECPointData(PointData):
         )
         final_columns += [sensor.name, f"{sensor.name}_units"]
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
-        sensor_df["measurementDate"] = pd.to_datetime(sensor_df["measurementDate"])
         sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
-        sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
-            self._handle_df_tz
-        )
+        if "measurementDate" in sensor_df.columns:
+            sensor_df["measurementDate"] = pd.to_datetime(sensor_df["measurementDate"])
+            sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
+                self._handle_df_tz
+            )
+        else:
+            LOG.warning(f"measurementDate not found for {self.name} for"
+                        f"sensor {sensor.code}")
         # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
@@ -192,9 +197,11 @@ class CDECPointData(PointData):
                 sensor_df = self._sensor_response_to_df(
                     response_data, sensor, final_columns
                 )
-                df = join_df(df, sensor_df)
+                df = join_df(df, sensor_df, filter_unused=True)
 
         if df is not None and len(df.index) > 0:
+            # Set the datasource
+            df["datasource"] = [self.DATASOURCE] * len(df.index)
             df.reset_index(inplace=True)
             df.set_index(keys=["datetime", "site"], inplace=True)
             df.index.set_names(["datetime", "site"], inplace=True)
