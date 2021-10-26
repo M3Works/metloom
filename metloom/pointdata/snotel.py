@@ -219,6 +219,7 @@ class SnotelPointData(PointData):
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
+        within_geometry=True
     ):
         """
         See docstring for PointData.points_from_geometry
@@ -263,7 +264,10 @@ class SnotelPointData(PointData):
                 df["longitude"], df["latitude"], z=df["elevation"]
             ),
         )
-        filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        if within_geometry:
+            filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        else:
+            filtered_gdf = gdf
         points = [
             cls(row[0], row[1], metadata=row[2])
             for row in zip(

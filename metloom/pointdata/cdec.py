@@ -296,6 +296,7 @@ class CDECPointData(PointData):
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
+        within_geometry=True
     ):
         """
         See docstring for PointData.points_from_geometry
@@ -315,8 +316,8 @@ class CDECPointData(PointData):
             )
             if result_df is not None:
                 result_df["index_id"] = result_df["ID"]
-                result_df.set_index("index_id")
-                search_df = join_df(search_df, result_df, how="outer")
+                result_df.set_index("index_id", inplace=True)
+                search_df = join_df(search_df, result_df, how="left")
         # return empty collection if we didn't find any points
         if search_df is None:
             return cls.ITERATOR_CLASS([])
@@ -329,8 +330,10 @@ class CDECPointData(PointData):
             ),
         )
         # filter to points within shapefile
-        # TODO: do we want to make this optional?
-        filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        if within_geometry:
+            filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        else:
+            filtered_gdf = gdf
 
         points = [
             cls(row[0], row[1], metadata=row[2])

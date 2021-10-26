@@ -195,6 +195,7 @@ class PointData(object):
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
+        within_geometry=True
     ):
         """
         Find a collection of points with measurements for certain variables
@@ -205,6 +206,8 @@ class PointData(object):
             variables: List of SensorDescription
             snow_courses: boolean for including only snowcourse data or no
                 snowcourse data
+            within_geometry: filter the points to within the shapefile
+                instead of just the extents. Default True
         Returns:
             PointDataCollection
         """
