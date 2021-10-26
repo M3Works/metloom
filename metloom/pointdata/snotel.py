@@ -226,7 +226,7 @@ class SnotelPointData(PointData):
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
         # TODO: network may need to change to get streamflow
-        network = "SNOW" if snow_courses else "SNTL"
+        network = "SNOW" if snow_courses else ["SNTL", "USGS", "BOR", "COOP"]
         point_codes = []
         for variable in variables:
             # this search is default AND on all parameters
