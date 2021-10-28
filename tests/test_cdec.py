@@ -59,8 +59,8 @@ class TestCDECStation(TestPointData):
                 "durCode": "D",
                 "SENSOR_NUM": 30,
                 "sensorType": "SNOW WC",
-                "date": "2021-5-16 00:00",
-                "obsDate": "2021-5-16 00:00",
+                "date": "2021-5-15 00:00",
+                "obsDate": "2021-5-15 00:00",
                 "value": 2.1,
                 "dataFlag": " ",
                 "units": "DEG F",
@@ -99,14 +99,27 @@ class TestCDECStation(TestPointData):
         df = gpd.GeoDataFrame.from_dict(
             [
                 {
+                    "datetime": pd.Timestamp("2021-05-15 08:00:00+0000",
+                                             tz="UTC"),
+                    "measurementDate": pd.Timestamp(
+                        "2021-05-15 08:00:00+0000", tz="UTC"
+                    ),
+                    "ACCUMULATED PRECIPITATION": np.nan,
+                    "ACCUMULATED PRECIPITATION_units": np.nan,
+                    "AVG AIR TEMP": 2.1,
+                    "AVG AIR TEMP_units": "DEG F",
+                    "site": "TNY",
+                    "datasource": "CDEC"
+                },
+                {
                     "datetime": pd.Timestamp("2021-05-16 08:00:00+0000", tz="UTC"),
                     "measurementDate": pd.Timestamp(
                         "2021-05-16 08:00:00+0000", tz="UTC"
                     ),
                     "ACCUMULATED PRECIPITATION": -0.11,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
-                    "AVG AIR TEMP": 2.1,
-                    "AVG AIR TEMP_units": "DEG F",
+                    "AVG AIR TEMP": np.nan,
+                    "AVG AIR TEMP_units": np.nan,
                     "site": "TNY",
                     "datasource": "CDEC"
                 },
@@ -135,7 +148,7 @@ class TestCDECStation(TestPointData):
                     "datasource": "CDEC"
                 },
             ],
-            geometry=[points[0]] * 3,
+            geometry=[points[0]] * 4,
         )
         # needed to reorder the columns for the pd testing compare
         df = df.filter(
@@ -360,7 +373,7 @@ class TestCDECStation(TestPointData):
             mock_get = mock_requests.get
             mock_get.side_effect = self.tny_side_effect
             response = tny_station.get_daily_data(
-                datetime(2021, 5, 16),
+                datetime(2021, 5, 15),
                 datetime(2021, 5, 18),
                 [CdecStationVariables.PRECIPITATIONACCUM,
                  CdecStationVariables.TEMPAVG],
@@ -371,7 +384,7 @@ class TestCDECStation(TestPointData):
                 params={
                     "Stations": "TNY",
                     "dur_code": "D",
-                    "Start": "2021-05-16T00:00:00",
+                    "Start": "2021-05-15T00:00:00",
                     "End": "2021-05-18T00:00:00",
                     "SensorNums": "30",
                 },

@@ -8,7 +8,7 @@ from functools import reduce
 
 from .base import PointData
 from ..variables import SnotelVariables, SensorDescription
-from ..dataframe_utils import join_df, append_df
+from ..dataframe_utils import append_df, merge_df
 
 from .snotel_client import (
     DailySnotelDataClient, MetaDataSnotelClient, HourlySnotelDataClient,
@@ -82,7 +82,7 @@ class SnotelPointData(PointData):
             # set index so joining works
             sensor_df.set_index("datetime", inplace=True)
             sensor_df = sensor_df.filter(final_columns)
-            df = join_df(df, sensor_df, filter_unused=True)
+            df = merge_df(df, sensor_df)
 
         if df is not None and len(df.index) > 0:
             df["datasource"] = [self.DATASOURCE] * len(df.index)

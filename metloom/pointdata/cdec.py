@@ -9,7 +9,7 @@ import logging
 
 from .base import PointData
 from ..variables import CdecStationVariables, SensorDescription
-from ..dataframe_utils import join_df, append_df
+from ..dataframe_utils import append_df, merge_df
 
 LOG = logging.getLogger("metloom.pointdata.cdec")
 
@@ -197,7 +197,7 @@ class CDECPointData(PointData):
                 sensor_df = self._sensor_response_to_df(
                     response_data, sensor, final_columns
                 )
-                df = join_df(df, sensor_df, filter_unused=True)
+                df = merge_df(df, sensor_df)
 
         if df is not None and len(df.index) > 0:
             # Set the datasource

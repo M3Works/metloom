@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from collections import OrderedDict
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -136,24 +137,48 @@ class TestSnotelPointData(TestPointData):
 
     @staticmethod
     def snotel_hourly_sideeffect(*args, **kwargs):
-        return [
-            {
-                'beginDate': '2020-01-02 00:00', 'endDate': '2020-01-20 00:00',
-                'stationTriplet': '538:CO:SNTL',
-                'values': [
-                    {
-                        'dateTime': '2020-03-20 00:00',
-                        'flag': 'V',
-                        'value': 13.19
-                    }, {
-                        'dateTime': '2020-03-20 01:00',
-                        'flag': 'V',
-                        'value': 13.17
-                    }, {
-                        'dateTime': '2020-03-20 02:00',
-                        'flag': 'V',
-                        'value': 13.14
-                    }]}]
+        element_cd = kwargs["elementCd"]
+        if element_cd == "WTEQ":
+            return [
+                {
+                    'beginDate': '2020-01-02 00:00', 'endDate': '2020-01-20 00:00',
+                    'stationTriplet': '538:CO:SNTL',
+                    'values': [
+                        {
+                            'dateTime': '2020-03-20 00:00',
+                            'flag': 'V',
+                            'value': 13.19
+                        }, {
+                            'dateTime': '2020-03-20 01:00',
+                            'flag': 'V',
+                            'value': 13.17
+                        }, {
+                            'dateTime': '2020-03-20 02:00',
+                            'flag': 'V',
+                            'value': 13.14
+                        }]}]
+        elif element_cd == "PRCPSA":
+            return [
+                {
+                    'beginDate': '2020-01-02 00:00',
+                    'endDate': '2020-01-20 00:00',
+                    'stationTriplet': '538:CO:SNTL',
+                    'values': [
+                        {
+                            'dateTime': '2020-03-20 00:00',
+                            'flag': 'V',
+                            'value': 4.1
+                        }, {
+                            'dateTime': '2020-03-20 02:00',
+                            'flag': 'V',
+                            'value': 4.3
+                        }, {
+                            'dateTime': '2020-03-20 03:00',
+                            'flag': 'V',
+                            'value': 4.4
+                        }]}]
+        else:
+            raise ValueError(f"{element_cd} not configured in this mock")
 
     @pytest.fixture(scope="class")
     def mock_elements(self):
@@ -186,7 +211,15 @@ class TestSnotelPointData(TestPointData):
                  'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
                  'ordinal': 1,
                  'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'})]
+                 'storedUnitCd': 'in'}),
+            MockZeepObject(
+                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
+                 'duration': 'HOURLY', 'elementCd': 'PRCPSA',
+                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
+                 'ordinal': 1,
+                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
+                 'storedUnitCd': 'in'}),
+        ]
 
     @pytest.fixture(scope="class")
     def mock_zeep_client(self, mock_elements):
@@ -218,7 +251,10 @@ class TestSnotelPointData(TestPointData):
                 "538:CO:SNTL",
                 ["2020-03-20 00:00", "2020-03-20 01:00", "2020-03-20 02:00"],
                 ["2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00"],
-                [13.19, 13.17, 13.14],
+                {
+                    SnotelVariables.SWE.name: [13.19, 13.17, 13.14],
+                    f"{SnotelVariables.SWE.name}_units": ["in", "in", "in"]
+                },
                 datetime(2020, 3, 20, 0),
                 datetime(2020, 3, 20, 2),
                 "get_hourly_data",
@@ -227,7 +263,10 @@ class TestSnotelPointData(TestPointData):
                 "538:CO:SNTL",
                 ["2020-03-20", "2020-03-21", "2020-03-22"],
                 ["2020-03-20 08:00", "2020-03-21 08:00", "2020-03-22 08:00"],
-                [13.19, 13.17, 13.14],
+                {
+                    SnotelVariables.SWE.name: [13.19, 13.17, 13.14],
+                    f"{SnotelVariables.SWE.name}_units": ["in", "in", "in"]
+                },
                 datetime(2020, 3, 20),
                 datetime(2020, 3, 22),
                 "get_daily_data",
@@ -236,22 +275,47 @@ class TestSnotelPointData(TestPointData):
                 "538:CO:SNOW",
                 ["2020-01-28", "2020-02-27"],
                 ["2020-01-28 00:00", "2020-02-27 00:00"],
-                [13.19, 13.17],
+                {
+                    SnotelVariables.SWE.name: [13.19, 13.17],
+                    f"{SnotelVariables.SWE.name}_units": ["in", "in"]
+                },
                 datetime(2020, 1, 20),
                 datetime(2020, 3, 15),
                 "get_snow_course_data",
             ),
         ],
     )
-    def test_get_data_methods(self, station_id, dts, expected_dts, vals, d1,
-                              d2,
-                              fn_name, points, mock_zeep_client):
+    def test_get_data_methods(
+            self, station_id, dts, expected_dts, vals, d1,
+            d2, fn_name, points, mock_zeep_client):
         station = SnotelPointData(station_id, "TestSite")
         vrs = [SnotelVariables.SWE]
         fn = getattr(station, fn_name)
         result = fn(d1, d2, vrs)
         expected = self.expected_response(
-            expected_dts, vals, SnotelVariables.SWE.name, "in", station, points
+            expected_dts, vals, station, points
+        )
+        pd.testing.assert_frame_equal(result, expected)
+
+    def test_get_hourly_data_multi_sensor(self, points, mock_zeep_client):
+        expected_dts = [
+            "2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00",
+            "2020-03-20 11:00"
+        ]
+        expected_vals_obj = {
+            SnotelVariables.SWE.name: [13.19, 13.17, 13.14, np.nan],
+            f"{SnotelVariables.SWE.name}_units": ["in", "in", "in", np.nan],
+            SnotelVariables.PRECIPITATION.name: [4.1, np.nan, 4.3, 4.4],
+            f"{SnotelVariables.PRECIPITATION.name}_units": [
+                "in", np.nan, "in", "in"],
+        }
+        station = SnotelPointData("538:CO:SNTL", "TestSite")
+        vrs = [SnotelVariables.PRECIPITATION, SnotelVariables.SWE]
+        result = station.get_hourly_data(
+            datetime(2020, 3, 20, 0), datetime(2020, 3, 20, 4), vrs
+        )
+        expected = self.expected_response(
+            expected_dts, expected_vals_obj, station, points
         )
         pd.testing.assert_frame_equal(result, expected)
 

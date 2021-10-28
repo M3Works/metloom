@@ -20,17 +20,18 @@ class TestPointData(object):
         return gpd.read_file(fp)
 
     @staticmethod
-    def expected_response(dates, vals, var, unit, station, points):
+    def expected_response(dates, variables_map, station, points):
         obj = []
-        for dt, v in zip(dates, vals):
+        for idt, dt in enumerate(dates):
+            # get the value and unit corresponding to the date
+            row_obj = {k: v[idt] for k, v in variables_map.items()}
             obj.append(
                 {
                     "datetime": pd.Timestamp(dt, tz="UTC"),
                     "measurementDate": pd.Timestamp(dt, tz="UTC"),
-                    var: v,
-                    f"{var}_units": unit,
                     "site": station.id,
-                    "datasource": "NRCS"
+                    "datasource": "NRCS",
+                    **row_obj
                 }
             )
         df = gpd.GeoDataFrame.from_dict(
@@ -38,10 +39,12 @@ class TestPointData(object):
             geometry=[points] * len(dates),
         )
         # needed to reorder the columns for the pd testing compare
+        var_keys = list(variables_map.keys())
+        var_keys.sort()
         df = df.filter(
             [
                 "datetime", "geometry", "site", "measurementDate",
-                var, f"{var}_units", "datasource"]
+                *var_keys, "datasource"]
         )
         df.set_index(keys=["datetime", "site"], inplace=True)
         return df
