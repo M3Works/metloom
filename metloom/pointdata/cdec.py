@@ -9,7 +9,7 @@ import logging
 
 from .base import PointData
 from ..variables import CdecStationVariables, SensorDescription
-from ..dataframe_utils import join_df
+from ..dataframe_utils import join_df, append_df
 
 LOG = logging.getLogger("metloom.pointdata.cdec")
 
@@ -317,7 +317,9 @@ class CDECPointData(PointData):
             if result_df is not None:
                 result_df["index_id"] = result_df["ID"]
                 result_df.set_index("index_id", inplace=True)
-                search_df = join_df(search_df, result_df, how="left")
+                search_df = append_df(
+                    search_df, result_df
+                ).drop_duplicates(subset=['ID'])
         # return empty collection if we didn't find any points
         if search_df is None:
             return cls.ITERATOR_CLASS([])
@@ -338,7 +340,7 @@ class CDECPointData(PointData):
         points = [
             cls(row[0], row[1], metadata=row[2])
             for row in zip(
-                filtered_gdf["ID"],
+                filtered_gdf.index,
                 filtered_gdf["Station Name"],
                 filtered_gdf["geometry"],
             )
