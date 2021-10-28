@@ -163,6 +163,7 @@ class CDECPointData(PointData):
         # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
+        sensor_df = sensor_df.loc[~np.isnan(sensor_df[sensor.name])]
         return sensor_df
 
     def _get_data(
@@ -199,12 +200,15 @@ class CDECPointData(PointData):
                 )
                 df = merge_df(df, sensor_df)
 
-        if df is not None and len(df.index) > 0:
-            # Set the datasource
-            df["datasource"] = [self.DATASOURCE] * len(df.index)
-            df.reset_index(inplace=True)
-            df.set_index(keys=["datetime", "site"], inplace=True)
-            df.index.set_names(["datetime", "site"], inplace=True)
+        if df is not None:
+            if len(df.index) > 0:
+                # Set the datasource
+                df["datasource"] = [self.DATASOURCE] * len(df.index)
+                df.reset_index(inplace=True)
+                df.set_index(keys=["datetime", "site"], inplace=True)
+                df.index.set_names(["datetime", "site"], inplace=True)
+            else:
+                df = None
         self.validate_sensor_df(df)
         return df
 
