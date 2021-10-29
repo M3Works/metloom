@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metloom.pointdata import CDECPointData, PointData, PointDataCollection
+from metloom.pointdata import CDECPointData, PointDataCollection
 from metloom.variables import CdecStationVariables
 from tests.test_point_data import BasePointDataTest, side_effect_error
 
