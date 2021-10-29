@@ -9,7 +9,7 @@ import pytest
 
 from metloom.pointdata import SnotelPointData
 from metloom.variables import SnotelVariables
-from tests.test_point_data import TestPointData
+from tests.test_point_data import BasePointDataTest
 
 
 class MockZeepObject:
@@ -30,7 +30,7 @@ class MockZeepObject:
         return self.mock_dict[item]
 
 
-class TestSnotelPointData(TestPointData):
+class TestSnotelPointData(BasePointDataTest):
 
     @pytest.fixture(scope="class")
     def points(self):

@@ -9,10 +9,10 @@ import pytest
 
 from metloom.pointdata import CDECPointData, PointData, PointDataCollection
 from metloom.variables import CdecStationVariables
-from tests.test_point_data import TestPointData, side_effect_error
+from tests.test_point_data import BasePointDataTest, side_effect_error
 
 
-class TestCDECStation(TestPointData):
+class TestCDECStation(BasePointDataTest):
     @staticmethod
     def cdec_daily_precip_response():
         return [
@@ -351,9 +351,6 @@ class TestCDECStation(TestPointData):
 
     def test_class_variables(self):
         assert CDECPointData("no", "no").tzinfo == timezone(timedelta(hours=-8.0))
-        # Base implementation should fail
-        with pytest.raises(AttributeError):
-            PointData("foo", "bar").tzinfo
 
     def test_get_metadata(self, tny_station):
         with patch("metloom.pointdata.cdec.requests") as mock_requests:

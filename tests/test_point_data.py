@@ -3,12 +3,21 @@ import geopandas as gpd
 import pandas as pd
 from os import path
 
+from metloom.pointdata.base import PointData
+
 
 def side_effect_error(*args):
     raise ValueError("Testing error")
 
 
-class TestPointData(object):
+class TestPointData:
+    def test_class_attributes(self):
+        # Base implementation should fail
+        with pytest.raises(AttributeError):
+            PointData("foo", "bar").tzinfo
+
+
+class BasePointDataTest(object):
     @pytest.fixture(scope="class")
     def data_dir(self):
         this_dir = path.dirname(__file__)
