@@ -163,7 +163,7 @@ class CDECPointData(PointData):
         # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
-        sensor_df = sensor_df.loc[~np.isnan(sensor_df[sensor.name])]
+        sensor_df = sensor_df.loc[pd.notna(sensor_df[sensor.name])]
         return sensor_df
 
     def _get_data(

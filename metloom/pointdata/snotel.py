@@ -82,6 +82,8 @@ class SnotelPointData(PointData):
             # set index so joining works
             sensor_df.set_index("datetime", inplace=True)
             sensor_df = sensor_df.filter(final_columns)
+            # filter to rows that have value
+            sensor_df = sensor_df.loc[pd.notna(sensor_df[variable.name])]
             df = merge_df(df, sensor_df)
 
         if df is not None and len(df.index) > 0:
