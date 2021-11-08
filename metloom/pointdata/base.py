@@ -64,6 +64,9 @@ class PointData(object):
     ALLOWED_VARIABLES = VariableBase
     ITERATOR_CLASS = PointDataCollection
     DATASOURCE = None
+    EXPECTED_COLUMNS = ["measurementDate", "geometry", "datasource"]
+    EXPECTED_INDICES = ["datetime", "site"]
+    NON_VARIABLE_COLUMNS = EXPECTED_INDICES + EXPECTED_COLUMNS
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -195,6 +198,7 @@ class PointData(object):
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
+        within_geometry=True
     ):
         """
         Find a collection of points with measurements for certain variables
@@ -205,12 +209,15 @@ class PointData(object):
             variables: List of SensorDescription
             snow_courses: boolean for including only snowcourse data or no
                 snowcourse data
+            within_geometry: filter the points to within the shapefile
+                instead of just the extents. Default True
         Returns:
             PointDataCollection
         """
         raise NotImplementedError("points_from_geometry not implemented")
 
-    def validate_sensor_df(self, gdf: gpd.GeoDataFrame):
+    @classmethod
+    def validate_sensor_df(cls, gdf: gpd.GeoDataFrame):
         """
         Validate that the GeoDataFrame returned is formatted correctly.
         The goal of this method is to ensure base classes are returning a
@@ -218,18 +225,16 @@ class PointData(object):
         """
         if gdf is None:
             return
-        expected_columns = ["measurementDate", "geometry", "datasource"]
-        expected_indexes = ["datetime", "site"]
         assert isinstance(gdf, gpd.GeoDataFrame)
         columns = gdf.columns
         index_names = gdf.index.names
         # check for required indexes
-        for ei in expected_indexes:
+        for ei in cls.EXPECTED_INDICES:
             assert ei in index_names
         # check for expected columns
-        for column in expected_columns:
+        for column in cls.EXPECTED_COLUMNS:
             assert column in columns
-        remaining_columns = [c for c in columns if c not in expected_columns]
+        remaining_columns = [c for c in columns if c not in cls.EXPECTED_COLUMNS]
         # make sure all variables have a units column as well
         for rc in remaining_columns:
             if "_units" not in rc:

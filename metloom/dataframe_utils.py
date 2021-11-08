@@ -43,6 +43,37 @@ def join_df(
     return result_df
 
 
+def merge_df(
+    df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame], how="left"
+):
+    """
+    join two dataframes. Assumes the dataframes are indexed on datetime
+    Args:
+        df: optional dataframe
+        new_df: optional dataframe
+    Returns:
+        The merged dataframe
+    """
+    if df is None:
+        result_df = new_df
+    elif new_df is None:
+        result_df = df
+    else:
+        try:
+            result_df = pd.merge_ordered(df.reset_index(), new_df.reset_index())
+            result_df.set_index("datetime", inplace=True)
+            result_df.sort_index(inplace=True)
+            if len(result_df.index.unique()) != len(result_df.index):
+                LOG.error("Merging did not result in unique indexes. Killing"
+                          " to avoid missing data")
+                raise ValueError("Issue merging")
+        except Exception as e:
+            LOG.error("failed joining dataframes.")
+            raise e
+
+    return result_df
+
+
 def append_df(df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame]):
     """
     append 2 dfs handling Nones

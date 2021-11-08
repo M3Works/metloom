@@ -8,7 +8,7 @@ from functools import reduce
 
 from .base import PointData
 from ..variables import SnotelVariables, SensorDescription
-from ..dataframe_utils import join_df, append_df
+from ..dataframe_utils import append_df, merge_df
 
 from .snotel_client import (
     DailySnotelDataClient, MetaDataSnotelClient, HourlySnotelDataClient,
@@ -82,7 +82,9 @@ class SnotelPointData(PointData):
             # set index so joining works
             sensor_df.set_index("datetime", inplace=True)
             sensor_df = sensor_df.filter(final_columns)
-            df = join_df(df, sensor_df, filter_unused=True)
+            # filter to rows that have value
+            sensor_df = sensor_df.loc[pd.notna(sensor_df[variable.name])]
+            df = merge_df(df, sensor_df)
 
         if df is not None and len(df.index) > 0:
             df["datasource"] = [self.DATASOURCE] * len(df.index)
@@ -219,6 +221,7 @@ class SnotelPointData(PointData):
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
+        within_geometry=True
     ):
         """
         See docstring for PointData.points_from_geometry
@@ -226,7 +229,7 @@ class SnotelPointData(PointData):
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
         # TODO: network may need to change to get streamflow
-        network = "SNOW" if snow_courses else "SNTL"
+        network = "SNOW" if snow_courses else ["SNTL", "USGS", "BOR", "COOP"]
         point_codes = []
         for variable in variables:
             # this search is default AND on all parameters
@@ -263,7 +266,10 @@ class SnotelPointData(PointData):
                 df["longitude"], df["latitude"], z=df["elevation"]
             ),
         )
-        filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        if within_geometry:
+            filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        else:
+            filtered_gdf = gdf
         points = [
             cls(row[0], row[1], metadata=row[2])
             for row in zip(
