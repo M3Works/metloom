@@ -9,7 +9,7 @@ import logging
 
 from .base import PointData
 from ..variables import CdecStationVariables, SensorDescription
-from ..dataframe_utils import join_df
+from ..dataframe_utils import append_df, merge_df
 
 LOG = logging.getLogger("metloom.pointdata.cdec")
 
@@ -163,6 +163,7 @@ class CDECPointData(PointData):
         # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
+        sensor_df = sensor_df.loc[pd.notna(sensor_df[sensor.name])]
         return sensor_df
 
     def _get_data(
@@ -197,14 +198,17 @@ class CDECPointData(PointData):
                 sensor_df = self._sensor_response_to_df(
                     response_data, sensor, final_columns
                 )
-                df = join_df(df, sensor_df, filter_unused=True)
+                df = merge_df(df, sensor_df)
 
-        if df is not None and len(df.index) > 0:
-            # Set the datasource
-            df["datasource"] = [self.DATASOURCE] * len(df.index)
-            df.reset_index(inplace=True)
-            df.set_index(keys=["datetime", "site"], inplace=True)
-            df.index.set_names(["datetime", "site"], inplace=True)
+        if df is not None:
+            if len(df.index) > 0:
+                # Set the datasource
+                df["datasource"] = [self.DATASOURCE] * len(df.index)
+                df.reset_index(inplace=True)
+                df.set_index(keys=["datetime", "site"], inplace=True)
+                df.index.set_names(["datetime", "site"], inplace=True)
+            else:
+                df = None
         self.validate_sensor_df(df)
         return df
 
@@ -296,6 +300,7 @@ class CDECPointData(PointData):
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
+        within_geometry=True
     ):
         """
         See docstring for PointData.points_from_geometry
@@ -315,8 +320,10 @@ class CDECPointData(PointData):
             )
             if result_df is not None:
                 result_df["index_id"] = result_df["ID"]
-                result_df.set_index("index_id")
-                search_df = join_df(search_df, result_df, how="outer")
+                result_df.set_index("index_id", inplace=True)
+                search_df = append_df(
+                    search_df, result_df
+                ).drop_duplicates(subset=['ID'])
         # return empty collection if we didn't find any points
         if search_df is None:
             return cls.ITERATOR_CLASS([])
@@ -329,13 +336,15 @@ class CDECPointData(PointData):
             ),
         )
         # filter to points within shapefile
-        # TODO: do we want to make this optional?
-        filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        if within_geometry:
+            filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        else:
+            filtered_gdf = gdf
 
         points = [
             cls(row[0], row[1], metadata=row[2])
             for row in zip(
-                filtered_gdf["ID"],
+                filtered_gdf.index,
                 filtered_gdf["Station Name"],
                 filtered_gdf["geometry"],
             )
