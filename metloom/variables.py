@@ -88,3 +88,11 @@ class SnotelVariables(VariableBase):
                                       "PRECIPITATION INCREMENT SNOW-ADJUSTED")
     PRECIPITATIONACCUM = SensorDescription("PREC", "ACCUMULATED PRECIPITATION",
                                            "PRECIPITATION ACCUMULATION")
+
+
+class MesowestVariables(VariableBase):
+    """
+    Available sensors from SNOTEL
+    """
+
+    TEMP = SensorDescription("air_temp", "AIR TEMP")
