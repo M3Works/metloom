@@ -27,7 +27,8 @@ class MesowestPointData(PointData):
 
         token_json = abspath(expanduser(token_json))
         if not isfile(token_json):
-            raise IOError(f"Token file missing. Please sign up for a token with Synoptic Labs and add it to a json.\n Missing {token_json}!")
+            raise IOError(f"Token file missing. Please sign up for a token with Synoptic Labs and add it to a json.\n "
+                          f"Missing {token_json}!")
 
         with open(token_json) as fp:
             self.token = json.load(fp)['token']
@@ -37,13 +38,51 @@ class MesowestPointData(PointData):
         self.MESO_URL = self.MESO_URL + f"?token={self.token}"
 
     def _get_metadata(self):
+        """
+        Method to get a shapely Point object to describe the station location
+
+        Returns:
+            shapely.point.Point object in Longitude, Latitude
+        """
+        shp_point = None
         if self._raw_metadata is None:
             resp = requests.get(self.META_URL, params={"stid": self.id})
             resp.raise_for_status()
-            print(resp.json())
             self._raw_metadata = resp.json()["STATION"]
-        return self._raw_metadata
 
+            data = self._raw_metadata[0]
+            shp_point = gpd.points_from_xy(
+                [float(data["LONGITUDE"])],
+                [float(data["LATITUDE"])],
+                z=[float(data["ELEVATION"])],
+            )[0]
+
+        return shp_point
+
+    def _get_data(self,
+                  start_date: datetime,
+                  end_date: datetime,
+                  variables: List[SensorDescription],):
+        """
+        Make get request to Mesowest and return JSON
+        Args:
+            start_date: datetime object for start of data collection period
+            end_date: datetime object for end of data collection period
+            variables: List of metloom.variables.SensorDescription object
+                from self.ALLOWED_VARIABLES
+        Returns:
+            dictionary of response values
+        """
+        fmt = '%Y%m%d%H%M'
+        params = {
+            "stid": self.id,
+            "start": start_date.strftime(fmt),
+            "end": end_date.strftime(fmt),
+            "vars": ",".join([s.code for s in variables])
+        }
+        resp = requests.get(self.MESO_URL, params=params)
+        resp.raise_for_status()
+        return resp.json()
 
     def get_daily_data(
         self,
@@ -94,8 +133,8 @@ class MesowestPointData(PointData):
             TestCDECStation.tny_daily_expected for example dataframe.
             Datetimes should be in UTC
         """
-        raise NotImplementedError("get_hourly_data is not implemented")
-
+        response = self._get_data(start_date, end_date, variables)
+        print(response)
 
     def points_from_geometry(
         self,

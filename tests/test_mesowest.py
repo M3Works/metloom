@@ -2,9 +2,10 @@ from metloom.pointdata.mesowest import *
 import pytest
 
 from tests.test_point_data import BasePointDataTest, side_effect_error
+import geopandas as gpd
+from datetime import datetime
 
-
-class TestMesoWestStation(BasePointDataTest):
+class TestMesowestStation(BasePointDataTest):
     def kmyl_meta_reponse(self):
         return {'STATION': [{'STATUS': 'ACTIVE',
                              'MNET_ID': '1',
@@ -29,4 +30,13 @@ class TestMesoWestStation(BasePointDataTest):
 
     def test_get_metadata(self, station):
         # with patch("metloom.pointdata.cdec.requests") as mock_requests:
-        station.metadata
+        expected = gpd.points_from_xy([-116.09978], [44.89425], z=[5020.0])[0]
+        assert station.metadata == expected
+
+    def test_get_hourly_data(self, station):
+        response = station.get_hourly_data(
+            datetime(2021, 5, 15),
+            datetime(2021, 5, 18),
+            [MesowestVariables.TEMP],
+        )
+        # pd.testing.assert_frame_equal(response, tny_daily_expected)

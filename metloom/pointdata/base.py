@@ -159,7 +159,8 @@ class PointData(object):
 
     def _get_metadata(self):
         """
-        Method to get a shapely Point object to describe the
+        Method to get a shapely Point object to describe the station location
+
         Returns:
             shapely.point.Point object in Longitude, Latitude
         """
