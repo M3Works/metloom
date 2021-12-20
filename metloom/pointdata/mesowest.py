@@ -1,19 +1,25 @@
 import logging
 import json
 from os.path import expanduser, isfile, abspath
+
+import pytz
+import pprint
 from .base import PointData
 import datetime
 from typing import List
 import geopandas as gpd
 import requests
+import numpy as np
+import pandas as pd
 
+from ..dataframe_utils import merge_df, resample
 from ..variables import MesowestVariables, SensorDescription
 
 LOG = logging.getLogger("metloom.pointdata.mesowest")
+pp = pprint.PrettyPrinter(indent=4)
 
 
 class MesowestPointData(PointData):
-
     ALLOWED_VARIABLES = MesowestVariables
     MESO_URL = "https://api.synopticdata.com/v2/stations/timeseries"
     META_URL = "https://api.synopticdata.com/v2/stations/metadata"
@@ -24,18 +30,32 @@ class MesowestPointData(PointData):
         self._raw_metadata = None
         self._raw_elements = None
         self._tzinfo = None
+        self._token = None
+        self._token_json = token_json
 
+        # Add the token to our urls
+        self.META_URL = self.META_URL + f"?token={self.token}"
+        self.MESO_URL = self.MESO_URL + f"?token={self.token}"
+
+    @classmethod
+    def get_token(cls, token_json):
+        """
+        Return the token stored in the json
+        """
         token_json = abspath(expanduser(token_json))
         if not isfile(token_json):
             raise IOError(f"Token file missing. Please sign up for a token with Synoptic Labs and add it to a json.\n "
                           f"Missing {token_json}!")
 
         with open(token_json) as fp:
-            self.token = json.load(fp)['token']
+            token = json.load(fp)['token']
+        return token
 
-        # Add the token to our urls
-        self.META_URL = self.META_URL + f"?token={self.token}"
-        self.MESO_URL = self.MESO_URL + f"?token={self.token}"
+    @property
+    def token(self):
+        if self._token is None:
+            self._token = self.get_token(self._token_json)
+        return self._token
 
     def _get_metadata(self):
         """
@@ -62,7 +82,8 @@ class MesowestPointData(PointData):
     def _get_data(self,
                   start_date: datetime,
                   end_date: datetime,
-                  variables: List[SensorDescription],):
+                  variables: List[SensorDescription],
+                  interval='H'):
         """
         Make get request to Mesowest and return JSON
         Args:
@@ -70,6 +91,7 @@ class MesowestPointData(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
+            interval: String interval the resulting data is resampled to
         Returns:
             dictionary of response values
         """
@@ -78,37 +100,63 @@ class MesowestPointData(PointData):
             "stid": self.id,
             "start": start_date.strftime(fmt),
             "end": end_date.strftime(fmt),
-            "vars": ",".join([s.code for s in variables])
+            "vars": ",".join([s.code for s in variables]),
+            'units': 'metric',
         }
         resp = requests.get(self.MESO_URL, params=params)
         resp.raise_for_status()
-        return resp.json()
+        response_data = resp.json()
 
-    def get_daily_data(
-        self,
-        start_date: datetime,
-        end_date: datetime,
-        variables: List[SensorDescription],
-    ):
+        final_columns = ["geometry", "site", "measurementDate"]
+
+        df = None
+        for sensor in variables:
+            if response_data:
+                sensor_df = self._sensor_response_to_df(response_data, sensor, final_columns)
+                df = merge_df(df, sensor_df)
+        df = resample(df, variables, interval=interval)
+        df = df.dropna(axis=0)
+        return df
+
+    def _sensor_response_to_df(self, response_data, sensor, final_columns):
         """
-        Get daily measurement data
+        Convert the response data from the API to a GeoDataFrame
+        Format and map columns in the dataframe
         Args:
-            start_date: datetime object for start of data collection period
-            end_date: datetime object for end of data collection period
-            variables: List of metloom.variables.SensorDescription object
-                from self.ALLOWED_VARIABLES
+            response_data: JSON list response from CDEC API
+            sensor: SensorDescription obj
+            final_columns: List of columns used for filtering
         Returns:
-            GeoDataFrame of data. The dataframe should be indexed on
-            ['datetime', 'site'] and have columns
-            ['geometry', 'site', 'measurementDate']. Additionally, for each
-            variables, it should have column f'{variable.name}' and
-            f'{variable.name}_UNITS'
-            See CDECPointData._get_data for example implementation and
-            TestCDECStation.tny_daily_expected for example dataframe.
-            Datetimes should be in UTC
+            GeoDataFrame
         """
-        raise NotImplementedError("get_daily_data is not implemented")
+        timeseries_response = response_data['STATION'][0]['OBSERVATIONS']
+        sensor_df = gpd.GeoDataFrame.from_dict(
+            timeseries_response,
+            geometry=[self.metadata] * len(timeseries_response['date_time']),
+        )
+        sensor_df.replace(-9999.0, np.nan, inplace=True)
+        # This mapping is important.
+        sensor_df.rename(
+            columns={
+                "date_time": "datetime",
+                f"{sensor.code}_set_1": sensor.name,
+            },
+            inplace=True,
+        )
+        final_columns += [sensor.name, f"{sensor.name}_units"]
+        self._tzinfo = pytz.timezone(response_data['STATION'][0]['TIMEZONE'])
+        # Convert the datetime, but 1st remove the Z in the string to avoid an assumed tz.
+        sensor_df["datetime"] = sensor_df.apply(lambda row: pd.to_datetime(row['datetime'].replace('Z', '')), axis=1)
+        sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
+        # TODO: Review whether this is necessary?
+        sensor_df['measurementDate'] = sensor_df['datetime'].copy()
 
+        # set index so joinng works
+        sensor_df.set_index("datetime", inplace=True)
+        sensor_df = sensor_df.filter(final_columns)
+        sensor_df[f"{sensor.name}_units"] = response_data['UNITS'][f"{sensor.code}"]
+
+        return sensor_df
 
     def get_hourly_data(
         self,
@@ -133,15 +181,43 @@ class MesowestPointData(PointData):
             TestCDECStation.tny_daily_expected for example dataframe.
             Datetimes should be in UTC
         """
-        response = self._get_data(start_date, end_date, variables)
-        print(response)
+        df = self._get_data(start_date, end_date, variables, interval='H')
+        return df
 
-    def points_from_geometry(
+    def get_daily_data(
         self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        """
+        Get daily measurement data
+        Args:
+            start_date: datetime object for start of data collection period
+            end_date: datetime object for end of data collection period
+            variables: List of metloom.variables.SensorDescription object
+                from self.ALLOWED_VARIABLES
+        Returns:
+            GeoDataFrame of data. The dataframe should be indexed on
+            ['datetime', 'site'] and have columns
+            ['geometry', 'site', 'measurementDate']. Additionally, for each
+            variables, it should have column f'{variable.name}' and
+            f'{variable.name}_UNITS'
+            See CDECPointData._get_data for example implementation and
+            TestCDECStation.tny_daily_expected for example dataframe.
+            Datetimes should be in UTC
+        """
+        df = self._get_data(start_date, end_date, variables, interval='D')
+        return df
+
+    @classmethod
+    def points_from_geometry(
+        cls,
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
-        within_geometry=True
+        within_geometry=True,
+        token_json="~/.synoptic_token.json"
     ):
         """
         Find a collection of points with measurements for certain variables
@@ -157,4 +233,18 @@ class MesowestPointData(PointData):
         Returns:
             PointDataCollection
         """
-        raise NotImplementedError("points_from_geometry not implemented")
+        cls.token = cls.get_token(token_json)
+        projected_geom = geometry.to_crs(4326)
+        bounds = projected_geom.bounds.iloc[0]
+        print(bounds)
+        bbox_str = ','.join(str(bounds[k]) for k in ['minx', 'miny', 'maxx', 'maxy'])
+        var_list_str = ','.join([v.code for v in variables])
+        resp = requests.get(cls.META_URL+f"?token={cls.token}", params={'bbox': bbox_str,
+                                                  'vars':var_list_str})
+        print(resp.json())
+        # if len(dfs) > 0:
+        #     df = reduce(lambda a, b: append_df(a, b), dfs)
+        # else:
+        #     return cls.ITERATOR_CLASS([])
+
+        return cls.ITERATOR_CLASS([])
