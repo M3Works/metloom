@@ -29,7 +29,8 @@ class BasePointDataTest(object):
         return gpd.read_file(fp)
 
     @staticmethod
-    def expected_response(dates, variables_map, station, points, include_measurement_date=False):
+    def expected_response(dates, variables_map, station, points,
+                          include_measurement_date=False):
         obj = []
         for idt, dt in enumerate(dates):
             # get the value and unit corresponding to the date
