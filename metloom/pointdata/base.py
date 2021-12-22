@@ -64,7 +64,7 @@ class PointData(object):
     ALLOWED_VARIABLES = VariableBase
     ITERATOR_CLASS = PointDataCollection
     DATASOURCE = None
-    EXPECTED_COLUMNS = ["measurementDate", "geometry", "datasource"]
+    EXPECTED_COLUMNS = ["geometry", "datasource"]
     EXPECTED_INDICES = ["datetime", "site"]
     NON_VARIABLE_COLUMNS = EXPECTED_INDICES + EXPECTED_COLUMNS
 
@@ -232,9 +232,12 @@ class PointData(object):
         for ei in cls.EXPECTED_INDICES:
             assert ei in index_names
         # check for expected columns
+        expected_columns = cls.EXPECTED_COLUMNS
+        if "measurementDate" in columns:
+            expected_columns = expected_columns + ["measurementDate"]
         for column in cls.EXPECTED_COLUMNS:
             assert column in columns
-        remaining_columns = [c for c in columns if c not in cls.EXPECTED_COLUMNS]
+        remaining_columns = [c for c in columns if c not in expected_columns]
         # make sure all variables have a units column as well
         for rc in remaining_columns:
             if "_units" not in rc:

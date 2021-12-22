@@ -44,7 +44,7 @@ class SnotelPointData(PointData):
         self._tzinfo = None
 
     def _snotel_response_to_df(self, result_map: Dict[SensorDescription, List[dict]],
-                               duration: str):
+                               duration: str, include_measurement_date=False):
         """
         Convert the response from climata.snotel classes into
         Args:
@@ -52,33 +52,39 @@ class SnotelPointData(PointData):
         """
         df = None
         # TODO: possible DRY opportunity here too
-        final_columns = ["geometry", "site", "measurementDate"]
+        final_columns = ["geometry", "site"]
+        if include_measurement_date:
+            final_columns += ["measurementDate"]
+
         for variable, data in result_map.items():
-            transformed = [
-                {
+            transformed = []
+            for row in data:
+                row_obj = {
                     "datetime": row["datetime"],
                     "site": self.id,
-                    "measurementDate": row["datetime"],
                     variable.name: row["value"],
                     f"{variable.name}_units": self._get_units(variable, duration),
                 }
-                for row in data
-            ]
+                if include_measurement_date:
+                    row_obj["measurementDate"] = row["datetime"]
+                transformed.append(row_obj)
+
             final_columns += [variable.name, f"{variable.name}_units"]
             sensor_df = gpd.GeoDataFrame.from_dict(
                 transformed, geometry=[self.metadata] * len(transformed)
             )
             # TODO: possibly an opportunity for DRY here (see CDEC)
             sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
-            sensor_df["measurementDate"] = pd.to_datetime(
-                sensor_df["measurementDate"]
-            )
             sensor_df["datetime"] = sensor_df["datetime"].apply(
                 self._handle_df_tz
             )
-            sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
-                self._handle_df_tz
-            )
+            if include_measurement_date:
+                sensor_df["measurementDate"] = pd.to_datetime(
+                    sensor_df["measurementDate"]
+                )
+                sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
+                    self._handle_df_tz
+                )
             # set index so joining works
             sensor_df.set_index("datetime", inplace=True)
             sensor_df = sensor_df.filter(final_columns)
@@ -96,7 +102,7 @@ class SnotelPointData(PointData):
 
     def _fetch_data_for_variables(self, client: SeriesSnotelClient,
                                   variables: List[SensorDescription],
-                                  duration: str):
+                                  duration: str, include_measurement_date=False):
         result_map = {}
         for variable in variables:
             data = client.get_data(element_cd=variable.code)
@@ -104,7 +110,10 @@ class SnotelPointData(PointData):
                 result_map[variable] = data
             else:
                 LOG.warning(f"No {variable.name} found for {self.name}")
-        return self._snotel_response_to_df(result_map, duration)
+        return self._snotel_response_to_df(
+            result_map, duration,
+            include_measurement_date=include_measurement_date
+        )
 
     def get_daily_data(
         self,
@@ -152,7 +161,9 @@ class SnotelPointData(PointData):
             begin_date=start_date,
             end_date=end_date,
         )
-        return self._fetch_data_for_variables(client, variables, client.DURATION)
+        return self._fetch_data_for_variables(
+            client, variables, client.DURATION, include_measurement_date=True
+        )
 
     def _get_all_metadata(self):
         """
