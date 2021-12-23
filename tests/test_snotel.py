@@ -293,7 +293,8 @@ class TestSnotelPointData(BasePointDataTest):
         fn = getattr(station, fn_name)
         result = fn(d1, d2, vrs)
         expected = self.expected_response(
-            expected_dts, vals, station, points
+            expected_dts, vals, station, points,
+            include_measurement_date="snow_course" in fn_name
         )
         pd.testing.assert_frame_equal(result, expected)
 
