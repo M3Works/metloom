@@ -48,7 +48,13 @@ class SnotelPointData(PointData):
         """
         Convert the response from climata.snotel classes into
         Args:
-           result_map: map of the sensors to the list of API results
+        result_map: map of the sensors to the list of API results
+        duration: string representation of the duration tag for the
+            API (i.e. HOURLY)
+        include_measurement_date: boolean for including the
+            'measurementDate' column in the resulting dataframe. This column
+            is only relevant for snow courses
+
         """
         df = None
         # TODO: possible DRY opportunity here too

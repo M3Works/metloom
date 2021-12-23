@@ -190,6 +190,9 @@ class CDECPointData(PointData):
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
             duration: CDEC duration code ['M', 'H', 'D']
+            include_measurement_date: boolean for including the
+                'measurmentDate' column in the resulting dataframe. This column
+                is only relevant for snow courses
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
