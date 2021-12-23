@@ -101,9 +101,6 @@ class TestCDECStation(BasePointDataTest):
                 {
                     "datetime": pd.Timestamp("2021-05-15 08:00:00+0000",
                                              tz="UTC"),
-                    "measurementDate": pd.Timestamp(
-                        "2021-05-15 08:00:00+0000", tz="UTC"
-                    ),
                     "ACCUMULATED PRECIPITATION": np.nan,
                     "ACCUMULATED PRECIPITATION_units": np.nan,
                     "AVG AIR TEMP": 2.1,
@@ -113,9 +110,6 @@ class TestCDECStation(BasePointDataTest):
                 },
                 {
                     "datetime": pd.Timestamp("2021-05-16 08:00:00+0000", tz="UTC"),
-                    "measurementDate": pd.Timestamp(
-                        "2021-05-16 08:00:00+0000", tz="UTC"
-                    ),
                     "ACCUMULATED PRECIPITATION": -0.11,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "AVG AIR TEMP": np.nan,
@@ -125,9 +119,6 @@ class TestCDECStation(BasePointDataTest):
                 },
                 {
                     "datetime": pd.Timestamp("2021-05-17 08:00:00+0000", tz="UTC"),
-                    "measurementDate": pd.Timestamp(
-                        "2021-05-17 08:00:00+0000", tz="UTC"
-                    ),
                     "ACCUMULATED PRECIPITATION": -0.10,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "AVG AIR TEMP": 2.4,
@@ -137,9 +128,6 @@ class TestCDECStation(BasePointDataTest):
                 },
                 {
                     "datetime": pd.Timestamp("2021-05-18 08:00:00+0000", tz="UTC"),
-                    "measurementDate": pd.Timestamp(
-                        "2021-05-18 08:00:00+0000", tz="UTC"
-                    ),
                     "ACCUMULATED PRECIPITATION": -0.10,
                     "ACCUMULATED PRECIPITATION_units": "INCHES",
                     "AVG AIR TEMP": 2.2,

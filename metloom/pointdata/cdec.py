@@ -47,7 +47,7 @@ class CDECPointData(PointData):
             self._raw_metadata = resp.json()["STATION"]
         return self._raw_metadata
 
-    def is_only_snow_course(self):
+    def is_only_snow_course(self, variables: List[SensorDescription]):
         """
         Determine if a station only has snow course measurements
         """
@@ -59,10 +59,19 @@ class CDECPointData(PointData):
         if result and not self.is_only_monthly():
             # This would happen if all snow sensors have code "M"
             # but there are other hourly or daily sensors
-            raise Exception(
-                f"We have not accounted for this scenario. Please talk to "
-                f"a Micah about how {self.id} violates their assumptions."
-            )
+            if any(
+                [sensor not in [
+                    self.ALLOWED_VARIABLES.SWE, self.ALLOWED_VARIABLES.SNOWDEPTH
+                ] for sensor in variables]
+            ):
+                # this is an acceptable scenario where we are looking for
+                # more than just snow variables and the station has them
+                result = False
+            else:
+                # We are only looking for snow variables and this only has
+                # monthly snow variables so it is effectively only
+                # a snow course
+                result = True
         return result
 
     def is_partly_snow_course(self):
@@ -139,14 +148,17 @@ class CDECPointData(PointData):
         )
         sensor_df.replace(-9999.0, np.nan, inplace=True)
         # this mapping is important. Sometimes obsDate is null
+        column_map = {
+            "date": "datetime",
+            "value": sensor.name,
+            "units": f"{sensor.name}_units",
+            "stationId": "site",
+        }
+        if "measurementDate" in final_columns:
+            column_map["obsDate"] = "measurementDate"
+
         sensor_df.rename(
-            columns={
-                "date": "datetime",
-                "obsDate": "measurementDate",
-                "value": sensor.name,
-                "units": f"{sensor.name}_units",
-                "stationId": "site",
-            },
+            columns=column_map,
             inplace=True,
         )
         final_columns += [sensor.name, f"{sensor.name}_units"]
@@ -157,9 +169,6 @@ class CDECPointData(PointData):
             sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
                 self._handle_df_tz
             )
-        else:
-            LOG.warning(f"measurementDate not found for {self.name} for"
-                        f"sensor {sensor.code}")
         # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
@@ -172,6 +181,7 @@ class CDECPointData(PointData):
         end_date: datetime,
         variables: List[SensorDescription],
         duration: str,
+        include_measurement_date=False
     ):
         """
         Args:
@@ -180,6 +190,9 @@ class CDECPointData(PointData):
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
             duration: CDEC duration code ['M', 'H', 'D']
+            include_measurement_date: boolean for including the
+                'measurmentDate' column in the resulting dataframe. This column
+                is only relevant for snow courses
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -190,7 +203,9 @@ class CDECPointData(PointData):
             "End": end_date.isoformat(),
         }
         df = None
-        final_columns = ["geometry", "site", "measurementDate"]
+        final_columns = ["geometry", "site"]
+        if include_measurement_date:
+            final_columns += ["measurementDate"]
         for sensor in variables:
             params["SensorNums"] = sensor.code
             response_data = self._data_request(params)
@@ -248,7 +263,9 @@ class CDECPointData(PointData):
         """
         if not self.is_partly_snow_course():
             raise ValueError(f"{self.id} is not a snow course")
-        return self._get_data(start_date, end_date, variables, "M")
+        return self._get_data(
+            start_date, end_date, variables, "M", include_measurement_date=True
+        )
 
     @staticmethod
     def _station_sensor_search(
@@ -354,5 +371,5 @@ class CDECPointData(PointData):
             return cls.ITERATOR_CLASS([p for p in points if p.is_partly_snow_course()])
         else:
             return cls.ITERATOR_CLASS(
-                [p for p in points if not p.is_only_snow_course()]
+                [p for p in points if not p.is_only_snow_course(variables)]
             )

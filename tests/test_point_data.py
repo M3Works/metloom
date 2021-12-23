@@ -29,19 +29,22 @@ class BasePointDataTest(object):
         return gpd.read_file(fp)
 
     @staticmethod
-    def expected_response(dates, variables_map, station, points):
+    def expected_response(dates, variables_map, station, points,
+                          include_measurement_date=False):
         obj = []
         for idt, dt in enumerate(dates):
             # get the value and unit corresponding to the date
             row_obj = {k: v[idt] for k, v in variables_map.items()}
+            entry = {
+                "datetime": pd.Timestamp(dt, tz="UTC"),
+                "site": station.id,
+                "datasource": "NRCS",
+                **row_obj
+            }
+            if include_measurement_date:
+                entry["measurementDate"] = pd.Timestamp(dt, tz="UTC")
             obj.append(
-                {
-                    "datetime": pd.Timestamp(dt, tz="UTC"),
-                    "measurementDate": pd.Timestamp(dt, tz="UTC"),
-                    "site": station.id,
-                    "datasource": "NRCS",
-                    **row_obj
-                }
+                entry
             )
         df = gpd.GeoDataFrame.from_dict(
             obj,
