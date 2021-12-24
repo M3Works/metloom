@@ -32,7 +32,6 @@ class MesowestPointData(PointData):
         self._tzinfo = None
         self._token = None
         self._token_json = token_json
-
         # Add the token to our urls
         self.META_URL = self.META_URL + f"?token={self.token}"
         self.MESO_URL = self.MESO_URL + f"?token={self.token}"
@@ -60,6 +59,7 @@ class MesowestPointData(PointData):
     def _get_metadata(self):
         """
         Method to get a shapely Point object to describe the station location
+        which is assigned to the metadata property
 
         Returns:
             shapely.point.Point object in Longitude, Latitude
@@ -68,13 +68,14 @@ class MesowestPointData(PointData):
         if self._raw_metadata is None:
             resp = requests.get(self.META_URL, params={"stid": self.id})
             resp.raise_for_status()
-            self._raw_metadata = resp.json()["STATION"]
+            jresp = resp.json()
 
-            data = self._raw_metadata[0]
+            self._raw_metadata = jresp["STATION"][0]
+
             shp_point = gpd.points_from_xy(
-                [float(data["LONGITUDE"])],
-                [float(data["LATITUDE"])],
-                z=[float(data["ELEVATION"])],
+                [float(self._raw_metadata["LONGITUDE"])],
+                [float(self._raw_metadata["LATITUDE"])],
+                z=[float(self._raw_metadata["ELEVATION"])],
             )[0]
 
         return shp_point
@@ -233,18 +234,30 @@ class MesowestPointData(PointData):
         Returns:
             PointDataCollection
         """
-        cls.token = cls.get_token(token_json)
+        token = cls.get_token(token_json)
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
-        print(bounds)
         bbox_str = ','.join(str(bounds[k]) for k in ['minx', 'miny', 'maxx', 'maxy'])
         var_list_str = ','.join([v.code for v in variables])
-        resp = requests.get(cls.META_URL+f"?token={cls.token}", params={'bbox': bbox_str,
-                                                  'vars':var_list_str})
-        print(resp.json())
-        # if len(dfs) > 0:
-        #     df = reduce(lambda a, b: append_df(a, b), dfs)
-        # else:
-        #     return cls.ITERATOR_CLASS([])
 
-        return cls.ITERATOR_CLASS([])
+        # Grab all the stations with the variables we want within a bounding box
+        resp = requests.get(cls.META_URL + f"?token={token}", params={'bbox': bbox_str,
+                                                                      'vars': var_list_str})
+
+        points = []
+        if resp:
+            jdata = resp.json()
+            data = jdata['STATION']
+
+            points = [MesowestPointData(station_id=sta['STID'], name=sta['NAME']) for sta in data]
+        # build the result geodataframe
+        result_df = gpd.GeoDataFrame.from_dict({'STID': [p.id for p in points],
+                                                'NAME': [p.name for p in points]},
+                                               geometry=[p.metadata for p in points])
+
+        # filter to points within shapefile
+        if within_geometry:
+            filtered_gdf = result_df[result_df.within(projected_geom.iloc[0]["geometry"])]
+            points = [p for p in points if p.id in filtered_gdf['STID'].values]
+
+        return cls.ITERATOR_CLASS(points)

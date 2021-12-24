@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 from os import path
 
 
-class TestMesowestStation(BasePointDataTest):
+class TestMesowestPointData(BasePointDataTest):
     @pytest.fixture(scope="class")
     def data_dir(self):
         this_dir = path.dirname(__file__)
@@ -16,22 +16,69 @@ class TestMesowestStation(BasePointDataTest):
 
     @pytest.fixture(scope="class")
     def shape_obj(self, data_dir):
-        fp = path.join(data_dir, "testing.shp")
+        fp = path.join(data_dir, "triangle.shp")
         return gpd.read_file(fp)
 
-
-    @pytest.fixture()
-    def meta_reponse(self):
+    def _meta_response(self, *args, **kwargs):
         """
         Mccall airport station metadata return
         """
-        return {'STATION': [{'ELEVATION': '5020',
-                             'NAME': 'McCall Airport',
-                             'STID': 'KMYL',
-                             'ELEV_DEM': '5006.6',
-                             'LONGITUDE': '-116.09978',
-                             'LATITUDE': '44.89425',
-                             'TIMEZONE': 'America/Boise'}]}
+        mock = MagicMock()
+
+        response = {}
+        params = kwargs["params"]
+
+        if 'stid' in params.keys():
+            stid = params['stid']
+            if stid == 'KMYL':
+                response = {'STATION': [{'ELEVATION': '5020',
+                                         'NAME': 'McCall Airport',
+                                         'STID': 'KMYL',
+                                         'ELEV_DEM': '5006.6',
+                                         'LONGITUDE': '-116.09978',
+                                         'LATITUDE': '44.89425',
+                                         'TIMEZONE': 'America/Boise'}]}
+
+            elif stid == 'INTRI':
+                response = {'STATION': [{'ELEVATION': '9409',
+                                         'NAME': 'IN TRIANGLE',
+                                         'STID': 'INTRI',
+                                         'LONGITUDE': '-119.5',
+                                         'LATITUDE': '38.0',
+                                         'TIMEZONE': 'America/Los_Angeles',
+                                         }]}
+
+            elif stid == 'OUTTRI':
+                response = {'STATION': [
+                    {'ELEVATION': '7201',
+                     'NAME': 'OUT TRIANGLE W/IN BOUNDS',
+                     'STID': 'OUTTRI',
+                     'TIMEZONE': 'America/Los_Angeles',
+                     'LONGITUDE': '-119.7',
+                     'LATITUDE': '38.0',
+                     }]}
+
+        elif 'bbox' in params.keys():
+            response = {'STATION': [{'ELEVATION': '9409',
+                                     'NAME': 'IN TRIANGLE',
+                                     'STID': 'INTRI',
+                                     'LONGITUDE': '-119.5',
+                                     'LATITUDE': '38.0',
+                                     'TIMEZONE': 'America/Los_Angeles',
+                                     },
+                                    {'ELEVATION': '7201',
+                                     'NAME': 'OUT TRIANGLE W/IN BOUNDS',
+                                     'STID': 'OUTTRI',
+                                     'TIMEZONE': 'America/Los_Angeles',
+                                     'LONGITUDE': '-119.7',
+                                     'LATITUDE': '38.0',
+                                     }
+                                    ]}
+        else:
+            raise ValueError('Invalid test STID provided')
+
+        mock.json.return_value = response
+        return mock
 
     @staticmethod
     def ts_response(var, values, delta, units: str):
@@ -54,13 +101,37 @@ class TestMesowestStation(BasePointDataTest):
                                           var: {f'{var}_set_1': {
                                               'position': '6.56'}}}},
                         'ELEVATION': '5006.6',
-                        'LONGITUDE': '-116.09978',
+                        'LONGITUDE': '-119.5',
                         'LATITUDE': '44.89425',
                         'OBSERVATIONS': {
                             'date_time': dt,
                             f'{var}_set_1': values},
                         'TIMEZONE': 'UTC'}]}
         return response
+
+    @pytest.fixture()
+    def bbox_response(self):
+        """
+        Metadata response from mesowest using a bbox
+        """
+        mock = MagicMock()
+        response = {'STATION': [{'ELEVATION': '9409',
+                                 'NAME': 'IN TRIANGLE',
+                                 'STID': 'INTRI',
+                                 'LONGITUDE': '-119.5',
+                                 'LATITUDE': '38.0',
+                                 'TIMEZONE': 'America/Los_Angeles',
+                                 },
+                                {'ELEVATION': '7201',
+                                 'NAME': 'OUT TRIANGLE W/IN BOUNDS',
+                                 'STID': 'OUTTRI',
+                                 'TIMEZONE': 'America/Los_Angeles',
+                                 'LONGITUDE': '-119.7',
+                                 'LATITUDE': '38.0',
+                                 }
+                                ]}
+        mock.json.return_value = response
+        return mock
 
     @pytest.fixture()
     def sub_hourly_response(self, var, values, units):
@@ -86,10 +157,18 @@ class TestMesowestStation(BasePointDataTest):
     def station(self):
         return MesowestPointData("KMYL", "Mccall Airport")
 
-    def test_get_metadata(self, station):
-        # with patch("metloom.pointdata.cdec.requests") as mock_requests:
-        expected = gpd.points_from_xy([-116.09978], [44.89425], z=[5020.0])[0]
-        assert station.metadata == expected
+    @pytest.mark.parametrize('stid, long, lat, elev', [
+        ("KMYL", -116.09978, 44.89425, 5020.0),
+    ])
+    def test_get_metadata(self, stid, long, lat, elev):
+        result = False
+        with patch("metloom.pointdata.mesowest.requests") as mock_requests:
+            mock_get = mock_requests.get
+            mock_get.side_effect = self._meta_response
+            expected = gpd.points_from_xy([long], [lat], z=[elev])[0]
+            station = MesowestPointData(stid, 'test')
+            result = station.metadata == expected
+        assert result
 
     @pytest.mark.parametrize('var, values, units, expected_values, expected_dates', [
         (MesowestVariables.TEMP, [14.0, 16.0, 16.0, 18.0], 'Celsius', [15.0, 17.0],
@@ -124,5 +203,17 @@ class TestMesowestStation(BasePointDataTest):
         expected.set_index('datetime', inplace=True)
         pd.testing.assert_frame_equal(df, expected)
 
-    def test_points_from_geometry(self, station, shape_obj):
-        MesowestPointData.points_from_geometry(shape_obj, [MesowestVariables.TEMP])
+    @pytest.mark.parametrize('within_geometry, expected_sid', [
+        (False, ['INTRI', 'OUTTRI']),  # Use just bounds of the shapefile
+        (True, ['INTRI']),  # Filter to within the shapefile
+    ])
+    def test_points_from_geometry(self, shape_obj, within_geometry, expected_sid):
+
+        with patch("metloom.pointdata.mesowest.requests") as mock_requests:
+            mock_get = mock_requests.get
+            mock_get.side_effect = self._meta_response
+            pnts = MesowestPointData.points_from_geometry(shape_obj, [MesowestVariables.TEMP],
+                                                          within_geometry=within_geometry)
+
+        df = pnts.to_dataframe()
+        assert df['id'].values == pytest.approx(expected_sid)
