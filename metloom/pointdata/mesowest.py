@@ -250,6 +250,7 @@ class MesowestPointData(PointData):
         # Grab all the stations with the variables we want within a bounding box
         resp = requests.get(cls.META_URL + f"?token={token}",
                             params={'bbox': bbox_str, 'vars': var_list_str})
+        resp.raise_for_status()
 
         points = []
         if resp:
