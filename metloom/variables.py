@@ -103,7 +103,7 @@ class MesowestVariables(VariableBase):
     WINDSPEED = SensorDescription("wind_speed", "WIND SPEED")
     WINDDIRECTION = SensorDescription("wind_direction", "WIND DIRECTION")
     PRESSURE = SensorDescription("pressure", "PRESSURE")
-    SNOWDEPTH = SensorDescription("snow_depth", "SNOW DEPTH")
+    SNOWDEPTH = SensorDescription("snow_depth", "SNOWDEPTH")
     SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
     WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature",
                                            "WET BULB TEMPERATURE")

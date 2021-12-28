@@ -11,7 +11,7 @@ import requests
 
 import geopandas as gpd
 
-from ..dataframe_utils import merge_df, resample
+from ..dataframe_utils import merge_df, resample_df
 from ..variables import MesowestVariables, SensorDescription
 from .base import PointData
 
@@ -43,7 +43,7 @@ class MesowestPointData(PointData):
         """
         token_json = abspath(expanduser(token_json))
         if not isfile(token_json):
-            raise IOError(f"Token file missing. Please sign up for a token "
+            raise FileNotFoundError(f"Token file missing. Please sign up for a token "
                           "with Synoptic Labs and add it to a json.\n "
                           f"Missing {token_json}!")
 
@@ -117,7 +117,7 @@ class MesowestPointData(PointData):
                 sensor_df = self._sensor_response_to_df(
                     response_data, sensor, final_columns)
                 df = merge_df(df, sensor_df)
-        df = resample(df, variables, interval=interval)
+        df = resample_df(df, variables, interval=interval)
         df = df.dropna(axis=0)
         return df
 

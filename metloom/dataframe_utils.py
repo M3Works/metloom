@@ -93,7 +93,7 @@ def append_df(df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame]):
     return result_df
 
 
-def resample(raw_df: pd.DataFrame, variables: List[SensorDescription], interval: str = 'H'):
+def resample_df(raw_df: pd.DataFrame, variables: List[SensorDescription], interval: str = 'H'):
     """
     Resample an datatime indexed pandas dateframe to hourly or daily timer intervals.
 
@@ -108,5 +108,10 @@ def resample(raw_df: pd.DataFrame, variables: List[SensorDescription], interval:
     df = raw_df.copy()
     for sensor in variables:
         name = sensor.name
-        df[name] = df[name].resample(interval).mean()
+        if sensor.accumulated:
+            df[name] = df[name].resample(interval).sum()
+        else:
+            df[name] = df[name].resample(interval).mean()
+
+    df = df.dropna()
     return df

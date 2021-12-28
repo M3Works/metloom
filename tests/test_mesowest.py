@@ -224,3 +224,25 @@ class TestMesowestPointData(BasePointDataTest):
 
         df = pnts.to_dataframe()
         assert df['id'].values == pytest.approx(expected_sid)
+
+    def test_missing_token_instantiation(self):
+        """
+        Test the missing token file raises an IOerror when instantiated
+        """
+        with pytest.raises(FileNotFoundError):
+            station = MesowestPointData('TEST',
+                                        'test',
+                                        token_json="./non-existent_path.json")
+
+    def test_missing_token_class_method(self, shape_obj):
+        """
+        Test the missing token file raises an IOerror when data is requested via class method
+        """
+        with patch("metloom.pointdata.mesowest.requests") as mock_requests:
+            mock_get = mock_requests.get
+            mock_get.side_effect = self._meta_response
+            with pytest.raises(FileNotFoundError):
+                pnts = MesowestPointData.points_from_geometry(
+                    shape_obj,
+                    [MesowestVariables.TEMP],
+                    token_json="./non-existent_path.json")

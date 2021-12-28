@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
+from metloom.variables import MesowestVariables, CdecStationVariables
 
-from metloom.dataframe_utils import join_df, append_df, merge_df
+from metloom.dataframe_utils import join_df, append_df, merge_df, resample_df
 
 df1 = pd.DataFrame.from_records([{"foo": 12.0}, {"foo": 11.0}])
 df2 = pd.DataFrame.from_records([{"bar": 1.0}, {"bar": 1.0}])
@@ -73,3 +74,33 @@ def test_merge_df():
     ).set_index("datetime")
     result = merge_df(first, second)
     pd.testing.assert_frame_equal(expected, result)
+
+
+@pytest.fixture()
+def sample_df(in_data, variable, delta_t, interval):
+    """
+    Build a dataframe given a incoming data set and interval to
+    look at and a delta time to create the datetime index.
+    """
+    if interval == 'H':
+        dt = timedelta(minutes=delta_t)
+    elif interval == 'D':
+        dt = timedelta(hours=delta_t)
+
+    d_time = [datetime(2021, 12, 1) + i * dt for i in range(len(in_data))]
+    df = pd.DataFrame.from_dict({'datetime': d_time, variable.name: in_data})
+    df = df.set_index('datetime')
+    yield df
+
+
+@pytest.mark.parametrize("in_data, variable, delta_t, interval, expected_data", [
+    ([1, 3, 2, 4], MesowestVariables.TEMP, 30, 'H', [2, 3]),
+    ([3, 3, 2, 2], CdecStationVariables.SWE, 12, 'D', [6, 4]),
+])
+def test_resample_df(sample_df, in_data, variable, delta_t, interval, expected_data):
+    """
+    Test the resample function can resample values according to
+    hourly and daily time intervals
+    """
+    out_df = resample_df(sample_df, [variable], interval=interval)
+    assert out_df[variable.name].values == pytest.approx(expected_data)
