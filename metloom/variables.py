@@ -95,7 +95,6 @@ class MesowestVariables(VariableBase):
     Available sensors from Mesowest
     There are a lot of variables here. Feel free to PR to add some
     https://developers.synopticdata.com/mesonet/v2/api-variables/
-
     """
 
     TEMP = SensorDescription("air_temp", "AIR TEMP")
@@ -106,4 +105,5 @@ class MesowestVariables(VariableBase):
     PRESSURE = SensorDescription("pressure", "PRESSURE")
     SNOWDEPTH = SensorDescription("snow_depth", "SNOW DEPTH")
     SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
-    WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature", "WET BULB TEMPERATURE")
+    WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature",
+                                           "WET BULB TEMPERATURE")
