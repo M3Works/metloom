@@ -4,5 +4,6 @@ from .snotel import SnotelPointData
 from .mesowest import MesowestPointData
 
 __all__ = [
-    "PointData", "PointDataCollection", "CDECPointData", "SnotelPointData", "MesowestPointData"
+    "PointData", "PointDataCollection", "CDECPointData", "SnotelPointData",
+    "MesowestPointData"
 ]

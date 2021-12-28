@@ -46,8 +46,8 @@ class MesowestPointData(PointData):
         token_json = abspath(expanduser(token_json))
         if not isfile(token_json):
             raise FileNotFoundError(f"Token file missing. Please sign up for a token "
-                          "with Synoptic Labs and add it to a json.\n "
-                          f"Missing {token_json}!")
+                                    "with Synoptic Labs and add it to a json.\n "
+                                    f"Missing {token_json}!")
 
         with open(token_json) as fp:
             token = json.load(fp)['token']

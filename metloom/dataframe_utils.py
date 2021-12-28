@@ -1,8 +1,9 @@
 from logging import getLogger
-from typing import Optional, List
-from .variables import  SensorDescription
+from typing import List, Optional
 
 import pandas as pd
+
+from .variables import SensorDescription
 
 LOG = getLogger("metloom.dataframe_utils")
 
@@ -93,17 +94,21 @@ def append_df(df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame]):
     return result_df
 
 
-def resample_df(raw_df: pd.DataFrame, variables: List[SensorDescription], interval: str = 'H'):
+def resample_df(raw_df: pd.DataFrame,
+                variables: List[SensorDescription], interval: str = 'H'):
     """
-    Resample an datatime indexed pandas dateframe to hourly or daily timer intervals.
+    Resample an datatime indexed pandas dateframe to hourly or daily timer
+    intervals.
 
     Args:
-        raw_df: Pandas Dataframe containing a datetime index at an interval smaller than hourly.
+        raw_df: Pandas Dataframe containing a datetime index at an interval
+            smaller than hourly.
         variables: List of SensorDescriptions to be found in the dataframe
         interval: Interval to resample to. Options are H = Hourly, D=Daily
 
     Returns:
-        df: Pandas dataframe containing all the columns as raw_df but resampled to the requested interval
+        df: Pandas dataframe containing all the columns as raw_df but resampled
+            to the requested interval
     """
     df = raw_df.copy()
     for sensor in variables:

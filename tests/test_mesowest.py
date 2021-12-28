@@ -1,12 +1,12 @@
+import json
+import os
 from collections import OrderedDict
 from datetime import datetime
-import os
 from os import path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
-import json
 
 import geopandas as gpd
 from metloom.pointdata.mesowest import MesowestPointData
@@ -249,19 +249,19 @@ class TestMesowestPointData(BasePointDataTest):
         Test the missing token file raises an IOerror when instantiated
         """
         with pytest.raises(FileNotFoundError):
-            station = MesowestPointData('TEST',
-                                        'test',
-                                        token_json="./non-existent_path.json")
+            MesowestPointData('TEST', 'test',
+                              token_json="./non-existent_path.json")
 
     def test_missing_token_class_method(self, shape_obj):
         """
-        Test the missing token file raises an IOerror when data is requested via class method
+        Test the missing token file raises an IOerror when data is requested vi
+        a class method
         """
         with patch("metloom.pointdata.mesowest.requests") as mock_requests:
             mock_get = mock_requests.get
             mock_get.side_effect = self._meta_response
             with pytest.raises(FileNotFoundError):
-                pnts = MesowestPointData.points_from_geometry(
+                MesowestPointData.points_from_geometry(
                     shape_obj,
                     [MesowestVariables.TEMP],
                     token_json="./non-existent_path.json")

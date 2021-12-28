@@ -1,11 +1,12 @@
+import logging
 from datetime import datetime
 from typing import List
 
-import geopandas as gpd
 import pandas as pd
-import logging
 
-from ..variables import VariableBase, SensorDescription
+import geopandas as gpd
+
+from ..variables import SensorDescription, VariableBase
 
 LOG = logging.getLogger("metloom.pointdata.base")
 
@@ -206,7 +207,6 @@ class PointData(object):
             if k not in kwargs.keys():
                 kwargs[k] = v
         return kwargs
-
 
     def points_from_geometry(
         self,
