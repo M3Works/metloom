@@ -1,10 +1,12 @@
 from collections import OrderedDict
 from datetime import datetime
+import os
 from os import path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
+import json
 
 import geopandas as gpd
 from metloom.pointdata.mesowest import MesowestPointData
@@ -13,6 +15,22 @@ from tests.test_point_data import BasePointDataTest
 
 
 class TestMesowestPointData(BasePointDataTest):
+    @pytest.fixture(scope='session')
+    def token_file(self):
+        """
+        Json token file fixture for mocking having a token
+        """
+        d = {'token': '####'}
+        json_file = path.join(path.dirname(__file__), 'token.json')
+
+        with open(json_file, 'w+') as fp:
+            json.dump(d, fp)
+
+        yield json_file
+        # Clean up
+        if path.isfile(json_file):
+            os.remove(json_file)
+
     @pytest.fixture(scope="class")
     def data_dir(self):
         this_dir = path.dirname(__file__)
@@ -159,19 +177,19 @@ class TestMesowestPointData(BasePointDataTest):
         return self.ts_response(var.code, values, delta, units)
 
     @pytest.fixture()
-    def station(self):
-        return MesowestPointData("KMYL", "Mccall Airport")
+    def station(self, token_file):
+        return MesowestPointData("KMYL", "Mccall Airport", token_json=token_file)
 
     @pytest.mark.parametrize('stid, long, lat, elev', [
         ("KMYL", -116.09978, 44.89425, 5020.0),
     ])
-    def test_get_metadata(self, stid, long, lat, elev):
+    def test_get_metadata(self, token_file, stid, long, lat, elev):
         result = False
         with patch("metloom.pointdata.mesowest.requests") as mock_requests:
             mock_get = mock_requests.get
             mock_get.side_effect = self._meta_response
             expected = gpd.points_from_xy([long], [lat], z=[elev])[0]
-            station = MesowestPointData(stid, 'test')
+            station = MesowestPointData(stid, 'test', token_json=token_file)
             result = station.metadata == expected
         assert result
 
@@ -213,14 +231,15 @@ class TestMesowestPointData(BasePointDataTest):
         (False, ['INTRI', 'OUTTRI']),  # Use just bounds of the shapefile
         (True, ['INTRI']),  # Filter to within the shapefile
     ])
-    def test_points_from_geometry(self, shape_obj, w_geom, expected_sid):
+    def test_points_from_geometry(self, token_file, shape_obj, w_geom, expected_sid):
 
         with patch("metloom.pointdata.mesowest.requests") as mock_requests:
             mock_get = mock_requests.get
             mock_get.side_effect = self._meta_response
             pnts = MesowestPointData.points_from_geometry(shape_obj,
                                                           [MesowestVariables.TEMP],
-                                                          within_geometry=w_geom)
+                                                          within_geometry=w_geom,
+                                                          token_json=token_file)
 
         df = pnts.to_dataframe()
         assert df['id'].values == pytest.approx(expected_sid)
