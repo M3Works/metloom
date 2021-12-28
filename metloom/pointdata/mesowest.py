@@ -1,22 +1,21 @@
-import logging
-import json
-from os.path import expanduser, isfile, abspath
-
-import pytz
-import pprint
-from .base import PointData
 import datetime
+import json
+import logging
+from os.path import abspath, expanduser, isfile
 from typing import List
-import geopandas as gpd
-import requests
+
 import numpy as np
 import pandas as pd
+import pytz
+import requests
+
+import geopandas as gpd
 
 from ..dataframe_utils import merge_df, resample
 from ..variables import MesowestVariables, SensorDescription
+from .base import PointData
 
 LOG = logging.getLogger("metloom.pointdata.mesowest")
-pp = pprint.PrettyPrinter(indent=4)
 
 
 class MesowestPointData(PointData):
@@ -25,7 +24,8 @@ class MesowestPointData(PointData):
     META_URL = "https://api.synopticdata.com/v2/stations/metadata"
     DATASOURCE = "Mesowest"
 
-    def __init__(self, station_id, name, token_json="~/.synoptic_token.json", metadata=None):
+    def __init__(self, station_id, name,
+                 token_json="~/.synoptic_token.json", metadata=None):
         super(MesowestPointData, self).__init__(station_id, name, metadata=metadata)
         self._raw_metadata = None
         self._raw_elements = None
@@ -43,7 +43,8 @@ class MesowestPointData(PointData):
         """
         token_json = abspath(expanduser(token_json))
         if not isfile(token_json):
-            raise IOError(f"Token file missing. Please sign up for a token with Synoptic Labs and add it to a json.\n "
+            raise IOError(f"Token file missing. Please sign up for a token "
+                          "with Synoptic Labs and add it to a json.\n "
                           f"Missing {token_json}!")
 
         with open(token_json) as fp:
@@ -108,12 +109,13 @@ class MesowestPointData(PointData):
         resp.raise_for_status()
         response_data = resp.json()
 
-        final_columns = ["geometry", "site", "measurementDate"]
+        final_columns = ["geometry", "site"]
 
         df = None
         for sensor in variables:
             if response_data:
-                sensor_df = self._sensor_response_to_df(response_data, sensor, final_columns)
+                sensor_df = self._sensor_response_to_df(
+                    response_data, sensor, final_columns)
                 df = merge_df(df, sensor_df)
         df = resample(df, variables, interval=interval)
         df = df.dropna(axis=0)
@@ -146,8 +148,12 @@ class MesowestPointData(PointData):
         )
         final_columns += [sensor.name, f"{sensor.name}_units"]
         self._tzinfo = pytz.timezone(response_data['STATION'][0]['TIMEZONE'])
-        # Convert the datetime, but 1st remove the Z in the string to avoid an assumed tz.
-        sensor_df["datetime"] = sensor_df.apply(lambda row: pd.to_datetime(row['datetime'].replace('Z', '')), axis=1)
+        # Convert the datetime, but 1st remove the Z in the string to avoid an
+        # assumed tz.
+        sensor_df["datetime"] = sensor_df.apply(
+            lambda row: pd.to_datetime(
+                row['datetime'].replace(
+                    'Z', '')), axis=1)
         sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
         # TODO: Review whether this is necessary?
         sensor_df['measurementDate'] = sensor_df['datetime'].copy()
@@ -241,15 +247,18 @@ class MesowestPointData(PointData):
         var_list_str = ','.join([v.code for v in variables])
 
         # Grab all the stations with the variables we want within a bounding box
-        resp = requests.get(cls.META_URL + f"?token={token}", params={'bbox': bbox_str,
-                                                                      'vars': var_list_str})
+        resp = requests.get(cls.META_URL + f"?token={token}",
+                            params={'bbox': bbox_str, 'vars': var_list_str})
 
         points = []
         if resp:
             jdata = resp.json()
             data = jdata['STATION']
 
-            points = [MesowestPointData(station_id=sta['STID'], name=sta['NAME']) for sta in data]
+            points = [
+                MesowestPointData(
+                    station_id=sta['STID'],
+                    name=sta['NAME']) for sta in data]
         # build the result geodataframe
         result_df = gpd.GeoDataFrame.from_dict({'STID': [p.id for p in points],
                                                 'NAME': [p.name for p in points]},
@@ -257,7 +266,8 @@ class MesowestPointData(PointData):
 
         # filter to points within shapefile
         if within_geometry:
-            filtered_gdf = result_df[result_df.within(projected_geom.iloc[0]["geometry"])]
+            filtered_gdf = result_df[result_df.within(
+                projected_geom.iloc[0]["geometry"])]
             points = [p for p in points if p.id in filtered_gdf['STID'].values]
 
         return cls.ITERATOR_CLASS(points)

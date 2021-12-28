@@ -1,11 +1,15 @@
-from metloom.pointdata.mesowest import *
-import geopandas as gpd
-from datetime import datetime
 from collections import OrderedDict
-import pytest
-from tests.test_point_data import BasePointDataTest
-from unittest.mock import MagicMock, patch
+from datetime import datetime
 from os import path
+from unittest.mock import MagicMock, patch
+
+import pandas as pd
+import pytest
+
+import geopandas as gpd
+from metloom.pointdata.mesowest import MesowestPointData
+from metloom.variables import MesowestVariables
+from tests.test_point_data import BasePointDataTest
 
 
 class TestMesowestPointData(BasePointDataTest):
@@ -83,13 +87,14 @@ class TestMesowestPointData(BasePointDataTest):
     @staticmethod
     def ts_response(var, values, delta, units: str):
         """
-        Build a timeseries return using only values and assuming a date start point. We do this to avoid
-        a lot of lists of repeat dates.
+        Build a timeseries return using only values and assuming a date start
+        point. We do this to avoid a lot of lists of repeat dates.
         """
 
         # Build a datetime list to match the values
         fmt = '%Y-%m-%dT%H:%M:%SZ'
-        dt = [(pd.to_datetime('2021-01-01T00:00') + delta * i).strftime(fmt) for i in range(len(values))]
+        dt = [(pd.to_datetime('2021-01-01T00:00') + delta * i).strftime(fmt)
+              for i in range(len(values))]
 
         # Populate the response
         response = {'UNITS': {var: units},
@@ -134,7 +139,7 @@ class TestMesowestPointData(BasePointDataTest):
         return mock
 
     @pytest.fixture()
-    def sub_hourly_response(self, var, values, units):
+    def sub_hr_response(self, var, values, units):
         """
         Build a sub hourly response for time series data
         """
@@ -174,9 +179,11 @@ class TestMesowestPointData(BasePointDataTest):
         (MesowestVariables.TEMP, [14.0, 16.0, 16.0, 18.0], 'Celsius', [15.0, 17.0],
          ['2021-01-1T00:00:00+00:00', '2021-01-1T01:00:00+00:00']),
     ])
-    def test_get_hourly_data(self, station, sub_hourly_response, var, values, units, expected_values, expected_dates):
+    def test_get_hourly_data(self, station, sub_hr_response,
+                             var, values, units, expected_values, expected_dates):
         # Patch in the made up response
-        with patch("metloom.pointdata.mesowest.requests.get", return_value=sub_hourly_response):
+        with patch("metloom.pointdata.mesowest.requests.get",
+                   return_value=sub_hr_response):
             df = station.get_hourly_data(
                 datetime(2021, 1, 1, 0),
                 datetime(2021, 1, 1, 2),
@@ -184,7 +191,7 @@ class TestMesowestPointData(BasePointDataTest):
             )
 
         dt = [pd.to_datetime(d) for d in expected_dates]
-        data = sub_hourly_response.json()['STATION'][0]
+        data = sub_hr_response.json()['STATION'][0]
         shp_point = gpd.points_from_xy(
             [float(data["LONGITUDE"])],
             [float(data["LATITUDE"])],
@@ -195,7 +202,6 @@ class TestMesowestPointData(BasePointDataTest):
             OrderedDict({
                 'geometry': [shp_point] * len(dt),
                 'datetime': dt,
-                'measurementDate': dt,
                 var.name: expected_values,
                 f'{var.name}_units': [units] * len(dt),
             }),
@@ -203,17 +209,18 @@ class TestMesowestPointData(BasePointDataTest):
         expected.set_index('datetime', inplace=True)
         pd.testing.assert_frame_equal(df, expected)
 
-    @pytest.mark.parametrize('within_geometry, expected_sid', [
+    @pytest.mark.parametrize('w_geom, expected_sid', [
         (False, ['INTRI', 'OUTTRI']),  # Use just bounds of the shapefile
         (True, ['INTRI']),  # Filter to within the shapefile
     ])
-    def test_points_from_geometry(self, shape_obj, within_geometry, expected_sid):
+    def test_points_from_geometry(self, shape_obj, w_geom, expected_sid):
 
         with patch("metloom.pointdata.mesowest.requests") as mock_requests:
             mock_get = mock_requests.get
             mock_get.side_effect = self._meta_response
-            pnts = MesowestPointData.points_from_geometry(shape_obj, [MesowestVariables.TEMP],
-                                                          within_geometry=within_geometry)
+            pnts = MesowestPointData.points_from_geometry(shape_obj,
+                                                          [MesowestVariables.TEMP],
+                                                          within_geometry=w_geom)
 
         df = pnts.to_dataframe()
         assert df['id'].values == pytest.approx(expected_sid)
