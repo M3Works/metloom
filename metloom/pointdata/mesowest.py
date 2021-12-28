@@ -23,6 +23,8 @@ class MesowestPointData(PointData):
     MESO_URL = "https://api.synopticdata.com/v2/stations/timeseries"
     META_URL = "https://api.synopticdata.com/v2/stations/metadata"
     DATASOURCE = "Mesowest"
+    POINTS_FROM_GEOM_DEFAULTS = {'within_geometry': True,
+                                 'token_json': "~/.synoptic_token.json"}
 
     def __init__(self, station_id, name,
                  token_json="~/.synoptic_token.json", metadata=None):
@@ -33,8 +35,8 @@ class MesowestPointData(PointData):
         self._token = None
         self._token_json = token_json
         # Add the token to our urls
-        self.META_URL = self.META_URL + f"?token={self.token}"
-        self.MESO_URL = self.MESO_URL + f"?token={self.token}"
+        self._meta_url = self.META_URL + f"?token={self.token}"
+        self._meso_url = self.MESO_URL + f"?token={self.token}"
 
     @classmethod
     def get_token(cls, token_json):
@@ -67,7 +69,7 @@ class MesowestPointData(PointData):
         """
         shp_point = None
         if self._raw_metadata is None:
-            resp = requests.get(self.META_URL, params={"stid": self.id})
+            resp = requests.get(self._meta_url, params={"stid": self.id})
             resp.raise_for_status()
             jresp = resp.json()
 
@@ -105,7 +107,7 @@ class MesowestPointData(PointData):
             "vars": ",".join([s.code for s in variables]),
             'units': 'metric',
         }
-        resp = requests.get(self.MESO_URL, params=params)
+        resp = requests.get(self._meso_url, params=params)
         resp.raise_for_status()
         response_data = resp.json()
 
@@ -155,13 +157,11 @@ class MesowestPointData(PointData):
                 row['datetime'].replace(
                     'Z', '')), axis=1)
         sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
-        # TODO: Review whether this is necessary?
-        sensor_df['measurementDate'] = sensor_df['datetime'].copy()
 
         # set index so joinng works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
-        sensor_df[f"{sensor.name}_units"] = response_data['UNITS'][f"{sensor.code}"]
+        sensor_df[f"{sensor.name}_units"] = response_data['UNITS'][sensor.code]
 
         return sensor_df
 
@@ -181,7 +181,7 @@ class MesowestPointData(PointData):
         Returns:
             GeoDataFrame of data. The dataframe should be indexed on
             ['datetime', 'site'] and have columns
-            ['geometry', 'site', 'measurementDate']. Additionally, for each
+            ['geometry', 'site']. Additionally, for each
             variables, it should have column f'{variable.name}' and
             f'{variable.name}_UNITS'
             See CDECPointData._get_data for example implementation and
@@ -207,7 +207,7 @@ class MesowestPointData(PointData):
         Returns:
             GeoDataFrame of data. The dataframe should be indexed on
             ['datetime', 'site'] and have columns
-            ['geometry', 'site', 'measurementDate']. Additionally, for each
+            ['geometry', 'site']. Additionally, for each
             variables, it should have column f'{variable.name}' and
             f'{variable.name}_UNITS'
             See CDECPointData._get_data for example implementation and
@@ -222,25 +222,26 @@ class MesowestPointData(PointData):
         cls,
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
-        snow_courses=False,
-        within_geometry=True,
-        token_json="~/.synoptic_token.json"
+        **kwargs
     ):
         """
-        Find a collection of points with measurements for certain variables
-        contained within a shapefile. Any point in the shapefile with
-        measurements for any of the variables should be included
+        See docstring for PointData.points_from_geometry
+
         Args:
             geometry: GeoDataFrame for shapefile from gpd.read_file
             variables: List of SensorDescription
-            snow_courses: boolean for including only snowcourse data or no
-                snowcourse data
             within_geometry: filter the points to within the shapefile
                 instead of just the extents. Default True
+            token_json: Path to the public token for the mesowest api
+                        default = "~/.synoptic_token.json"
+
         Returns:
             PointDataCollection
         """
-        token = cls.get_token(token_json)
+        # assign defaults
+        kwargs = cls._add_default_kwargs(kwargs)
+
+        token = cls.get_token(kwargs['token_json'])
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
         bbox_str = ','.join(str(bounds[k]) for k in ['minx', 'miny', 'maxx', 'maxy'])
@@ -265,7 +266,7 @@ class MesowestPointData(PointData):
                                                geometry=[p.metadata for p in points])
 
         # filter to points within shapefile
-        if within_geometry:
+        if kwargs['within_geometry']:
             filtered_gdf = result_df[result_df.within(
                 projected_geom.iloc[0]["geometry"])]
             points = [p for p in points if p.id in filtered_gdf['STID'].values]
