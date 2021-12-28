@@ -257,10 +257,11 @@ class MesowestPointData(PointData):
             jdata = resp.json()
             data = jdata['STATION']
 
-            points = [
-                MesowestPointData(
-                    station_id=sta['STID'],
-                    name=sta['NAME']) for sta in data]
+            points = []
+            for sta in data:
+                points.append(MesowestPointData(station_id=sta['STID'],
+                                                name=sta['NAME'],
+                                                token_json=kwargs['token_json']))
         # build the result geodataframe
         result_df = gpd.GeoDataFrame.from_dict({'STID': [p.id for p in points],
                                                 'NAME': [p.name for p in points]},
