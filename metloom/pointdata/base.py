@@ -1,11 +1,12 @@
+import logging
 from datetime import datetime
 from typing import List
 
-import geopandas as gpd
 import pandas as pd
-import logging
 
-from ..variables import VariableBase, SensorDescription
+import geopandas as gpd
+
+from ..variables import SensorDescription, VariableBase
 
 LOG = logging.getLogger("metloom.pointdata.base")
 
@@ -67,6 +68,9 @@ class PointData(object):
     EXPECTED_COLUMNS = ["geometry", "datasource"]
     EXPECTED_INDICES = ["datetime", "site"]
     NON_VARIABLE_COLUMNS = EXPECTED_INDICES + EXPECTED_COLUMNS
+
+    # Default kwargs for function points from geometry
+    POINTS_FROM_GEOM_DEFAULTS = {'within_geometry': True, 'snow_courses': False}
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -159,7 +163,8 @@ class PointData(object):
 
     def _get_metadata(self):
         """
-        Method to get a shapely Point object to describe the
+        Method to get a shapely Point object to describe the station location
+
         Returns:
             shapely.point.Point object in Longitude, Latitude
         """
@@ -192,6 +197,16 @@ class PointData(object):
         if self._metadata is None:
             self._metadata = self._get_metadata()
         return self._metadata
+
+    @classmethod
+    def _add_default_kwargs(cls, kwargs):
+        """
+        Populates the kwargs for the points from geometry function
+        """
+        for k, v in cls.POINTS_FROM_GEOM_DEFAULTS.items():
+            if k not in kwargs.keys():
+                kwargs[k] = v
+        return kwargs
 
     def points_from_geometry(
         self,
