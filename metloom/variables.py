@@ -19,6 +19,11 @@ class VariableBase:
     datasource should implement the class. The goal is that the variables
     are synonymous across implementations.(i.e. PRECIPITATION should have the
     same meaning in each implementation).
+    Additionally, variables with the same meaning should have the same
+    `name` attribute of the SensorDescription. This way, if multiple datsources
+    are used to sample the same variable, they can be written to the same
+    column in a csv.
+
     Variables in this base class should ideally be implemented by all classes
     and cannot be directly used from the base class.
     """
