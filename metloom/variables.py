@@ -88,3 +88,22 @@ class SnotelVariables(VariableBase):
                                       "PRECIPITATION INCREMENT SNOW-ADJUSTED")
     PRECIPITATIONACCUM = SensorDescription("PREC", "ACCUMULATED PRECIPITATION",
                                            "PRECIPITATION ACCUMULATION")
+
+
+class MesowestVariables(VariableBase):
+    """
+    Available sensors from Mesowest
+    There are a lot of variables here. Feel free to PR to add some
+    https://developers.synopticdata.com/mesonet/v2/api-variables/
+    """
+
+    TEMP = SensorDescription("air_temp", "AIR TEMP")
+    DEWPOINT = SensorDescription("dew_point_temperature", "DEW POINT TEMPERATURE")
+    RH = SensorDescription("relative_humidity", "RELATIVE HUMIDITY")
+    WINDSPEED = SensorDescription("wind_speed", "WIND SPEED")
+    WINDDIRECTION = SensorDescription("wind_direction", "WIND DIRECTION")
+    PRESSURE = SensorDescription("pressure", "PRESSURE")
+    SNOWDEPTH = SensorDescription("snow_depth", "SNOWDEPTH")
+    SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
+    WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature",
+                                           "WET BULB TEMPERATURE")

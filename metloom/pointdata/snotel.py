@@ -237,16 +237,28 @@ class SnotelPointData(PointData):
         cls,
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
-        snow_courses=False,
-        within_geometry=True
+        **kwargs
     ):
         """
         See docstring for PointData.points_from_geometry
+
+        Args:
+            geometry: GeoDataFrame for shapefile from gpd.read_file
+            variables: List of SensorDescription
+            snow_courses: boolean for including only snowcourse data or no
+                snowcourse data
+            within_geometry: filter the points to within the shapefile
+                instead of just the extents. Default True
+        Returns:
+            PointDataCollection
         """
+        # assign defaults
+        kwargs = cls._add_default_kwargs(kwargs)
+
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
         # TODO: network may need to change to get streamflow
-        network = "SNOW" if snow_courses else ["SNTL", "USGS", "BOR", "COOP"]
+        network = "SNOW" if kwargs['snow_courses'] else ["SNTL", "USGS", "BOR", "COOP"]
         point_codes = []
         for variable in variables:
             # this search is default AND on all parameters
@@ -283,7 +295,7 @@ class SnotelPointData(PointData):
                 df["longitude"], df["latitude"], z=df["elevation"]
             ),
         )
-        if within_geometry:
+        if kwargs['within_geometry']:
             filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
         else:
             filtered_gdf = gdf

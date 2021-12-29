@@ -316,19 +316,33 @@ class CDECPointData(PointData):
         cls,
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
-        snow_courses=False,
-        within_geometry=True
+        **kwargs
     ):
         """
         See docstring for PointData.points_from_geometry
+
+        Args:
+            geometry: GeoDataFrame for shapefile from gpd.read_file
+            variables: List of SensorDescription
+            snow_courses: Boolean for including only snowcourse data or no
+            snowcourse data
+            within_geometry: filter the points to within the shapefile
+            instead of just the extents. Default True
+
+        Returns:
+            PointDataCollection
         """
+        # assign defaults
+        kwargs = cls._add_default_kwargs(kwargs)
+
         # Assume station search result is in 4326
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
         search_df = None
         station_search_kwargs = {}
+
         # Filter to manual, monthly measurements if looking for snow courses
-        if snow_courses:
+        if kwargs['snow_courses']:
             station_search_kwargs["dur"] = "M"
             station_search_kwargs["collect"] = "MANUAL+ENTRY"
         for variable in variables:
@@ -353,7 +367,7 @@ class CDECPointData(PointData):
             ),
         )
         # filter to points within shapefile
-        if within_geometry:
+        if kwargs['within_geometry']:
             filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
         else:
             filtered_gdf = gdf
@@ -367,7 +381,7 @@ class CDECPointData(PointData):
             )
         ]
         # filter to snow courses or not snowcourses depending on desired result
-        if snow_courses:
+        if kwargs['snow_courses']:
             return cls.ITERATOR_CLASS([p for p in points if p.is_partly_snow_course()])
         else:
             return cls.ITERATOR_CLASS(
