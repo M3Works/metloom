@@ -64,7 +64,10 @@ instance/
 
 # Sphinx documentation
 docs/_build/
-
+docs/metloom.pointdata.rst
+docs/metloom.rst
+docs/modules.rst
+		
 # PyBuilder
 target/
 

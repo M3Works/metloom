@@ -19,6 +19,11 @@ class VariableBase:
     datasource should implement the class. The goal is that the variables
     are synonymous across implementations.(i.e. PRECIPITATION should have the
     same meaning in each implementation).
+    Additionally, variables with the same meaning should have the same
+    `name` attribute of the SensorDescription. This way, if multiple datsources
+    are used to sample the same variable, they can be written to the same
+    column in a csv.
+
     Variables in this base class should ideally be implemented by all classes
     and cannot be directly used from the base class.
     """
@@ -88,3 +93,22 @@ class SnotelVariables(VariableBase):
                                       "PRECIPITATION INCREMENT SNOW-ADJUSTED")
     PRECIPITATIONACCUM = SensorDescription("PREC", "ACCUMULATED PRECIPITATION",
                                            "PRECIPITATION ACCUMULATION")
+
+
+class MesowestVariables(VariableBase):
+    """
+    Available sensors from Mesowest
+    There are a lot of variables here. Feel free to PR to add some
+    https://developers.synopticdata.com/mesonet/v2/api-variables/
+    """
+
+    TEMP = SensorDescription("air_temp", "AIR TEMP")
+    DEWPOINT = SensorDescription("dew_point_temperature", "DEW POINT TEMPERATURE")
+    RH = SensorDescription("relative_humidity", "RELATIVE HUMIDITY")
+    WINDSPEED = SensorDescription("wind_speed", "WIND SPEED")
+    WINDDIRECTION = SensorDescription("wind_direction", "WIND DIRECTION")
+    PRESSURE = SensorDescription("pressure", "PRESSURE")
+    SNOWDEPTH = SensorDescription("snow_depth", "SNOWDEPTH")
+    SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
+    WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature",
+                                           "WET BULB TEMPERATURE")

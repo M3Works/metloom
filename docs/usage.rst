@@ -2,7 +2,9 @@
 Usage
 =====
 
-Use metloom to find data for a station::
+SNOTEL
+------
+Use metloom to find data for a SNOTEL station::
 
     from datetime import datetime
     from metloom.pointdata import SnotelPointData
@@ -14,7 +16,11 @@ Use metloom to find data for a station::
     )
     print(df)
 
-Use metloom to find snow courses within a geometry::
+
+CDEC
+----
+
+Use metloom to find snow courses within a geometry from CDEC::
 
     from metloom.pointdata import CDECPointData
     import geopandas as gpd
@@ -30,8 +36,36 @@ Use metloom to find snow courses within a geometry::
     df = points.to_dataframe()
     print(df)
 
+Mesowest
+--------
+You can also use the Mesowest network if you sign up for an API token which is
+free!
+
+1. Create/Copy token from `synoptics labs <https://developers.synopticdata.com/signup/>`_
+2. Create :code:`~/.synoptic_token.json`
+3. Copy your token and place it in the file like :code:`{"token":"<MY_TOKEN_HERE>"}` and save it.
+4. Protect the file using :code:`chmod 600 ~/.synoptic_token.json`
+
+To pull stations using Mesowest::
+
+    from datetime import datetime
+    from metloom.pointdata import MesowestPointData
+
+    meso_point = MesowestPointData("ITD48", "IDAHOME")
+    df = snotel_point.get_daily_data(
+        datetime(2021, 12, 25), datetime(2021, 12, 26),
+        [meso_point.ALLOWED_VARIABLES.TEMP]
+    )
+    print(df)
+
+
+
+My variables aren't here
+------------------------
 Not all of the available variables for each datasource are implemented
 within this package. It is easy to extend the classes to add more variables
+Below is an example on how to add more variables. This is also a great to
+get started contributing to metloom!
 
 .. code-block:: python
 
