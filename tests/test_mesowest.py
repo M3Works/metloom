@@ -218,13 +218,15 @@ class TestMesowestPointData(BasePointDataTest):
 
         expected = gpd.GeoDataFrame.from_dict(
             OrderedDict({
+                'site': [station.id] * len(dt),
                 'geometry': [shp_point] * len(dt),
                 'datetime': dt,
                 var.name: expected_values,
                 f'{var.name}_units': [units] * len(dt),
+                'datasource': ["Mesowest"] * len(dt),
             }),
             geometry=[shp_point] * len(dt))
-        expected.set_index('datetime', inplace=True)
+        expected.set_index(keys=["datetime", "site"], inplace=True)
         pd.testing.assert_frame_equal(df, expected)
 
     @pytest.mark.parametrize('w_geom, expected_sid', [

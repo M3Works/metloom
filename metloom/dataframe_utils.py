@@ -113,10 +113,11 @@ def resample_df(raw_df: pd.DataFrame,
     df = raw_df.copy()
     for sensor in variables:
         name = sensor.name
-        if sensor.accumulated:
-            df[name] = df[name].resample(interval).sum()
-        else:
-            df[name] = df[name].resample(interval).mean()
+        if name in df.columns:
+            if sensor.accumulated:
+                df[name] = df[name].resample(interval).sum()
+            else:
+                df[name] = df[name].resample(interval).mean()
 
     df = df.dropna()
     return df
