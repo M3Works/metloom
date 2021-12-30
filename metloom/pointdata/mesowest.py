@@ -117,13 +117,24 @@ class MesowestPointData(PointData):
         for sensor in variables:
             if response_data:
                 sensor_df = self._sensor_response_to_df(
-                    response_data, sensor, final_columns)
+                    response_data, sensor, final_columns, interval=interval)
                 df = merge_df(df, sensor_df)
-        df = resample_df(df, variables, interval=interval)
-        df = df.dropna(axis=0)
+
+        if df is not None:
+            df = df.dropna(axis=0)
+            if len(df.index) > 0:
+                # Set the datasource
+                df["datasource"] = [self.DATASOURCE] * len(df.index)
+                df.reset_index(inplace=True)
+                df.set_index(keys=["datetime", "site"], inplace=True)
+                df.index.set_names(["datetime", "site"], inplace=True)
+            else:
+                df = None
+        self.validate_sensor_df(df)
         return df
 
-    def _sensor_response_to_df(self, response_data, sensor, final_columns):
+    def _sensor_response_to_df(self, response_data, sensor, final_columns,
+                               interval: str = 'H'):
         """
         Convert the response data from the API to a GeoDataFrame
         Format and map columns in the dataframe
@@ -131,10 +142,18 @@ class MesowestPointData(PointData):
             response_data: JSON list response from CDEC API
             sensor: SensorDescription obj
             final_columns: List of columns used for filtering
+            interval: string interval for resampling
         Returns:
             GeoDataFrame
         """
-        timeseries_response = response_data['STATION'][0]['OBSERVATIONS']
+        station_response = response_data['STATION']
+        if len(station_response) == 0:
+            return None
+        else:
+            timeseries_response = station_response[0]['OBSERVATIONS']
+        # check that the variable was returned
+        if f"{sensor.code}_set_1" not in timeseries_response:
+            return None
         sensor_df = gpd.GeoDataFrame.from_dict(
             timeseries_response,
             geometry=[self.metadata] * len(timeseries_response['date_time']),
@@ -157,10 +176,13 @@ class MesowestPointData(PointData):
                 row['datetime'].replace(
                     'Z', '')), axis=1)
         sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
-
-        # set index so joinng works
+        sensor_df["site"] = [self.id] * len(sensor_df)
+        # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
+        sensor_df = resample_df(sensor_df, [sensor], interval=interval)
+        sensor_df = sensor_df.dropna(axis=0)
+
         sensor_df[f"{sensor.name}_units"] = response_data['UNITS'][sensor.code]
 
         return sensor_df
