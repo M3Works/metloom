@@ -219,9 +219,9 @@ class TestMesowestPointData(BasePointDataTest):
         expected = gpd.GeoDataFrame.from_dict(
             OrderedDict({
                 'site': [station.id] * len(dt),
+                var.name: expected_values,
                 'geometry': [shp_point] * len(dt),
                 'datetime': dt,
-                var.name: expected_values,
                 f'{var.name}_units': [units] * len(dt),
                 'datasource': ["Mesowest"] * len(dt),
             }),

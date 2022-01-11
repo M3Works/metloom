@@ -102,5 +102,24 @@ def test_resample_df(sample_df, in_data, variable, delta_t, interval, expected_d
     Test the resample function can resample values according to
     hourly and daily time intervals
     """
-    out_df = resample_df(sample_df, [variable], interval=interval)
+    out_df = resample_df(sample_df, variable, interval=interval)
     assert out_df[variable.name].values == pytest.approx(expected_data)
+
+
+def test_resample_df_odd_increment():
+    df = pd.DataFrame.from_records([
+        {"datetime": datetime(2020, 1, 2, 11, 3, 20), "AIR TEMP": 1.0},
+        {"datetime": datetime(2020, 1, 2, 11, 13, 21), "AIR TEMP": 2.0},
+        {"datetime": datetime(2020, 1, 2, 11, 42, 1), "AIR TEMP": 3.0},
+        {"datetime": datetime(2020, 1, 2, 12, 5, 28), "AIR TEMP": 2.0},
+        {"datetime": datetime(2020, 1, 2, 12, 59, 3), "AIR TEMP": 1.5},
+    ])
+    df.set_index("datetime", inplace=True)
+    out_df = resample_df(df, MesowestVariables.TEMP, interval="H")
+    expected = pd.DataFrame.from_records([
+        {"datetime": datetime(2020, 1, 2, 11), "AIR TEMP": 2.0},
+        {"datetime": datetime(2020, 1, 2, 12,), "AIR TEMP": 1.75},
+    ])
+    expected.set_index("datetime", inplace=True)
+    expected.index.freq = "H"
+    pd.testing.assert_frame_equal(out_df, expected)
