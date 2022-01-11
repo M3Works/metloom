@@ -106,6 +106,7 @@ class MesowestPointData(PointData):
             "end": end_date.strftime(fmt),
             "vars": ",".join([s.code for s in variables]),
             'units': 'metric',
+            "obtimezone": "UTC",  # this is the default
         }
         resp = requests.get(self._meso_url, params=params)
         resp.raise_for_status()
@@ -151,11 +152,6 @@ class MesowestPointData(PointData):
             return None
         else:
             timeseries_response = station_response[0]['OBSERVATIONS']
-        # set timezone
-        if self._tzinfo is None:
-            self._tzinfo = pytz.timezone(
-                response_data['STATION'][0]['TIMEZONE']
-            )
         # check that the variable was returned
         if f"{sensor.code}_set_1" not in timeseries_response:
             return None
@@ -173,18 +169,11 @@ class MesowestPointData(PointData):
         )
         final_columns += [sensor.name, f"{sensor.name}_units"]
 
-        # Convert the datetime, but 1st remove the Z in the string to avoid an
-        # assumed tz.
-        sensor_df["datetime"] = sensor_df.apply(
-            lambda row: pd.to_datetime(
-                row['datetime'].replace(
-                    'Z', '')), axis=1)
+        sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
         # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
-        # handle timezonees
-        sensor_df = sensor_df.tz_localize(
-            self.tzinfo, ambiguous=[True] * len(sensor_df),
-        )
+        # handle timezones
+        # mesowest can return utc so we do not need to localize
         sensor_df = sensor_df.tz_convert(self.desired_tzinfo)
         sensor_df = sensor_df.filter(final_columns)
 
