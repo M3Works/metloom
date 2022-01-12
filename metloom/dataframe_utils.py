@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import List, Optional
+from typing import Optional
 
 import pandas as pd
 
@@ -95,29 +95,32 @@ def append_df(df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame]):
 
 
 def resample_df(raw_df: pd.DataFrame,
-                variables: List[SensorDescription], interval: str = 'H'):
+                variable: SensorDescription, interval: str = 'H'):
     """
     Resample an datatime indexed pandas dateframe to hourly or daily timer
     intervals.
+    Resample a datetime indexed pandas dataframe for 1 variable
 
     Args:
         raw_df: Pandas Dataframe containing a datetime index at an interval
             smaller than hourly.
-        variables: List of SensorDescriptions to be found in the dataframe
+        variable: SensorDescriptions to be found in the dataframe
         interval: Interval to resample to. Options are H = Hourly, D=Daily
 
     Returns:
-        df: Pandas dataframe containing all the columns as raw_df but resampled
-            to the requested interval
+        df: Pandas Dataframe of a single variable resampled to the
+            desired interval
     """
-    df = raw_df.copy()
-    for sensor in variables:
-        name = sensor.name
-        if name in df.columns:
-            if sensor.accumulated:
-                df[name] = df[name].resample(interval).sum()
-            else:
-                df[name] = df[name].resample(interval).mean()
+    name = variable.name
+    if name in raw_df.columns:
+        if variable.accumulated:
+            result = raw_df[name].resample(interval).sum()
+        else:
+            result = raw_df[name].resample(interval).mean()
+        df = pd.DataFrame()
+        df[name] = result
+        df = df.dropna()
+    else:
+        df = None
 
-    df = df.dropna()
     return df
