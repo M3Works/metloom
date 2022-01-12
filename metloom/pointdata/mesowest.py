@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import json
 import logging
 from os.path import abspath, expanduser, isfile
@@ -6,7 +6,6 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-import pytz
 import requests
 
 import geopandas as gpd
@@ -106,6 +105,7 @@ class MesowestPointData(PointData):
             "end": end_date.strftime(fmt),
             "vars": ",".join([s.code for s in variables]),
             'units': 'metric',
+            "obtimezone": "UTC",  # this is the default
         }
         resp = requests.get(self._meso_url, params=params)
         resp.raise_for_status()
@@ -154,9 +154,8 @@ class MesowestPointData(PointData):
         # check that the variable was returned
         if f"{sensor.code}_set_1" not in timeseries_response:
             return None
-        sensor_df = gpd.GeoDataFrame.from_dict(
-            timeseries_response,
-            geometry=[self.metadata] * len(timeseries_response['date_time']),
+        sensor_df = pd.DataFrame.from_dict(
+            timeseries_response
         )
         sensor_df.replace(-9999.0, np.nan, inplace=True)
         # This mapping is important.
@@ -168,20 +167,26 @@ class MesowestPointData(PointData):
             inplace=True,
         )
         final_columns += [sensor.name, f"{sensor.name}_units"]
-        self._tzinfo = pytz.timezone(response_data['STATION'][0]['TIMEZONE'])
-        # Convert the datetime, but 1st remove the Z in the string to avoid an
-        # assumed tz.
-        sensor_df["datetime"] = sensor_df.apply(
-            lambda row: pd.to_datetime(
-                row['datetime'].replace(
-                    'Z', '')), axis=1)
-        sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
-        sensor_df["site"] = [self.id] * len(sensor_df)
+
+        sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
         # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
+        # handle timezones
+        # mesowest can return utc so we do not need to localize
+        sensor_df = sensor_df.tz_convert(self.desired_tzinfo)
         sensor_df = sensor_df.filter(final_columns)
-        sensor_df = resample_df(sensor_df, [sensor], interval=interval)
+
+        # make sure we resample to dataframe to the desired output freq
+        sensor_df = resample_df(sensor_df, sensor, interval=interval)
+        if sensor_df is None:
+            return None
+        # clean up dataframe and add other columns
         sensor_df = sensor_df.dropna(axis=0)
+        sensor_df = gpd.GeoDataFrame(
+            sensor_df,
+            geometry=[self.metadata] * len(sensor_df),
+        )
+        sensor_df["site"] = [self.id] * len(sensor_df)
 
         sensor_df[f"{sensor.name}_units"] = response_data['UNITS'][sensor.code]
 
