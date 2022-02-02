@@ -126,8 +126,8 @@ def resample_df(raw_df: pd.DataFrame,
     return df
 
 
-def resample_whole_df(raw_df: pd.DataFrame,
-                variable: SensorDescription, interval: str = 'H'):
+def resample_whole_df(raw_df: pd.DataFrame, variable: SensorDescription,
+                      interval: str = 'H'):
     """
     Resample an datatime indexed pandas dateframe to hourly or daily timer
     intervals.
@@ -162,4 +162,3 @@ def resample_whole_df(raw_df: pd.DataFrame,
         df = None
 
     return df
-

@@ -97,7 +97,7 @@ def sample_df(in_data, variable, delta_t, interval):
 
 @pytest.mark.parametrize("in_data, variable, delta_t, interval, expected_data", [
     ([1, 3, 2, 4], MesowestVariables.TEMP, 30, 'H', [2, 3]),
-    ([3, 3, 2, 2], CdecStationVariables.SWE, 12, 'D', [6, 4]),
+    ([3, 3, 2, 2], CdecStationVariables.SWE, 12, 'D', [3, 2]),
 ])
 def test_resample_df(sample_df, in_data, variable, delta_t, interval, expected_data):
     """

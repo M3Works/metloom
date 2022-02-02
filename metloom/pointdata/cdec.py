@@ -242,7 +242,9 @@ class CDECPointData(PointData):
             final_columns += ["measurementDate"]
         for sensor in variables:
             params["SensorNums"] = sensor.code
-            response_data, response_duration = self._get_data_fallback(params, duration_list)
+            response_data, response_duration = self._get_data_fallback(
+                params, duration_list
+            )
             if response_data:
                 # don't resample if we have the desired duration
                 if response_duration == desired_duration:

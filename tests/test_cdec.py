@@ -450,10 +450,10 @@ class TestCDECStation(BasePointDataTest):
                 {
                     'AVG AIR TEMP': {
                         (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
-                        'TNY'): 2.233333},
+                            'TNY'): 2.233333},
                     'AVG AIR TEMP_units': {
                         (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
-                        'TNY'): 'DEG F'},
+                            'TNY'): 'DEG F'},
                     'datasource': {
                         (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
                          'TNY'): 'CDEC'}
