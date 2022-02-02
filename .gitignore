@@ -67,7 +67,7 @@ docs/_build/
 docs/metloom.pointdata.rst
 docs/metloom.rst
 docs/modules.rst
-		
+
 # PyBuilder
 target/
 
@@ -107,3 +107,6 @@ ENV/
 # IDE settings
 .vscode/
 .idea/
+
+# scratch dir
+scratch/

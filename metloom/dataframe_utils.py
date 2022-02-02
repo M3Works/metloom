@@ -124,3 +124,42 @@ def resample_df(raw_df: pd.DataFrame,
         df = None
 
     return df
+
+
+def resample_whole_df(raw_df: pd.DataFrame,
+                variable: SensorDescription, interval: str = 'H'):
+    """
+    Resample an datatime indexed pandas dateframe to hourly or daily timer
+    intervals.
+    Resample a datetime indexed pandas dataframe for 1 variable
+    Other columns get resampled with the .first() values
+
+    Args:
+        raw_df: Pandas Dataframe containing a datetime index at an interval
+            smaller than hourly.
+        variable: SensorDescriptions to be found in the dataframe
+        interval: Interval to resample to. Options are H = Hourly, D=Daily
+
+    Returns:
+        df: Pandas Dataframe of a single variable resampled to the
+            desired interval
+    """
+    name = variable.name
+    df = pd.DataFrame()
+    columns = raw_df.columns
+    if name in raw_df.columns:
+        if variable.accumulated:
+            result = raw_df[name].resample(interval).sum()
+        else:
+            result = raw_df[name].resample(interval).mean()
+        df[name] = result
+        df = df.dropna()
+        # get the first value for the other columns
+        for c in columns:
+            if c != name:
+                df[c] = raw_df[c].resample(interval).first()
+    else:
+        df = None
+
+    return df
+

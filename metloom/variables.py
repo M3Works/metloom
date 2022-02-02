@@ -62,13 +62,13 @@ class CdecStationVariables(VariableBase):
     """
 
     PRECIPITATIONACCUM = SensorDescription(
-        "2", "ACCUMULATED PRECIPITATION", "PRECIPITATION, ACCUMULATED", True
+        "2", "ACCUMULATED PRECIPITATION", "PRECIPITATION, ACCUMULATED", False
     )
     PRECIPITATION = SensorDescription(
-        "45", "PRECIPITATION", "PRECIPITATION, INCREMENTAL", False
+        "45", "PRECIPITATION", "PRECIPITATION, INCREMENTAL", True
     )
     SNOWDEPTH = SensorDescription("18", "SNOWDEPTH", "SNOW DEPTH")
-    SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT", True)
+    SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT", False)
     TEMP = SensorDescription("4", "AIR TEMP", "TEMPERATURE, AIR")
     TEMPAVG = SensorDescription("30", "AVG AIR TEMP", "TEMPERATURE, AIR AVERAGE")
     TEMPMIN = SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")

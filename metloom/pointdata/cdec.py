@@ -7,9 +7,11 @@ import pandas as pd
 import requests
 import logging
 
+from geopandas import GeoDataFrame
+
 from .base import PointData
 from ..variables import CdecStationVariables, SensorDescription
-from ..dataframe_utils import append_df, merge_df
+from ..dataframe_utils import append_df, merge_df, resample_whole_df
 
 LOG = logging.getLogger("metloom.pointdata.cdec")
 
@@ -131,7 +133,8 @@ class CDECPointData(PointData):
         resp.raise_for_status()
         return resp.json()
 
-    def _sensor_response_to_df(self, response_data, sensor, final_columns):
+    def _sensor_response_to_df(self, response_data, sensor, final_columns,
+                               resample_duration=None):
         """
         Convert the response data from the API to a GeoDataFrame
         Format and map columns in the dataframe
@@ -139,6 +142,7 @@ class CDECPointData(PointData):
             response_data: JSON list response from CDEC API
             sensor: SensorDescription obj
             final_columns: List of columns used for filtering
+            resample_duration: duration to resample to
         Returns:
             GeoDataFrame
         """
@@ -163,24 +167,54 @@ class CDECPointData(PointData):
         )
         final_columns += [sensor.name, f"{sensor.name}_units"]
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
+
+        # resample if necessary
+        if resample_duration:
+            sensor_df = resample_whole_df(
+                sensor_df.set_index("datetime"), sensor,
+                interval=resample_duration
+            ).reset_index()
+            sensor_df = GeoDataFrame(sensor_df, geometry=sensor_df["geometry"])
+
         sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
         if "measurementDate" in sensor_df.columns:
             sensor_df["measurementDate"] = pd.to_datetime(sensor_df["measurementDate"])
             sensor_df["measurementDate"] = sensor_df["measurementDate"].apply(
                 self._handle_df_tz
             )
-        # set index so joinng works
+        # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
         sensor_df = sensor_df.filter(final_columns)
         sensor_df = sensor_df.loc[pd.notna(sensor_df[sensor.name])]
         return sensor_df
+
+    def _get_data_fallback(self, params, duration_list):
+        """
+        Allow for fallback on finer resolution API durations with resample
+        if the desired duration does not return data
+        Args:
+            params: request params with or without dur_code
+            duration_list: list of durations to try. First index is desired
+                durations
+        """
+        if len(duration_list) < 1:
+            raise ValueError(f"Duration list cannot be empty")
+        response_data = []
+        df_duration = duration_list[0]
+        for duration in duration_list:
+            params["dur_code"] = duration
+            response_data = self._data_request(params)
+            if response_data:
+                df_duration = duration
+                break
+        return response_data, df_duration
 
     def _get_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
-        duration: str,
+        duration_list: List[str],
         include_measurement_date=False
     ):
         """
@@ -189,7 +223,7 @@ class CDECPointData(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
-            duration: CDEC duration code ['M', 'H', 'D']
+            duration_list: CDEC duration code and fallbacks ['D', 'H', 'E']
             include_measurement_date: boolean for including the
                 'measurmentDate' column in the resulting dataframe. This column
                 is only relevant for snow courses
@@ -198,20 +232,26 @@ class CDECPointData(PointData):
         """
         params = {
             "Stations": self.id,
-            "dur_code": duration,
             "Start": start_date.isoformat(),
             "End": end_date.isoformat(),
         }
         df = None
         final_columns = ["geometry", "site"]
+        desired_duration = duration_list[0]
         if include_measurement_date:
             final_columns += ["measurementDate"]
         for sensor in variables:
             params["SensorNums"] = sensor.code
-            response_data = self._data_request(params)
+            response_data, response_duration = self._get_data_fallback(params, duration_list)
             if response_data:
+                # don't resample if we have the desired duration
+                if response_duration == desired_duration:
+                    resample_duration = None
+                else:
+                    resample_duration = desired_duration
                 sensor_df = self._sensor_response_to_df(
-                    response_data, sensor, final_columns
+                    response_data, sensor, final_columns,
+                    resample_duration=resample_duration
                 )
                 df = merge_df(df, sensor_df)
 
@@ -227,6 +267,14 @@ class CDECPointData(PointData):
         self.validate_sensor_df(df)
         return df
 
+    def get_event_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        return self._get_data(start_date, end_date, variables, ["E"])
+
     def get_daily_data(
         self,
         start_date: datetime,
@@ -239,7 +287,7 @@ class CDECPointData(PointData):
         https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet?
         Stations=TNY&SensorNums=3&dur_code=D&Start=2021-05-16&End=2021-05-16
         """
-        return self._get_data(start_date, end_date, variables, "D")
+        return self._get_data(start_date, end_date, variables, ["D", "H", "E"])
 
     def get_hourly_data(
         self,
@@ -250,7 +298,7 @@ class CDECPointData(PointData):
         """
         See docstring for PointData.get_hourly_data
         """
-        return self._get_data(start_date, end_date, variables, "H")
+        return self._get_data(start_date, end_date, variables, ["H", "E"])
 
     def get_snow_course_data(
         self,
@@ -264,7 +312,7 @@ class CDECPointData(PointData):
         if not self.is_partly_snow_course():
             raise ValueError(f"{self.id} is not a snow course")
         return self._get_data(
-            start_date, end_date, variables, "M", include_measurement_date=True
+            start_date, end_date, variables, ["M"], include_measurement_date=True
         )
 
     @staticmethod
