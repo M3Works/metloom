@@ -198,7 +198,7 @@ class CDECPointData(PointData):
                 durations
         """
         if len(duration_list) < 1:
-            raise ValueError(f"Duration list cannot be empty")
+            raise ValueError("Duration list cannot be empty")
         response_data = []
         df_duration = duration_list[0]
         for duration in duration_list:
