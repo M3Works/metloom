@@ -152,8 +152,24 @@ class MesowestPointData(PointData):
         else:
             timeseries_response = station_response[0]['OBSERVATIONS']
         # check that the variable was returned
-        if f"{sensor.code}_set_1" not in timeseries_response:
+        set1 = f"{sensor.code}_set_1"
+        set1d = f"{sensor.code}_set_1d"
+        # choose the best possible response
+        if set1 not in timeseries_response and set1d not in timeseries_response:
             return None
+        elif set1 in timeseries_response and set1d in timeseries_response:
+            len_vals = len([val for val in timeseries_response[set1]
+                            if not np.isnan(val)])
+            len_vals2 = len([val for val in
+                            timeseries_response[set1d] if not np.isnan(val)])
+            sensor_col = set1d
+            if len_vals > len_vals2:
+                sensor_col = set1
+        elif set1 in timeseries_response:
+            sensor_col = set1
+        else:
+            sensor_col = set1d
+
         sensor_df = pd.DataFrame.from_dict(
             timeseries_response
         )
@@ -162,7 +178,7 @@ class MesowestPointData(PointData):
         sensor_df.rename(
             columns={
                 "date_time": "datetime",
-                f"{sensor.code}_set_1": sensor.name,
+                sensor_col: sensor.name,
             },
             inplace=True,
         )
