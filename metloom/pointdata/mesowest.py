@@ -159,9 +159,10 @@ class MesowestPointData(PointData):
             return None
         elif set1 in timeseries_response and set1d in timeseries_response:
             len_vals = len([val for val in timeseries_response[set1]
-                            if not np.isnan(val)])
+                            if val is not None and not np.isnan(val)])
             len_vals2 = len([val for val in
-                            timeseries_response[set1d] if not np.isnan(val)])
+                            timeseries_response[set1d]
+                             if val is not None and not np.isnan(val)])
             sensor_col = set1d
             if len_vals > len_vals2:
                 sensor_col = set1
