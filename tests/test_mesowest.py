@@ -276,15 +276,15 @@ class TestMesowestPointData(BasePointDataTest):
                 'pressure_set_1d': [10.2, 10.3]
             }, "pressure_set_1"),
             ({
-                 'date_time': [datetime(2020, 1, 1), datetime(2020, 1, 2)],
-                 'pressure_set_1': [10.1, 10.2],
-                 'pressure_set_1d': [10.2, None]
-             }, "pressure_set_1"),
+                'date_time': [datetime(2020, 1, 1), datetime(2020, 1, 2)],
+                'pressure_set_1': [10.1, 10.2],
+                'pressure_set_1d': [10.2, None]
+            }, "pressure_set_1"),
             ({
-                 'date_time': [datetime(2020, 1, 1), datetime(2020, 1, 2)],
-                 'pressure_set_1': [10.1, None],
-                 'pressure_set_1d': [10.2, 10.3]
-             }, "pressure_set_1d"),
+                'date_time': [datetime(2020, 1, 1), datetime(2020, 1, 2)],
+                'pressure_set_1': [10.1, None],
+                'pressure_set_1d': [10.2, 10.3]
+            }, "pressure_set_1d"),
             ({
                 'date_time': [datetime(2020, 1, 1), datetime(2020, 1, 2)],
                 'temperature_set_1': [5.2, 5.3]
