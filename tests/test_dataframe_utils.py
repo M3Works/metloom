@@ -4,7 +4,9 @@ import pytest
 from datetime import datetime, timedelta
 from metloom.variables import MesowestVariables, CdecStationVariables
 
-from metloom.dataframe_utils import join_df, append_df, merge_df, resample_df
+from metloom.dataframe_utils import (
+    join_df, append_df, merge_df, resample_df, resample_whole_df
+)
 
 df1 = pd.DataFrame.from_records([{"foo": 12.0}, {"foo": 11.0}])
 df2 = pd.DataFrame.from_records([{"bar": 1.0}, {"bar": 1.0}])
@@ -95,7 +97,7 @@ def sample_df(in_data, variable, delta_t, interval):
 
 @pytest.mark.parametrize("in_data, variable, delta_t, interval, expected_data", [
     ([1, 3, 2, 4], MesowestVariables.TEMP, 30, 'H', [2, 3]),
-    ([3, 3, 2, 2], CdecStationVariables.SWE, 12, 'D', [6, 4]),
+    ([3, 3, 2, 2], CdecStationVariables.SWE, 12, 'D', [3, 2]),
 ])
 def test_resample_df(sample_df, in_data, variable, delta_t, interval, expected_data):
     """
@@ -123,3 +125,27 @@ def test_resample_df_odd_increment():
     expected.set_index("datetime", inplace=True)
     expected.index.freq = "H"
     pd.testing.assert_frame_equal(out_df, expected)
+
+
+def test_resample_full_df_odd_increment():
+    df = pd.DataFrame.from_records([
+        {"datetime": datetime(2020, 1, 2, 11, 3, 20), "other": "value",
+         "AIR TEMP": 1.0},
+        {"datetime": datetime(2020, 1, 2, 11, 13, 21), "other": "value",
+         "AIR TEMP": 2.0},
+        {"datetime": datetime(2020, 1, 2, 11, 42, 1), "other": "value",
+         "AIR TEMP": 3.0},
+        {"datetime": datetime(2020, 1, 2, 12, 5, 28), "other": "value",
+         "AIR TEMP": 2.0},
+        {"datetime": datetime(2020, 1, 2, 12, 59, 3), "other": "value",
+         "AIR TEMP": 1.5},
+    ])
+    df.set_index("datetime", inplace=True)
+    out_df = resample_whole_df(df, MesowestVariables.TEMP, interval="H")
+    expected = pd.DataFrame.from_records([
+        {"datetime": datetime(2020, 1, 2, 11), "other": "value", "AIR TEMP": 2.0},
+        {"datetime": datetime(2020, 1, 2, 12,), "other": "value", "AIR TEMP": 1.75},
+    ])
+    expected.set_index("datetime", inplace=True)
+    expected.index.freq = "H"
+    pd.testing.assert_frame_equal(out_df, expected, check_like=True)
