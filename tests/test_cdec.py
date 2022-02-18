@@ -6,6 +6,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
+from pandas import Timestamp
 
 from metloom.pointdata import CDECPointData, PointDataCollection
 from metloom.variables import CdecStationVariables
@@ -89,6 +90,44 @@ class TestCDECStation(BasePointDataTest):
             },
         ]
 
+    @staticmethod
+    def cdec_hourly_temp_response():
+        return [
+            {
+                "stationId": "TNY",
+                "durCode": "D",
+                "SENSOR_NUM": 30,
+                "sensorType": "SNOW WC",
+                "date": "2021-5-15 00:00",
+                "obsDate": "2021-5-15 00:00",
+                "value": 2.1,
+                "dataFlag": " ",
+                "units": "DEG F",
+            },
+            {
+                "stationId": "TNY",
+                "durCode": "D",
+                "SENSOR_NUM": 30,
+                "sensorType": "SNOW WC",
+                "date": "2021-5-15 01:00",
+                "obsDate": "2021-5-15 01:00",
+                "value": 2.4,
+                "dataFlag": " ",
+                "units": "DEG F",
+            },
+            {
+                "stationId": "TNY",
+                "durCode": "D",
+                "SENSOR_NUM": 30,
+                "sensorType": "SNOW WC",
+                "date": "2021-5-15 03:00",
+                "obsDate": "2021-5-15 03:00",
+                "value": 2.2,
+                "dataFlag": " ",
+                "units": "DEG F",
+            },
+        ]
+
     @pytest.fixture(scope="function")
     def tny_station(self):
         return CDECPointData("TNY", "Tenaya Lake")
@@ -155,6 +194,19 @@ class TestCDECStation(BasePointDataTest):
         df.set_index(keys=["datetime", "site"], inplace=True)
         return df
 
+    @staticmethod
+    def tny_meta_return():
+        return {
+            "STATION": [
+                {
+                    "SENS_LONG_NAME": "SNOW, WATER CONTENT",
+                    "ELEVATION": 1000.0,
+                    "LATITUDE": 42.0,
+                    "LONGITUDE": -119.0,
+                }
+            ]
+        }
+
     @classmethod
     def tny_side_effect(cls, url, **kwargs):
         mock = MagicMock()
@@ -166,18 +218,21 @@ class TestCDECStation(BasePointDataTest):
         elif params.get("dur_code") == "H":
             raise NotImplementedError()
         elif "getStationInfo" in url:
-            mock.json.return_value = {
-                "STATION": [
-                    {
-                        "SENS_LONG_NAME": "SNOW, WATER CONTENT",
-                        "ELEVATION": 1000.0,
-                        "LATITUDE": 42.0,
-                        "LONGITUDE": -119.0,
-                    }
-                ]
-            }
+            mock.json.return_value = cls.tny_meta_return()
         else:
             raise ValueError("unknown scenario")
+        return mock
+
+    @classmethod
+    def tny_hourly_side_effect(cls, url, **kwargs):
+        mock = MagicMock()
+        params = kwargs["params"]
+        if params.get("dur_code") == 'H':
+            mock.json.return_value = cls.cdec_hourly_temp_response()
+        elif "getStationInfo" in url:
+            mock.json.return_value = cls.tny_meta_return()
+        else:
+            mock.json.return_value = []
         return mock
 
     @classmethod
@@ -376,6 +431,38 @@ class TestCDECStation(BasePointDataTest):
             )
             assert mock_get.call_count == 3
         pd.testing.assert_frame_equal(response, tny_daily_expected)
+
+    def test_get_daily_from_hourly_data(self, tny_station):
+        """
+        Check that we fall back on resampled hourly data if we don't find
+        daily data
+        """
+        with patch("metloom.pointdata.cdec.requests") as mock_requests:
+            mock_get = mock_requests.get
+            mock_get.side_effect = self.tny_hourly_side_effect
+            response = tny_station.get_daily_data(
+                datetime(2021, 5, 15),
+                datetime(2021, 5, 16),
+                [CdecStationVariables.TEMPAVG],
+            )
+            assert mock_get.call_count == 3
+            expected = gpd.GeoDataFrame.from_dict(
+                {
+                    'AVG AIR TEMP': {
+                        (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
+                            'TNY'): 2.233333},
+                    'AVG AIR TEMP_units': {
+                        (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
+                            'TNY'): 'DEG F'},
+                    'datasource': {
+                        (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
+                         'TNY'): 'CDEC'}
+                }, geometry=gpd.points_from_xy([-119.0], [42.0], z=[1000.0])
+            )
+            expected.index.set_names(["datetime", "site"], inplace=True)
+            pd.testing.assert_frame_equal(
+                response, expected, check_exact=False, check_like=True
+            )
 
     def test_points_from_geometry(self, shape_obj):
         expected_url = (
