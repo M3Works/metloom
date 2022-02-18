@@ -133,6 +133,39 @@ class MesowestPointData(PointData):
         self.validate_sensor_df(df)
         return df
 
+    @staticmethod
+    def _choose_sensor_key(timeseries_response, sensor):
+        """
+        Choose between possible keys for a variable
+
+        Args:
+            timeseries_response: the ["OBSERVATIONS"] return for a station
+            sensor: the mesowest variable sensor description
+
+        Returns:
+            key for the data or None
+        """
+        # check that the variable was returned
+        set1 = f"{sensor.code}_set_1"
+        set1d = f"{sensor.code}_set_1d"
+        # choose the best possible response
+        if set1 not in timeseries_response and set1d not in timeseries_response:
+            return None
+        elif set1 in timeseries_response and set1d in timeseries_response:
+            len_vals = len([val for val in timeseries_response[set1]
+                            if val is not None and not np.isnan(val)])
+            len_vals2 = len([val for val in
+                            timeseries_response[set1d]
+                             if val is not None and not np.isnan(val)])
+            sensor_col = set1
+            if len_vals < len_vals2:
+                sensor_col = set1d
+        elif set1 in timeseries_response:
+            sensor_col = set1
+        else:
+            sensor_col = set1d
+        return sensor_col
+
     def _sensor_response_to_df(self, response_data, sensor, final_columns,
                                interval: str = 'H'):
         """
@@ -152,8 +185,10 @@ class MesowestPointData(PointData):
         else:
             timeseries_response = station_response[0]['OBSERVATIONS']
         # check that the variable was returned
-        if f"{sensor.code}_set_1" not in timeseries_response:
+        sensor_col = self._choose_sensor_key(timeseries_response, sensor)
+        if sensor_col is None:
             return None
+
         sensor_df = pd.DataFrame.from_dict(
             timeseries_response
         )
@@ -162,7 +197,7 @@ class MesowestPointData(PointData):
         sensor_df.rename(
             columns={
                 "date_time": "datetime",
-                f"{sensor.code}_set_1": sensor.name,
+                sensor_col: sensor.name,
             },
             inplace=True,
         )
