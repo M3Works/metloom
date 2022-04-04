@@ -15,8 +15,7 @@ class BaseSnotelClient:
         MetaDataSnotelClient('TNY:CA:SNOW').get_data()
 
     """
-
-    URL = "https://www.wcc.nrcs.usda.gov/awdbWebService/services?wsdl"
+    URL = "https://wcc.sc.egov.usda.gov/awdbWebService/services?WSDL"
     # map allowed params to API filter params
     PARAMS_MAP = {
         'station_triplet': 'stationTriplet',
