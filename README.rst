@@ -115,6 +115,8 @@ Use metloom to find snow courses within a geometry
 .. code-block:: python
 
     from metloom.pointdata import CDECPointData
+    from metloom.variables import CdecStationVariables
+
     import geopandas as gpd
 
     fp = <path to shape file>
