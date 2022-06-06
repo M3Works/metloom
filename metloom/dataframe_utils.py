@@ -90,7 +90,7 @@ def append_df(df: Optional[pd.DataFrame], new_df: Optional[pd.DataFrame]):
     elif new_df is None:
         result_df = df
     else:
-        result_df = df.append(new_df)
+        result_df = pd.concat([df, new_df])
     return result_df
 
 
