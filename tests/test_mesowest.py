@@ -246,6 +246,23 @@ class TestMesowestPointData(BasePointDataTest):
         df = pnts.to_dataframe()
         assert df['id'].values == pytest.approx(expected_sid)
 
+    def test_points_from_geometry_buffer(self, token_file, shape_obj):
+
+        with patch("metloom.pointdata.mesowest.requests") as mock_requests:
+            mock_get = mock_requests.get
+            mock_get.side_effect = self._meta_response
+            MesowestPointData.points_from_geometry(
+                shape_obj, [MesowestVariables.TEMP],
+                within_geometry=False, token_json=token_file,
+                buffer=0.1
+            )
+            call_params = mock_get.call_args_list[0].kwargs["params"]
+
+        results = [float(v) for v in call_params["bbox"].split(',')]
+        expected = [-119.9, 37.6, -119.1, 38.3]
+        for result, exp in zip(results, expected):
+            assert exp == pytest.approx(result)
+
     def test_missing_token_instantiation(self):
         """
         Test the missing token file raises an IOerror when instantiated
