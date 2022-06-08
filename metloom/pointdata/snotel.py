@@ -249,6 +249,7 @@ class SnotelPointData(PointData):
                 snowcourse data
             within_geometry: filter the points to within the shapefile
                 instead of just the extents. Default True
+            buffer: buffer added to search box
         Returns:
             PointDataCollection
         """
@@ -260,16 +261,20 @@ class SnotelPointData(PointData):
         # TODO: network may need to change to get streamflow
         network = "SNOW" if kwargs['snow_courses'] else ["SNTL", "USGS", "BOR", "COOP"]
         point_codes = []
+        buffer = kwargs["buffer"]
+        search_kwargs = {
+            "max_latitude": bounds["maxy"] + buffer,
+            "min_latitude": bounds["miny"] - buffer,
+            "max_longitude": bounds["maxx"] + buffer,
+            "min_longitude": bounds["minx"] - buffer,
+            "network_cds": network,
+        }
         for variable in variables:
             # this search is default AND on all parameters
             # so search for each variable seperately
             response = PointSearchSnotelClient(
-                max_latitude=bounds["maxy"],
-                min_latitude=bounds["miny"],
-                max_longitude=bounds["maxx"],
-                min_longitude=bounds["minx"],
-                network_cds=network,
-                element_cds=variable.code
+                element_cds=variable.code,
+                **search_kwargs
                 # ordinals=  # TODO: what are ordinals?
             ).get_data()
             if len(response) > 0:
