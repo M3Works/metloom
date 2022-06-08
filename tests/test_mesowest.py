@@ -256,7 +256,7 @@ class TestMesowestPointData(BasePointDataTest):
                 within_geometry=False, token_json=token_file,
                 buffer=0.1
             )
-            call_params = mock_get.call_args_list[0].kwargs["params"]
+            call_params = mock_get.call_args_list[0][1]["params"]
 
         results = [float(v) for v in call_params["bbox"].split(',')]
         expected = [-119.9, 37.6, -119.1, 38.3]

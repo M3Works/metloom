@@ -334,7 +334,7 @@ class TestSnotelPointData(BasePointDataTest):
         SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=False, buffer=0.1
         )
-        search_kwargs = mock_zeep_client().method_calls[0].kwargs
+        search_kwargs = mock_zeep_client().method_calls[0][2]
         expected = {
             'maxLatitude': 38.3, 'minLatitude': 37.6,
             'maxLongitude': -119.1, 'minLongitude': -119.9
