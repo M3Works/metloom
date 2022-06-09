@@ -319,7 +319,8 @@ class CDECPointData(PointData):
 
     @staticmethod
     def _station_sensor_search(
-        bounds, sensor: SensorDescription, dur=None, collect=None
+        bounds, sensor: SensorDescription, dur=None, collect=None,
+        buffer=0.0
     ):
         """
         Station search form https://cdec.water.ca.gov/dynamicapp/staSearch?
@@ -334,8 +335,6 @@ class CDECPointData(PointData):
             Pandas Dataframe of table result or None if no table found
 
         """
-        # TODO: do we want this buffer?
-        buffer = 0.00
         dur_str = f"&dur_chk=on&dur={dur}" if dur else "&dur="
         collect_str = (
             f"&collect_chk=on&collect={collect}"
@@ -378,6 +377,7 @@ class CDECPointData(PointData):
             snowcourse data
             within_geometry: filter the points to within the shapefile
             instead of just the extents. Default True
+            buffer: buffer added to search box
 
         Returns:
             PointDataCollection
@@ -397,7 +397,8 @@ class CDECPointData(PointData):
             station_search_kwargs["collect"] = "MANUAL+ENTRY"
         for variable in variables:
             result_df = cls._station_sensor_search(
-                bounds, variable, **station_search_kwargs
+                bounds, variable, buffer=kwargs["buffer"],
+                **station_search_kwargs
             )
             if result_df is not None:
                 result_df["index_id"] = result_df["ID"]

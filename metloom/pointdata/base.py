@@ -70,7 +70,10 @@ class PointData(object):
     NON_VARIABLE_COLUMNS = EXPECTED_INDICES + EXPECTED_COLUMNS
 
     # Default kwargs for function points from geometry
-    POINTS_FROM_GEOM_DEFAULTS = {'within_geometry': True, 'snow_courses': False}
+    POINTS_FROM_GEOM_DEFAULTS = {
+        'within_geometry': True, 'snow_courses': False,
+        'buffer': 0.0
+    }
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -213,7 +216,8 @@ class PointData(object):
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
-        within_geometry=True
+        within_geometry=True,
+        buffer=0.0
     ):
         """
         Find a collection of points with measurements for certain variables
@@ -226,6 +230,7 @@ class PointData(object):
                 snowcourse data
             within_geometry: filter the points to within the shapefile
                 instead of just the extents. Default True
+            buffer: buffer added to search box
         Returns:
             PointDataCollection
         """

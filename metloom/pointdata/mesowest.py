@@ -22,8 +22,11 @@ class MesowestPointData(PointData):
     MESO_URL = "https://api.synopticdata.com/v2/stations/timeseries"
     META_URL = "https://api.synopticdata.com/v2/stations/metadata"
     DATASOURCE = "Mesowest"
-    POINTS_FROM_GEOM_DEFAULTS = {'within_geometry': True,
-                                 'token_json': "~/.synoptic_token.json"}
+    POINTS_FROM_GEOM_DEFAULTS = {
+        'within_geometry': True,
+        'token_json': "~/.synoptic_token.json",
+        'buffer': 0.0
+    }
 
     def __init__(self, station_id, name,
                  token_json="~/.synoptic_token.json", metadata=None):
@@ -294,6 +297,7 @@ class MesowestPointData(PointData):
             variables: List of SensorDescription
             within_geometry: filter the points to within the shapefile
                 instead of just the extents. Default True
+            buffer: buffer added to search box
             token_json: Path to the public token for the mesowest api
                         default = "~/.synoptic_token.json"
 
@@ -306,7 +310,12 @@ class MesowestPointData(PointData):
         token = cls.get_token(kwargs['token_json'])
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
-        bbox_str = ','.join(str(bounds[k]) for k in ['minx', 'miny', 'maxx', 'maxy'])
+        buffer = kwargs["buffer"]
+        adjusted_bounds = [
+            bounds["minx"] - buffer, bounds["miny"] - buffer,
+            bounds["maxx"] + buffer, bounds["maxy"] + buffer,
+        ]
+        bbox_str = ','.join(str(ab) for ab in adjusted_bounds)
         var_list_str = ','.join([v.code for v in variables])
 
         # Grab all the stations with the variables we want within a bounding box
