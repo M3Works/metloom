@@ -221,7 +221,7 @@ class TestSnotelPointData(BasePointDataTest):
                  'storedUnitCd': 'in'}),
         ]
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def mock_zeep_client(self, mock_elements):
         with patch("metloom.pointdata.snotel_client.zeep.Client") as mock_client:
             mock_service = MagicMock()
@@ -329,6 +329,18 @@ class TestSnotelPointData(BasePointDataTest):
         assert len(names) == 2
         assert set(ids) == {"FFF:CA:SNOW", "BBB:CA:SNOW"}
         assert set(names) == {"Fake1", "Fake2"}
+
+    def test_points_from_geomtery_buffer(self, shape_obj, mock_zeep_client):
+        SnotelPointData.points_from_geometry(
+            shape_obj, [SnotelVariables.SWE], snow_courses=False, buffer=0.1
+        )
+        search_kwargs = mock_zeep_client().method_calls[0][2]
+        expected = {
+            'maxLatitude': 38.3, 'minLatitude': 37.6,
+            'maxLongitude': -119.1, 'minLongitude': -119.9
+        }
+        for k, v in expected.items():
+            assert v == pytest.approx(search_kwargs[k])
 
     def test_points_from_geometry_fail(self, shape_obj, mock_zeep_client):
         mock_zeep_client.return_value.service.getStations.return_value = []

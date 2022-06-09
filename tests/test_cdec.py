@@ -486,6 +486,37 @@ class TestCDECStation(BasePointDataTest):
             assert len(result) == 5
             assert [st.id for st in result] == ["GIN", "DAN", "TNY", "TUM", "SLI"]
 
+    @staticmethod
+    def check_str_for_float(whole_string, key):
+        """
+        Parse lat/lon from cdec search string for table read
+        """
+        split_str = whole_string.split("&")
+        matches = [ss for ss in split_str if key in ss]
+        if len(matches) > 1 or len(matches) == 0:
+            raise ValueError(f"{key} is a bad checker")
+        match = matches[0]
+        result_val = match.split("=")[-1]
+        return float(result_val)
+
+    def test_points_from_geometry_buffer(self, shape_obj):
+        with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
+            mock_table_read.return_value = self.station_search_response()
+            CDECPointData.points_from_geometry(
+                shape_obj, [CdecStationVariables.SWE], buffer=0.1
+            )
+            "&loc_chk=on&lon1=-119.8"
+            "&lon2=-119.2&lat1=37.7"
+            "&lat2=38.2"
+            result_str = mock_table_read.call_args[0][0]
+        expected = {
+            'lat2': 38.3, 'lat1': 37.6,
+            'lon2': -119.1, 'lon1': -119.9
+        }
+        for k, v in expected.items():
+            result = self.check_str_for_float(result_str, k)
+            assert v == pytest.approx(result)
+
     def test_points_from_geometry_multi_sensor(self, shape_obj):
         with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
             # patch the snowcourse check so we don't fetch metadata
