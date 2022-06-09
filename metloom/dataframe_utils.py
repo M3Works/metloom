@@ -62,7 +62,10 @@ def merge_df(
         result_df = df
     else:
         try:
-            result_df = pd.merge_ordered(df.reset_index(), new_df.reset_index())
+            result_df = pd.merge_ordered(
+                df.reset_index(),
+                new_df.reset_index().drop_duplicates()
+            )
             result_df.set_index("datetime", inplace=True)
             result_df.sort_index(inplace=True)
             if len(result_df.index.unique()) != len(result_df.index):
