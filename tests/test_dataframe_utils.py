@@ -78,6 +78,42 @@ def test_merge_df():
     pd.testing.assert_frame_equal(expected, result)
 
 
+def test_merge_df_duplicates():
+    first = pd.DataFrame(
+        {
+            "datetime": [
+                datetime(2020, 1, 2), datetime(2020, 1, 5)
+            ],
+            "b": [6.0, 8.0],
+            "c": [6.0, 8.0],
+        },
+    ).set_index("datetime")
+    second = pd.DataFrame(
+        {
+            "datetime": [
+                datetime(2020, 1, 3), datetime(2020, 1, 3),
+                datetime(2020, 1, 7)
+            ],
+            "a": [3.0, 3.0, 3.0],
+            "c": [4.0, 4.0, 4.0]
+        }
+    ).set_index("datetime")
+    result = merge_df(first, second)
+    expected = pd.DataFrame(
+        {
+            "datetime": [
+                datetime(2020, 1, 2),
+                datetime(2020, 1, 3),
+                datetime(2020, 1, 5), datetime(2020, 1, 7)
+            ],
+            "b": [6.0, np.nan, 8.0, np.nan],
+            "c": [6.0, 4.0, 8.0, 4.0],
+            "a": [np.nan, 3.0, np.nan, 3.0],
+        }
+    ).set_index("datetime")
+    pd.testing.assert_frame_equal(result, expected)
+
+
 @pytest.fixture()
 def sample_df(in_data, variable, delta_t, interval):
     """
