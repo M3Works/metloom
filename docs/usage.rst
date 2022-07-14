@@ -70,18 +70,25 @@ get started contributing to metloom!
 .. code-block:: python
 
     from datetime import datetime
-    from metloom.variables import CDECStationVariables:
+    from metloom.variables import CdecStationVariables, SensorDescription
     from metloom.pointdata import CDECPointData
 
 
-    class MyVariables(CDEcStationVariables):
-        DEWPT = SensorDescription("36", "Dew Point", "TEMPERATURE, DEW POINT")
+    class MyVariables(CdecStationVariables):
+        """
+        SensorDescription("<variable code>", "Desired Name", "Description")
+        CDEC variable codes are available with CDEC station metadata
+        """
+        RH = SensorDescription("12", "Relative Humidity", "RELATIVE HUMIDITY [%]")
+        WINDSP = SensorDescription("9", "Wind Speed", "WIND SPEED [mph]")
 
 
     class MyCDECPointData(CDECPointData):
         ALLOWED_VARIABLES = MyVariables
 
 
-    MyCDECPointData("TNY", "Tenaya Lake").get_daily_data(
-        datetime(2020, 1, 3), datetime(2020, 1, 7), [MyVariables.DEWPT]
-    )
+    variables = [MyVariables.RH, MyVariables.WINDSP]
+    stn = MyCDECPointData("TNY", "Tenaya Lake")
+    df = stn.get_daily_data(datetime(2021, 12, 25), datetime(2021, 12, 26), variables)
+
+    print(df[['Relative Humidity', 'Wind Speed']])
