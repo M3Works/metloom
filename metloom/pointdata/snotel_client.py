@@ -32,6 +32,7 @@ class BaseSnotelClient:
         'element_cd': 'elementCd',
         'element_cds': 'elementCds',
         'parameter': 'parameter',
+        'height_depth': 'heightDepth'
     }
     SERVICE_NAME = None
     DEFAULT_PARAMS = {}

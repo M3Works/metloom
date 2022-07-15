@@ -108,10 +108,14 @@ class SnotelPointData(PointData):
 
     def _fetch_data_for_variables(self, client: SeriesSnotelClient,
                                   variables: List[SensorDescription],
-                                  duration: str, include_measurement_date=False):
+                                  duration: str,
+                                  include_measurement_date=False,
+                                  **kwargs
+    ):
         result_map = {}
         for variable in variables:
-            data = client.get_data(element_cd=variable.code)
+            data = client.get_data(element_cd=variable.code, **kwargs
+            )
             if len(data) > 0:
                 result_map[variable] = data
             else:
@@ -142,16 +146,20 @@ class SnotelPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        **kwargs
     ):
         """
         See docstring for PointData.get_hourly_data
         """
+
         client = HourlySnotelDataClient(
             station_triplet=self.id,
             begin_date=start_date,
             end_date=end_date,
         )
-        return self._fetch_data_for_variables(client, variables, "HOURLY")
+        return self._fetch_data_for_variables(
+            client, variables, "HOURLY", **kwargs
+        )
 
     def get_snow_course_data(
         self,
@@ -276,6 +284,10 @@ class SnotelPointData(PointData):
                 element_cds=variable.code,
                 **search_kwargs
                 # ordinals=  # TODO: what are ordinals?
+                # ordinals are NRCS descriptors for parameters that may have multiple
+                # measurements, such as two pillows at a site, or two measurements of
+                # SWE from the same pillow. Fairly comfortable with the idea that we
+                # can assume ordinal=1
             ).get_data()
             if len(response) > 0:
                 point_codes += response

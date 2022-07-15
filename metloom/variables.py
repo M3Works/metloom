@@ -73,6 +73,13 @@ class CdecStationVariables(VariableBase):
     TEMPAVG = SensorDescription("30", "AVG AIR TEMP", "TEMPERATURE, AIR AVERAGE")
     TEMPMIN = SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")
     TEMPMAX = SensorDescription("31", "MAX AIR TEMP", "TEMPERATURE, AIR MAXIMUM")
+    RH = SensorDescription("12", "Relative Humidity", "RELATIVE HUMIDITY")
+    SOILTEMP = SensorDescription("194", "Soil Temperature", "SOIL TEMPERATURE 1")
+    SOILTEMP2 = SensorDescription("195", "Soil Temperature", "SOIL TEMPERATURE 2")
+    SOILTEMP3 = SensorDescription("196", "Soil Temperature", "SOIL TEMPERATURE 3")
+    SOLARRAD = SensorDescription("103", "Solar Radiation", "SOLAR RADIATION")
+    WINDSPEED = SensorDescription("9", "Wind Speed", "WIND SPEED")
+    WINDDIR = SensorDescription("10", "Wind Direction", "WIND DIRECTION")
 
 
 class SnotelVariables(VariableBase):
@@ -83,16 +90,21 @@ class SnotelVariables(VariableBase):
     SNOWDEPTH = SensorDescription("SNWD", "SNOWDEPTH")
     SWE = SensorDescription("WTEQ", "SWE")
     TEMP = SensorDescription("TOBS", "AIR TEMP")
-    TEMPAVG = SensorDescription("TAVG", "AVG AIR TEMP",
-                                "AIR TEMPERATURE AVERAGE")
-    TEMPMIN = SensorDescription("TMIN", "MIN AIR TEMP",
-                                "AIR TEMPERATURE MINIMUM")
-    TEMPMAX = SensorDescription("TMAX", "MAX AIR TEMP",
-                                "AIR TEMPERATURE MAXIMUM")
-    PRECIPITATION = SensorDescription("PRCPSA", "PRECIPITATON",
-                                      "PRECIPITATION INCREMENT SNOW-ADJUSTED")
-    PRECIPITATIONACCUM = SensorDescription("PREC", "ACCUMULATED PRECIPITATION",
-                                           "PRECIPITATION ACCUMULATION")
+    TEMPAVG = SensorDescription("TAVG", "AVG AIR TEMP", "AIR TEMPERATURE AVERAGE")
+    TEMPMIN = SensorDescription("TMIN", "MIN AIR TEMP", "AIR TEMPERATURE MINIMUM")
+    TEMPMAX = SensorDescription("TMAX", "MAX AIR TEMP", "AIR TEMPERATURE MAXIMUM")
+    PRECIPITATION = SensorDescription(
+        "PRCPSA", "PRECIPITATON", "PRECIPITATION INCREMENT SNOW-ADJUSTED"
+    )
+    PRECIPITATIONACCUM = SensorDescription(
+        "PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION"
+    )
+    TEMPGROUND = SensorDescription(
+        "STO", "GROUND TEMPERATURE", "GROUND TEMPERATURE OBS"
+    )   # STV?
+    # SOILMOIS = SensorDescription("SMS", "SOIL MOISTURE", "SOIL MOISTURE")
+    # for the SCAN network this appears to be "RHUM", we may need a new class
+    RH = SensorDescription("RHUMV", "RELATIVE HUMIDITY", "RELATIVE HUMIDITY")
 
 
 class MesowestVariables(VariableBase):
@@ -112,3 +124,9 @@ class MesowestVariables(VariableBase):
     SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
     WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature",
                                            "WET BULB TEMPERATURE")
+    SOILTEMP = SensorDescription("soil_temp", "SOIL TEMPERATURE")
+    SOILTEMPIR = SensorDescription("soil_temp_ir", "SOIL TEMPERATURE IR")
+    SWE = SensorDescription("snow_water_equiv", "SWE")
+    NETSHORTWAVE = SensorDescription("net_radiation_sw", "NET SHORTWAVE RADIATION")
+    NETLONGWAVE = SensorDescription("net_radiation_lw", "NET LONGWAVE RADIATION")
+
