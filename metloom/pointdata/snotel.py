@@ -44,7 +44,7 @@ class SnotelPointData(PointData):
         self._tzinfo = None
 
     def _snotel_response_to_df(self, result_map: Dict[SensorDescription, List[dict]],
-                               duration: str, include_measurement_date=False):
+                               duration: str, include_measurement_date=False, **kwargs):
         """
         Convert the response from climata.snotel classes into
         Args:
@@ -110,19 +110,22 @@ class SnotelPointData(PointData):
                                   variables: List[SensorDescription],
                                   duration: str,
                                   include_measurement_date=False,
-                                  **kwargs
+                                  extra_params=None
     ):
         result_map = {}
         for variable in variables:
-            data = client.get_data(element_cd=variable.code, **kwargs
-            )
+            params = None
+            # not the tightest logic
+            if 'GROUND' in variable.name and extra_params is not None:
+                params = extra_params[variable.name]
+            data = client.get_data(element_cd=variable.code, **params)
             if len(data) > 0:
                 result_map[variable] = data
             else:
                 LOG.warning(f"No {variable.name} found for {self.name}")
         return self._snotel_response_to_df(
-            result_map, duration,
-            include_measurement_date=include_measurement_date
+            result_map, duration, include_measurement_date=include_measurement_date,
+            **extra_params
         )
 
     def get_daily_data(
@@ -146,7 +149,7 @@ class SnotelPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
-        **kwargs
+        # **kwargs
     ):
         """
         See docstring for PointData.get_hourly_data
@@ -157,8 +160,9 @@ class SnotelPointData(PointData):
             begin_date=start_date,
             end_date=end_date,
         )
+        extra_params = self._add_fixed_params(variables)
         return self._fetch_data_for_variables(
-            client, variables, "HOURLY", **kwargs
+            client, variables, "HOURLY", extra_params=extra_params
         )
 
     def get_snow_course_data(
@@ -233,6 +237,25 @@ class SnotelPointData(PointData):
         else:
             tz_hours = float(tz_hours)
         return timezone(timedelta(hours=tz_hours))
+
+    def _add_fixed_params(self, variables):
+        """
+        Get additional necessary fixed arguments for sensors that need heightDepth
+        params (soil moisture and soil temp)
+        """
+
+        # may be better to add these to SnotelVariables in variables.py?
+        extra_params = {}
+        for variable in variables:
+            if variable.name == 'GROUND TEMPERATURE -2':
+                extra_params.update({variable.name: {'height_depth': {"value": -2, "unitCd": "in"}}})
+            if variable.name == 'GROUND TEMPERATURE -4':
+                extra_params.update({variable.name: {'height_depth': {"value": -4, "unitCd": "in"}}})
+            if variable.name == 'GROUND TEMPERATURE -8':
+                extra_params.update({variable.name: {'heigh_depth': {"value": -8, "unitCd": "in"}}})
+            if variable.name == 'GROUND TEMPERATURE -20':
+                extra_params.update({variable.name: {'heigh_depth': {"value": -20, "unitCd": "in"}}})
+        return extra_params or None
 
     @property
     def tzinfo(self):

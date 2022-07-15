@@ -99,8 +99,8 @@ class SnotelVariables(VariableBase):
     PRECIPITATIONACCUM = SensorDescription(
         "PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION"
     )
-    TEMPGROUND = SensorDescription(
-        "STO", "GROUND TEMPERATURE", "GROUND TEMPERATURE OBS"
+    TEMPGROUND2 = SensorDescription(
+        "STO", "GROUND TEMPERATURE -2", "GROUND TEMPERATURE OBS -2in"
     )   # STV?
     # SOILMOIS = SensorDescription("SMS", "SOIL MOISTURE", "SOIL MOISTURE")
     # for the SCAN network this appears to be "RHUM", we may need a new class
