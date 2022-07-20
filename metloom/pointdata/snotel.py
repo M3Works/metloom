@@ -5,7 +5,6 @@ import geopandas as gpd
 import pandas as pd
 from functools import reduce
 
-
 from .base import PointData
 from ..variables import SnotelVariables, SensorDescription
 from ..dataframe_utils import append_df, merge_df
@@ -111,13 +110,16 @@ class SnotelPointData(PointData):
                                   duration: str,
                                   include_measurement_date=False,
                                   extra_params=None
-    ):
+                                  ):
         result_map = {}
+        extra_params = extra_params or {}
         for variable in variables:
-            params = None
-            # not the tightest logic
-            if 'GROUND' in variable.name and extra_params is not None:
+            # need to add extra_params for ground temp call, this may not be the
+            # best logic
+            if 'GROUND' in variable.name:
                 params = extra_params[variable.name]
+            else:
+                params = {}
             data = client.get_data(element_cd=variable.code, **params)
             if len(data) > 0:
                 result_map[variable] = data
@@ -148,8 +150,7 @@ class SnotelPointData(PointData):
         self,
         start_date: datetime,
         end_date: datetime,
-        variables: List[SensorDescription],
-        # **kwargs
+        variables: List[SensorDescription]
     ):
         """
         See docstring for PointData.get_hourly_data
@@ -244,17 +245,24 @@ class SnotelPointData(PointData):
         params (soil moisture and soil temp)
         """
 
-        # may be better to add these to SnotelVariables in variables.py?
         extra_params = {}
         for variable in variables:
-            if variable.name == 'GROUND TEMPERATURE -2':
-                extra_params.update({variable.name: {'height_depth': {"value": -2, "unitCd": "in"}}})
-            if variable.name == 'GROUND TEMPERATURE -4':
-                extra_params.update({variable.name: {'height_depth': {"value": -4, "unitCd": "in"}}})
-            if variable.name == 'GROUND TEMPERATURE -8':
-                extra_params.update({variable.name: {'heigh_depth': {"value": -8, "unitCd": "in"}}})
-            if variable.name == 'GROUND TEMPERATURE -20':
-                extra_params.update({variable.name: {'heigh_depth': {"value": -20, "unitCd": "in"}}})
+            if variable.name == self.ALLOWED_VARIABLES.TEMPGROUND2.name:
+                extra_params.update(
+                    {variable.name: {'height_depth': {"value": -2, "unitCd": "in"}}}
+                )
+            if variable.name == self.ALLOWED_VARIABLES.TEMPGROUND4.name:
+                extra_params.update(
+                    {variable.name: {'height_depth': {"value": -4, "unitCd": "in"}}}
+                )
+            if variable.name == self.ALLOWED_VARIABLES.TEMPGROUND8.name:
+                extra_params.update(
+                    {variable.name: {'height_depth': {"value": -8, "unitCd": "in"}}}
+                )
+            if variable.name == self.ALLOWED_VARIABLES.TEMPGROUND20.name:
+                extra_params.update(
+                    {variable.name: {'height_depth': {"value": -20, "unitCd": "in"}}}
+                )
         return extra_params or None
 
     @property
