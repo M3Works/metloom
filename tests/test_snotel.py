@@ -177,6 +177,26 @@ class TestSnotelPointData(BasePointDataTest):
                             'flag': 'V',
                             'value': 4.4
                         }]}]
+        elif element_cd == "STO":
+            return [
+                {
+                    'beginDate': '2020-01-02 00:00',
+                    'endDate': '2020-01-20 00:00',
+                    'stationTriplet': '538:CO:SNTL',
+                    'values': [
+                        {
+                            'dateTime': '2020-03-20 00:00',
+                            'flag': 'V',
+                            'value': -0.3,
+                        }, {
+                            'dateTime': '2020-03-20 02:00',
+                            'flag': 'V',
+                            'value': -0.4,
+                        }, {
+                            'dateTime': '2020-03-20 03:00',
+                            'flag': 'V',
+                            'value': -0.5,
+                        }]}]
         else:
             raise ValueError(f"{element_cd} not configured in this mock")
 
@@ -219,6 +239,14 @@ class TestSnotelPointData(BasePointDataTest):
                  'ordinal': 1,
                  'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
                  'storedUnitCd': 'in'}),
+            MockZeepObject(
+                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
+                 'duration': 'HOURLY', 'elementCd': 'STO',
+                 'endDate': '2100-01-01 00:00:00',
+                 'heightDepth': {'unitCd': 'in', 'value': '-2'},
+                 'ordinal': 1,
+                 'originalUnitCd': 'degF', 'stationTriplet': '538:CO:SNTL',
+                 'storedUnitCd': 'degF'})
         ]
 
     @pytest.fixture
@@ -261,6 +289,19 @@ class TestSnotelPointData(BasePointDataTest):
             ),
             (
                 "538:CO:SNTL",
+                ["2020-03-20 00:00", "2020-03-20 01:00", "2020-03-20 02:00"],
+                # unsure why this isn't coming back as 08:00, 09:00, 10:00, but it is
+                ["2020-03-20 08:00", "2020-03-20 10:00", "2020-03-20 11:00"],
+                {
+                    SnotelVariables.TEMPGROUND2.name: [-0.3, -0.4, -0.5],
+                    f"{SnotelVariables.TEMPGROUND2.name}_units": ["degF", "degF", "degF"]
+                },
+                datetime(2020, 3, 20, 0),
+                datetime(2020, 3, 20, 2),
+                "get_hourly_data",
+            ),
+            (
+                "538:CO:SNTL",
                 ["2020-03-20", "2020-03-21", "2020-03-22"],
                 ["2020-03-20 08:00", "2020-03-21 08:00", "2020-03-22 08:00"],
                 {
@@ -289,7 +330,10 @@ class TestSnotelPointData(BasePointDataTest):
             self, station_id, dts, expected_dts, vals, d1,
             d2, fn_name, points, mock_zeep_client):
         station = SnotelPointData(station_id, "TestSite")
-        vrs = [SnotelVariables.SWE]
+        if 'GROUND TEMPERATURE -2' in list(vals.keys()):
+            vrs = [SnotelVariables.TEMPGROUND2]
+        else:
+            vrs = [SnotelVariables.SWE]
         fn = getattr(station, fn_name)
         result = fn(d1, d2, vrs)
         expected = self.expected_response(
