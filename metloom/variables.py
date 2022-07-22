@@ -73,6 +73,21 @@ class CdecStationVariables(VariableBase):
     TEMPAVG = SensorDescription("30", "AVG AIR TEMP", "TEMPERATURE, AIR AVERAGE")
     TEMPMIN = SensorDescription("32", "MIN AIR TEMP", "TEMPERATURE, AIR MINIMUM")
     TEMPMAX = SensorDescription("31", "MAX AIR TEMP", "TEMPERATURE, AIR MAXIMUM")
+    RH = SensorDescription("12", "Relative Humidity", "RELATIVE HUMIDITY")
+    # TODO confirm with CDWR if these depths are standard, no metadata available
+    TEMPGROUND = SensorDescription("52", "Ground Temperature Int", "Ground Temperature")
+    TEMPGROUND2 = SensorDescription(
+        "194", "GROUND TEMPERATURE -2", "GROUND TEMPERATURE OBS -2in"
+    )
+    TEMPGROUND4 = SensorDescription(
+        "195", "GROUND TEMPERATURE -4", "GROUND TEMPERATURE OBS -4in"
+    )
+    TEMPGROUND8 = SensorDescription(
+        "196", "GROUND TEMPERATURE -8", "GROUND TEMPERATURE OBS -8in"
+    )
+    SOLARRAD = SensorDescription("103", "Solar Radiation", "SOLAR RADIATION")
+    WINDSPEED = SensorDescription("9", "Wind Speed", "WIND SPEED")
+    WINDDIR = SensorDescription("10", "Wind Direction", "WIND DIRECTION")
 
 
 class SnotelVariables(VariableBase):
@@ -83,16 +98,30 @@ class SnotelVariables(VariableBase):
     SNOWDEPTH = SensorDescription("SNWD", "SNOWDEPTH")
     SWE = SensorDescription("WTEQ", "SWE")
     TEMP = SensorDescription("TOBS", "AIR TEMP")
-    TEMPAVG = SensorDescription("TAVG", "AVG AIR TEMP",
-                                "AIR TEMPERATURE AVERAGE")
-    TEMPMIN = SensorDescription("TMIN", "MIN AIR TEMP",
-                                "AIR TEMPERATURE MINIMUM")
-    TEMPMAX = SensorDescription("TMAX", "MAX AIR TEMP",
-                                "AIR TEMPERATURE MAXIMUM")
-    PRECIPITATION = SensorDescription("PRCPSA", "PRECIPITATON",
-                                      "PRECIPITATION INCREMENT SNOW-ADJUSTED")
-    PRECIPITATIONACCUM = SensorDescription("PREC", "ACCUMULATED PRECIPITATION",
-                                           "PRECIPITATION ACCUMULATION")
+    TEMPAVG = SensorDescription("TAVG", "AVG AIR TEMP", "AIR TEMPERATURE AVERAGE")
+    TEMPMIN = SensorDescription("TMIN", "MIN AIR TEMP", "AIR TEMPERATURE MINIMUM")
+    TEMPMAX = SensorDescription("TMAX", "MAX AIR TEMP", "AIR TEMPERATURE MAXIMUM")
+    PRECIPITATION = SensorDescription(
+        "PRCPSA", "PRECIPITATON", "PRECIPITATION INCREMENT SNOW-ADJUSTED"
+    )
+    PRECIPITATIONACCUM = SensorDescription(
+        "PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION"
+    )
+    TEMPGROUND2 = SensorDescription(
+        "STO", "GROUND TEMPERATURE -2", "GROUND TEMPERATURE OBS -2in"
+    )
+    TEMPGROUND4 = SensorDescription(
+        "STO", "GROUND TEMPERATURE -4", "GROUND TEMPERATURE OBS -4in"
+    )
+    TEMPGROUND8 = SensorDescription(
+        "STO", "GROUND TEMPERATURE -8", "GROUND TEMPERATURE OBS -8in"
+    )
+    TEMPGROUND20 = SensorDescription(
+        "STO", "GROUND TEMPERATURE -20", "GROUND TEMPERATURE OBS -20in"
+    )
+    # TODO for the SCAN network this appears to be "RHUM", we may need a new class
+    RH = SensorDescription("RHUMV", "RELATIVE HUMIDITY", "RELATIVE HUMIDITY")
+    # SOILMOIS = SensorDescription("SMS", "SOIL MOISTURE", "SOIL MOISTURE")
 
 
 class MesowestVariables(VariableBase):
@@ -110,5 +139,11 @@ class MesowestVariables(VariableBase):
     PRESSURE = SensorDescription("pressure", "PRESSURE")
     SNOWDEPTH = SensorDescription("snow_depth", "SNOWDEPTH")
     SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
-    WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature",
-                                           "WET BULB TEMPERATURE")
+    WETBULBTEMPERATURE = SensorDescription(
+        "wet_bulb_temperature", "WET BULB TEMPERATURE"
+    )
+    SOILTEMP = SensorDescription("soil_temp", "SOIL TEMPERATURE")
+    SOILTEMPIR = SensorDescription("soil_temp_ir", "SOIL TEMPERATURE IR")
+    SWE = SensorDescription("snow_water_equiv", "SWE")
+    NETSHORTWAVE = SensorDescription("net_radiation_sw", "NET SHORTWAVE RADIATION")
+    NETLONGWAVE = SensorDescription("net_radiation_lw", "NET LONGWAVE RADIATION")
