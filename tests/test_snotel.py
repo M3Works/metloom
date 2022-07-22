@@ -189,11 +189,11 @@ class TestSnotelPointData(BasePointDataTest):
                             'flag': 'V',
                             'value': -0.3,
                         }, {
-                            'dateTime': '2020-03-20 02:00',
+                            'dateTime': '2020-03-20 01:00',
                             'flag': 'V',
                             'value': -0.4,
                         }, {
-                            'dateTime': '2020-03-20 03:00',
+                            'dateTime': '2020-03-20 02:00',
                             'flag': 'V',
                             'value': -0.5,
                         }]}]
@@ -290,11 +290,11 @@ class TestSnotelPointData(BasePointDataTest):
             (
                 "538:CO:SNTL",
                 ["2020-03-20 00:00", "2020-03-20 01:00", "2020-03-20 02:00"],
-                # unsure why this isn't coming back as 08:00, 09:00, 10:00, but it is
-                ["2020-03-20 08:00", "2020-03-20 10:00", "2020-03-20 11:00"],
+                ["2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00"],
                 {
                     SnotelVariables.TEMPGROUND2.name: [-0.3, -0.4, -0.5],
-                    f"{SnotelVariables.TEMPGROUND2.name}_units": ["degF", "degF", "degF"]
+                    f"{SnotelVariables.TEMPGROUND2.name}_units":
+                        ["degF", "degF", "degF"]
                 },
                 datetime(2020, 3, 20, 0),
                 datetime(2020, 3, 20, 2),

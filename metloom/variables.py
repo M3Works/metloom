@@ -76,9 +76,15 @@ class CdecStationVariables(VariableBase):
     RH = SensorDescription("12", "Relative Humidity", "RELATIVE HUMIDITY")
     # TODO confirm with CDWR if these depths are standard, no metadata available
     TEMPGROUND = SensorDescription("52", "Ground Temperature Int", "Ground Temperature")
-    TEMPGROUND2 = SensorDescription("194", "GROUND TEMPERATURE -2", "GROUND TEMPERATURE OBS -2in")
-    TEMPGROUND4 = SensorDescription("195", "GROUND TEMPERATURE -4", "GROUND TEMPERATURE OBS -4in")
-    TEMPGROUND8 = SensorDescription("196", "GROUND TEMPERATURE -8", "GROUND TEMPERATURE OBS -8in")
+    TEMPGROUND2 = SensorDescription(
+        "194", "GROUND TEMPERATURE -2", "GROUND TEMPERATURE OBS -2in"
+    )
+    TEMPGROUND4 = SensorDescription(
+        "195", "GROUND TEMPERATURE -4", "GROUND TEMPERATURE OBS -4in"
+    )
+    TEMPGROUND8 = SensorDescription(
+        "196", "GROUND TEMPERATURE -8", "GROUND TEMPERATURE OBS -8in"
+    )
     SOLARRAD = SensorDescription("103", "Solar Radiation", "SOLAR RADIATION")
     WINDSPEED = SensorDescription("9", "Wind Speed", "WIND SPEED")
     WINDDIR = SensorDescription("10", "Wind Direction", "WIND DIRECTION")
@@ -133,11 +139,11 @@ class MesowestVariables(VariableBase):
     PRESSURE = SensorDescription("pressure", "PRESSURE")
     SNOWDEPTH = SensorDescription("snow_depth", "SNOWDEPTH")
     SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
-    WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature",
-                                           "WET BULB TEMPERATURE")
+    WETBULBTEMPERATURE = SensorDescription(
+        "wet_bulb_temperature", "WET BULB TEMPERATURE"
+    )
     SOILTEMP = SensorDescription("soil_temp", "SOIL TEMPERATURE")
     SOILTEMPIR = SensorDescription("soil_temp_ir", "SOIL TEMPERATURE IR")
     SWE = SensorDescription("snow_water_equiv", "SWE")
     NETSHORTWAVE = SensorDescription("net_radiation_sw", "NET SHORTWAVE RADIATION")
     NETLONGWAVE = SensorDescription("net_radiation_lw", "NET LONGWAVE RADIATION")
-

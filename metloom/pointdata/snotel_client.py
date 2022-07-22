@@ -33,9 +33,6 @@ class BaseSnotelClient:
         'element_cds': 'elementCds',
         'parameter': 'parameter',
         'height_depth': 'heightDepth',
-        # the AWDB docs say these are needed, but they are sub-args and not the main params
-        # 'unitCd': 'unitCd',
-        # 'value': 'value'
     }
     SERVICE_NAME = None
     DEFAULT_PARAMS = {}
