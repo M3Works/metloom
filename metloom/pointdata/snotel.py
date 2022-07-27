@@ -126,8 +126,7 @@ class SnotelPointData(PointData):
             else:
                 LOG.warning(f"No {variable.name} found for {self.name}")
         return self._snotel_response_to_df(
-            result_map, duration, include_measurement_date=include_measurement_date,
-            **extra_params
+            result_map, duration, include_measurement_date=include_measurement_date
         )
 
     def get_daily_data(
@@ -245,24 +244,28 @@ class SnotelPointData(PointData):
         params (soil moisture and soil temp)
         """
 
+        extra_params_map = {
+            self.ALLOWED_VARIABLES.TEMPGROUND2IN: {
+                'height_depth': {"value": -2, "unitCd": "in"}
+            },
+            self.ALLOWED_VARIABLES.TEMPGROUND4IN: {
+                'height_depth': {"value": -4, "unitCd": "in"}
+            },
+            self.ALLOWED_VARIABLES.TEMPGROUND8IN: {
+                'height_depth': {"value": -8, "unitCd": "in"}
+            },
+            self.ALLOWED_VARIABLES.TEMPGROUND20IN: {
+                'height_depth': {"value": -20, "unitCd": "in"}
+            },
+
+        }
+
         extra_params = {}
         for variable in variables:
-            if variable.name == self.ALLOWED_VARIABLES.TEMPGROUND2.name:
-                extra_params.update(
-                    {variable.name: {'height_depth': {"value": -2, "unitCd": "in"}}}
-                )
-            if variable.name == self.ALLOWED_VARIABLES.TEMPGROUND4.name:
-                extra_params.update(
-                    {variable.name: {'height_depth': {"value": -4, "unitCd": "in"}}}
-                )
-            if variable.name == self.ALLOWED_VARIABLES.TEMPGROUND8.name:
-                extra_params.update(
-                    {variable.name: {'height_depth': {"value": -8, "unitCd": "in"}}}
-                )
-            if variable.name == self.ALLOWED_VARIABLES.TEMPGROUND20.name:
-                extra_params.update(
-                    {variable.name: {'height_depth': {"value": -20, "unitCd": "in"}}}
-                )
+            result = extra_params_map.get(variable)
+            if result:
+                extra_params[variable.name] = result
+
         return extra_params or None
 
     @property

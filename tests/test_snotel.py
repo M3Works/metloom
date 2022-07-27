@@ -292,8 +292,8 @@ class TestSnotelPointData(BasePointDataTest):
                 ["2020-03-20 00:00", "2020-03-20 01:00", "2020-03-20 02:00"],
                 ["2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00"],
                 {
-                    SnotelVariables.TEMPGROUND2.name: [-0.3, -0.4, -0.5],
-                    f"{SnotelVariables.TEMPGROUND2.name}_units":
+                    SnotelVariables.TEMPGROUND2IN.name: [-0.3, -0.4, -0.5],
+                    f"{SnotelVariables.TEMPGROUND2IN.name}_units":
                         ["degF", "degF", "degF"]
                 },
                 datetime(2020, 3, 20, 0),
@@ -330,8 +330,8 @@ class TestSnotelPointData(BasePointDataTest):
             self, station_id, dts, expected_dts, vals, d1,
             d2, fn_name, points, mock_zeep_client):
         station = SnotelPointData(station_id, "TestSite")
-        if 'GROUND TEMPERATURE -2' in list(vals.keys()):
-            vrs = [SnotelVariables.TEMPGROUND2]
+        if 'GROUND TEMPERATURE -2IN' in list(vals.keys()):
+            vrs = [SnotelVariables.TEMPGROUND2IN]
         else:
             vrs = [SnotelVariables.SWE]
         fn = getattr(station, fn_name)

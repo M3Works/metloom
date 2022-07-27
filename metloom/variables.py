@@ -75,19 +75,21 @@ class CdecStationVariables(VariableBase):
     TEMPMAX = SensorDescription("31", "MAX AIR TEMP", "TEMPERATURE, AIR MAXIMUM")
     RH = SensorDescription("12", "Relative Humidity", "RELATIVE HUMIDITY")
     # TODO confirm with CDWR if these depths are standard, no metadata available
-    TEMPGROUND = SensorDescription("52", "Ground Temperature Int", "Ground Temperature")
-    TEMPGROUND2 = SensorDescription(
-        "194", "GROUND TEMPERATURE -2", "GROUND TEMPERATURE OBS -2in"
+    TEMPGROUND = SensorDescription(
+        "52", "GROUND TEMPERATURE INT", "GROUND TEMPERATURE SNOW/SOIL INTERFACE"
     )
-    TEMPGROUND4 = SensorDescription(
-        "195", "GROUND TEMPERATURE -4", "GROUND TEMPERATURE OBS -4in"
+    TEMPGROUND25CM = SensorDescription(
+        "194", "GROUND TEMPERATURE -25CM", "GROUND TEMPERATURE OBS -25CM"
     )
-    TEMPGROUND8 = SensorDescription(
-        "196", "GROUND TEMPERATURE -8", "GROUND TEMPERATURE OBS -8in"
+    TEMPGROUND50CM = SensorDescription(
+        "195", "GROUND TEMPERATURE -50CM", "GROUND TEMPERATURE OBS -50CM"
     )
-    SOLARRAD = SensorDescription("103", "Solar Radiation", "SOLAR RADIATION")
-    WINDSPEED = SensorDescription("9", "Wind Speed", "WIND SPEED")
-    WINDDIR = SensorDescription("10", "Wind Direction", "WIND DIRECTION")
+    TEMPGROUND100CM = SensorDescription(
+        "196", "GROUND TEMPERATURE -100CM", "GROUND TEMPERATURE OBS -100CM"
+    )
+    SOLARRAD = SensorDescription("103", "SOLAR RADIATION", "SOLAR RADIATION")
+    WINDSPEED = SensorDescription("9", "WIND SPEED", "WIND SPEED")
+    WINDDIR = SensorDescription("10", "WIND DIRECTION", "WIND DIRECTION")
 
 
 class SnotelVariables(VariableBase):
@@ -107,17 +109,17 @@ class SnotelVariables(VariableBase):
     PRECIPITATIONACCUM = SensorDescription(
         "PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION"
     )
-    TEMPGROUND2 = SensorDescription(
-        "STO", "GROUND TEMPERATURE -2", "GROUND TEMPERATURE OBS -2in"
+    TEMPGROUND2IN = SensorDescription(
+        "STO", "GROUND TEMPERATURE -2IN", "GROUND TEMPERATURE OBS -2IN"
     )
-    TEMPGROUND4 = SensorDescription(
-        "STO", "GROUND TEMPERATURE -4", "GROUND TEMPERATURE OBS -4in"
+    TEMPGROUND4IN = SensorDescription(
+        "STO", "GROUND TEMPERATURE -4IN", "GROUND TEMPERATURE OBS -4IN"
     )
-    TEMPGROUND8 = SensorDescription(
-        "STO", "GROUND TEMPERATURE -8", "GROUND TEMPERATURE OBS -8in"
+    TEMPGROUND8IN = SensorDescription(
+        "STO", "GROUND TEMPERATURE -8IN", "GROUND TEMPERATURE OBS -8IN"
     )
-    TEMPGROUND20 = SensorDescription(
-        "STO", "GROUND TEMPERATURE -20", "GROUND TEMPERATURE OBS -20in"
+    TEMPGROUND20IN = SensorDescription(
+        "STO", "GROUND TEMPERATURE -20IN", "GROUND TEMPERATURE OBS -20IN"
     )
     # TODO for the SCAN network this appears to be "RHUM", we may need a new class
     RH = SensorDescription("RHUMV", "RELATIVE HUMIDITY", "RELATIVE HUMIDITY")
