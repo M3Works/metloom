@@ -43,7 +43,7 @@ class SnotelPointData(PointData):
         self._tzinfo = None
 
     def _snotel_response_to_df(self, result_map: Dict[SensorDescription, List[dict]],
-                               duration: str, include_measurement_date=False, **kwargs):
+                               duration: str, include_measurement_date=False):
         """
         Convert the response from climata.snotel classes into
         Args:
