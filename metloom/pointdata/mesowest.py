@@ -48,7 +48,8 @@ class MesowestPointData(PointData):
         token_json = abspath(expanduser(token_json))
         if not isfile(token_json):
             raise FileNotFoundError(f"Token file missing. Please sign up for a token "
-                                    "with Synoptic Labs and add it to a json.\n "
+                                    "with Synoptic Labs and add it to a json using\n "
+                                    "the MesowestPointData.create_token_json(token) method"
                                     f"Missing {token_json}!")
 
         with open(token_json) as fp:
@@ -345,3 +346,17 @@ class MesowestPointData(PointData):
             points = [p for p in points if p.id in filtered_gdf['STID'].values]
 
         return cls.ITERATOR_CLASS(points)
+
+    @classmethod
+    def create_token_json(token):
+        """
+        Creates the neccessary synoptic token json for mesowest requests.
+        To get public token visit: https://synopticdata.com/mesonet-api
+        Args:
+            token: Syntoptic Lab's public token.
+        Returns:
+            None
+        """
+        json_dict = {'token':token}
+        with open(abspath(expanduser("~/.synoptic_token.json")), 'w') as outfile:
+            json.dump(json_dict, outfile)
