@@ -357,6 +357,6 @@ class MesowestPointData(PointData):
         Returns:
             None
         """
-        json_dict = {'token':token}
-        with open(abspath(expanduser("~/.synoptic_token.json")),'w') as outfile: 
+        json_dict = {'token': token}
+        with open(abspath(expanduser("~/.synoptic_token.json")), 'w') as outfile: 
             json.dump(json_dict, outfile)
