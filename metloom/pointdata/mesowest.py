@@ -348,7 +348,7 @@ class MesowestPointData(PointData):
         return cls.ITERATOR_CLASS(points)
 
     @classmethod
-    def create_token_json(token): 
+    def create_token_json(token):
         """
         Creates the neccessary synoptic token json for mesowest requests.
         To get public token visit: https://synopticdata.com/mesonet-api
