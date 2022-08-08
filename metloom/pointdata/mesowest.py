@@ -27,6 +27,7 @@ class MesowestPointData(PointData):
         'token_json': "~/.synoptic_token.json",
         'buffer': 0.0
     }
+    NO_DATA_MESSAGE = 'No stations found for this request.'
 
     def __init__(self, station_id, name,
                  token_json="~/.synoptic_token.json", metadata=None):
@@ -182,6 +183,13 @@ class MesowestPointData(PointData):
         Returns:
             GeoDataFrame
         """
+        # handle no data returned
+        response_summary = response_data.get('SUMMARY')
+        if response_summary and response_summary.get(
+            "RESPONSE_MESSAGE"
+        ) == self.NO_DATA_MESSAGE:
+            return None
+        # parse the data for the station
         station_response = response_data['STATION']
         if len(station_response) == 0:
             return None

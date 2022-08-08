@@ -102,6 +102,21 @@ class TestMesowestPointData(BasePointDataTest):
         mock.json.return_value = response
         return mock
 
+    @pytest.fixture(scope="class")
+    def nodata_response(self):
+        """
+        Mesowest api return when no data is found for a variable for one
+        station
+        """
+        mock = MagicMock()
+        response = {
+            "SUMMARY": {
+                "RESPONSE_MESSAGE": 'No stations found for this request.'
+            }
+        }
+        mock.json.return_value = response
+        return mock
+
     @staticmethod
     def ts_response(var, values, delta, units: str):
         """
@@ -228,6 +243,17 @@ class TestMesowestPointData(BasePointDataTest):
             geometry=[shp_point] * len(dt))
         expected.set_index(keys=["datetime", "site"], inplace=True)
         pd.testing.assert_frame_equal(df, expected)
+
+    def test_get_hourly_nodata(self, station, nodata_response):
+        # Patch in the made up response
+        with patch("metloom.pointdata.mesowest.requests.get",
+                   return_value=nodata_response):
+            df = station.get_hourly_data(
+                datetime(2021, 1, 1, 0),
+                datetime(2021, 1, 1, 2),
+                [MesowestVariables.TEMP]
+            )
+        assert df is None
 
     @pytest.mark.parametrize('w_geom, expected_sid', [
         (False, ['INTRI', 'OUTTRI']),  # Use just bounds of the shapefile
