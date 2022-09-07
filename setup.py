@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'geopandas>=0.9.0,<1.0.0',
     'pandas>1.0.0',
-    'lxml==4.6.3',
+    'lxml==4.9.1',
     'requests>2.0.0,<3.0.0',
     'zeep>4.0.0'
 ]
@@ -50,6 +50,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/M3Works/metloom',
-    version='0.2.10',
+    version='0.2.11',
     zip_safe=False,
 )
