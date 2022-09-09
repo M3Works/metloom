@@ -144,8 +144,9 @@ class SnotelPointData(PointData):
             end_date=end_date,
         )
         extra_params = self._add_fixed_params(variables)
-
-        return self._fetch_data_for_variables(client, variables, client.DURATION, extra_params=extra_params)
+        return self._fetch_data_for_variables(client, variables,
+                                              client.DURATION,
+                                              extra_params=extra_params)
 
     def get_hourly_data(
         self,
