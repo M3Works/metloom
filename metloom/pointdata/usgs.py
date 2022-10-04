@@ -5,10 +5,11 @@ import numpy as np
 import pandas as pd
 import requests
 import logging
+from io import StringIO
 
 from .base import PointData
 from ..variables import USGSVariables, SensorDescription
-from ..dataframe_utils import merge_df
+from ..dataframe_utils import merge_df, append_df
 
 LOG = logging.getLogger(__name__)
 
@@ -17,14 +18,10 @@ class USGSPointData(PointData):
     """
     Implement PointData methods for USGS data source.
 
-    Currently only handling daily data.
-    _check_response needs works
-    negative time, line 56
-
     APIs:
-        https://waterservices.usgs.gov/nwis/
         https://streamstats.usgs.gov/docs/streamstatsservices/#/
         https://waterservices.usgs.gov/rest/DV-Service.html#Service
+        https://waterservices.usgs.gov/rest/Site-Test-Tool.html
 
     """
 
@@ -68,12 +65,16 @@ class USGSPointData(PointData):
             dictionary of response values
         """
 
+        data = []
         resp = requests.get(self.USGS_URL, params=params)
         resp.raise_for_status()
-        self._check_response(resp)
-        self._get_all_metadata(resp)
+        valid_data = self._check_response(resp)
 
-        return resp.json()["value"]["timeSeries"][0]["values"][0]["value"]
+        if valid_data:
+            self._get_all_metadata(resp)
+            data = resp.json()["value"]["timeSeries"][0]["values"][0]["value"]
+
+        return data
 
     def _check_response(self, resp):
         """
@@ -81,17 +82,21 @@ class USGSPointData(PointData):
         Args:
              resp: dict of request response
         """
-
+        valid_data = True
         resp = resp.json()
 
         # this is not robust
         if "value" not in resp:
-            raise ValueError("Empty response from url request")
-            # LOG.warning(" Empty response from url request")
+            # raise ValueError("Empty response from url request")
+            LOG.warning(" Empty response from url request")
+            valid_data = False
 
         if len(resp["value"]["timeSeries"]) < 1:
-            raise ValueError("No data, requested site may not have requested sensor")
-            # LOG.warning(" No data, requested site may not have requested sensor")
+            # raise ValueError("No data, requested site may not have requested sensor")
+            LOG.warning(" No data, requested site may not have requested sensor")
+            valid_data = False
+
+        return valid_data
 
     def _sensor_response_to_df(self, response_data, sensor, final_columns, site_id):
         """
@@ -200,8 +205,7 @@ class USGSPointData(PointData):
                     resample_duration = desired_duration
 
                 sensor_df = self._sensor_response_to_df(
-                    response_data, sensor, final_columns, self.id, sensor,
-                    resample_duration=resample_duration
+                    response_data, sensor, final_columns, self.id
                 )
                 df = merge_df(df, sensor_df)
 
@@ -230,3 +234,118 @@ class USGSPointData(PointData):
         """
 
         return self._get_data(start_date, end_date, variables, ["dv"])
+
+    @staticmethod
+    def _station_sensor_search(
+        url, bounds, sensor: SensorDescription, dur="dv", buffer=0.0
+    ):
+        """
+        Search for USGS stations within a bounding box for the given sensor description.
+
+        Args:
+            url: base url for metadata
+            bounds: dictionary of lat/long bounds with keys minx, miny, maxx, maxy
+            sensor: SensorDescription object
+            dur: during (currently only supporting daily values "dv")
+            buffer: buffer the bounding box
+        """
+        bounds = bounds.round(decimals=5)
+
+        params = {
+            "format": "rdb",
+            "bBox": rf"{bounds['minx'] - buffer},{bounds['miny'] - buffer},"
+                    rf"{bounds['maxx'] + buffer},{bounds['maxy'] + buffer}",
+            "siteStatus": "active",
+            "hasDataTypeCd": dur,
+            "parameterCd": sensor.code
+        }
+
+        resp = requests.get(url, params)
+        if resp.status_code == 404:
+            LOG.warning(
+                "No sites matching request withing given points, try changing "
+                "parameter or adding buffer"
+            )
+        resp.raise_for_status()
+        data = resp.text
+
+        try:
+            df = pd.read_csv(
+                StringIO(data), delimiter="\t", skip_blank_lines=True, comment="#"
+            )
+        except ValueError:
+            LOG.error(f"Could not convert url to dataFrame")
+            return None
+
+        df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
+
+        return df
+
+    @classmethod
+    def points_from_geometry(
+        cls,
+        geometry: gpd.GeoDataFrame,
+        variables: List[SensorDescription],
+        **kwargs
+    ):
+        """
+        See docstring for PointData.points_from_geometry
+
+        Args:
+            geometry: GeoDataFrame for shapefile from gpd.read_file
+            variables: List of SensorDescription
+            within_geometry: filter the points to within the shapefile instead of
+                just the extents. Default True
+            buffer: buffer added to search box
+
+        Returns:
+            PointDataCollection
+        """
+        # assign defaults
+        kwargs = cls._add_default_kwargs(kwargs)
+
+        # Assume station search result is in 4326
+        projected_geom = geometry.to_crs(4326)
+        bounds = projected_geom.bounds.iloc[0]
+        search_df = None
+        station_search_kwargs = {}
+
+        for variable in variables:
+            result_df = cls._station_sensor_search(
+                cls.META_URL, bounds, variable, buffer=kwargs["buffer"],
+                **station_search_kwargs
+            )
+            if result_df is not None:
+                result_df["index_id"] = result_df["site_no"]
+                result_df.set_index("index_id", inplace=True)
+                search_df = append_df(
+                    search_df, result_df
+                ).drop_duplicates(subset=['site_no'])
+
+        # return empty collection if we didn't find any points
+        if search_df is None:
+            return cls.ITERATOR_CLASS([])
+        gdf = gpd.GeoDataFrame(
+            search_df,
+            geometry=gpd.points_from_xy(
+                search_df["dec_long_va"],
+                search_df["dec_lat_va"],
+                z=search_df["alt_va"],
+            ),
+        )
+        # filter to points within shapefile
+        if kwargs['within_geometry']:
+            filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        else:
+            filtered_gdf = gdf
+
+        points = [
+            cls(row[0], row[1], metadata=row[2])
+            for row in zip(
+                filtered_gdf.index,
+                filtered_gdf["station_nm"],
+                filtered_gdf["geometry"],
+            )
+        ]
+
+        return cls.ITERATOR_CLASS([p for p in points])
