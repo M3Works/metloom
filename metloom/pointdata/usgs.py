@@ -26,9 +26,8 @@ class USGSPointData(PointData):
     """
 
     ALLOWED_VARIABLES = USGSVariables
-    BASE_URL = "https://waterservices.usgs.gov/nwis/"
-    USGS_URL = BASE_URL + "dv/"
-    META_URL = BASE_URL + "site/"
+    USGS_URL = "https://waterservices.usgs.gov/nwis/"
+    META_URL = USGS_URL + "site/"
     DATASOURCE = "USGS"
 
     def __init__(self, station_id, name, metadata=None):
@@ -52,21 +51,27 @@ class USGSPointData(PointData):
             offset = -offset
 
         self._tzinfo = timezone(timedelta(hours=offset))
-
         self._metadata = gpd.points_from_xy([loc["longitude"]], [loc["latitude"]])[0]
+
         return gpd.points_from_xy([loc["longitude"]], [loc["latitude"]])[0]
 
-    def _data_request(self, params):
+    def _data_request(self, params, duration):
         """
         Make request to USGS and return JSON
         Args:
             params: dictionary of request parameters
+            duration: daily ("dv") or instantaneous ("iv")
         Returns:
             dictionary of response values
         """
 
         data = []
-        resp = requests.get(self.USGS_URL, params=params)
+        if duration in ["iv", "dv"]:
+            url = duration + "/"
+        else:
+            raise ValueError(f"duration '{duration}' not valid, must be 'iv' or 'dv'")
+
+        resp = requests.get(self.USGS_URL + url, params=params)
         resp.raise_for_status()
         valid_data = self._check_response(resp)
 
@@ -78,27 +83,29 @@ class USGSPointData(PointData):
 
     def _check_response(self, resp):
         """
+        Check data response from url.
 
         Args:
              resp: dict of request response
         """
-        valid_data = True
+        contains_data = True
         resp = resp.json()
 
-        # this is not robust
         if "value" not in resp:
             # raise ValueError("Empty response from url request")
             LOG.warning(" Empty response from url request")
-            valid_data = False
+            contains_data = False
 
         if len(resp["value"]["timeSeries"]) < 1:
             # raise ValueError("No data, requested site may not have requested sensor")
             LOG.warning(" No data, requested site may not have requested sensor")
-            valid_data = False
+            contains_data = False
 
-        return valid_data
+        return contains_data
 
-    def _sensor_response_to_df(self, response_data, sensor, final_columns, site_id):
+    def _sensor_response_to_df(
+        self, response_data, sensor, final_columns, site_id, duration
+    ):
         """
         Convert the response data from the API to a GeoDataFrame
         Format and map columns in the dataframe
@@ -107,6 +114,7 @@ class USGSPointData(PointData):
             sensor: SensorDescription obj
             final_columns: List of columns used for filtering
             site_id: site id
+            duration: daily ("dv") or instantaneous ("iv")
         Returns:
             GeoDataFrame
         """
@@ -126,7 +134,10 @@ class USGSPointData(PointData):
         )
 
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
-        sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
+        a = sensor_df["datetime"][0]
+
+        if duration == "dv":
+            sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
 
         # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
@@ -148,7 +159,7 @@ class USGSPointData(PointData):
         response_data = []
         df_duration = duration_list[0]
         for duration in duration_list:
-            response_data = self._data_request(params)
+            response_data = self._data_request(params, duration)
             if response_data:
                 df_duration = duration
                 break
@@ -167,21 +178,14 @@ class USGSPointData(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
-            duration_list: USGS duration code and fallbacks, currently only ["dv"]
+            duration_list: USGS duration code, "dv" or "iv"
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
 
-        if duration_list[0] == "dv":
-            start_date = start_date.date().isoformat()
-            end_date = end_date.date().isoformat()
-        else:
-            start_date = start_date.isoformat()
-            end_date = end_date.isoformat()
-
         params = {
-            'startDT': start_date,
-            'endDT': end_date,
+            'startDT': start_date.date().isoformat(),
+            'endDT': end_date.date().isoformat(),
             'sites': self.id,
             'format': 'json',
             'siteType': 'ST',
@@ -205,7 +209,7 @@ class USGSPointData(PointData):
                     resample_duration = desired_duration
 
                 sensor_df = self._sensor_response_to_df(
-                    response_data, sensor, final_columns, self.id
+                    response_data, sensor, final_columns, self.id, desired_duration
                 )
                 df = merge_df(df, sensor_df)
 
@@ -229,11 +233,19 @@ class USGSPointData(PointData):
     ):
         """
         See docstring for PointData.get_daily_data
-
-        Currently just have daily values ["dv"], have not incorporated hourly ["iv"]
         """
-
         return self._get_data(start_date, end_date, variables, ["dv"])
+
+    def get_instantaneous_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        """
+        USGS supplies daily and 'instantaneous' daily, which is 15 minutes.
+        """
+        return self._get_data(start_date, end_date, variables, ["iv"])
 
     @staticmethod
     def _station_sensor_search(
@@ -274,7 +286,7 @@ class USGSPointData(PointData):
                 StringIO(data), delimiter="\t", skip_blank_lines=True, comment="#"
             )
         except ValueError:
-            LOG.error(f"Could not convert url to dataFrame")
+            LOG.error(f"Could not convert data to dataFrame")
             return None
 
         df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
