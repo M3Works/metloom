@@ -32,7 +32,7 @@ def test_join_df(set1, set2, expected):
 
 
 def test_join_df_failure():
-    with pytest.raises(AttributeError):
+    with pytest.raises((ValueError, AttributeError)):
         join_df(df1, "bad value")
 
 
