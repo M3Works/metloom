@@ -30,19 +30,52 @@ class USGSPointData(PointData):
     META_URL = USGS_URL + "site/"
     DATASOURCE = "USGS"
 
-    def __init__(self, station_id, name, metadata=None):
+    def __init__(self, station_id, name, metadata=None, duration="dv"):
         """
         See docstring for PointData.__init__
         """
         super(USGSPointData, self).__init__(station_id, name, metadata=metadata)
+        self._tzinfo = timezone(timedelta(hours=0.0))
         self._raw_metadata = None
+        self.duration = duration
+
+    def _get_metadata(self):
+        """ """
+
+        if self.duration in ["iv", "dv"]:
+            url = self.duration + "/"
+        else:
+            raise ValueError(
+                f"duration '{self.duration}' not valid, must be 'iv' or 'dv'"
+            )
+
+        params = {
+            'sites': self.id,
+            'format': 'json',
+            'siteType': 'ST',
+            'siteStatus': 'all'
+        }
+
+        resp = requests.get(self.USGS_URL + url, params=params)
+        resp.raise_for_status()
+        valid_data = self.check_response(resp)
+
+        if valid_data:
+            data = self._get_all_metadata(resp)
+
+        return data
 
     def _get_all_metadata(self, resp):
         """
         Use the full json response from site data url because it contains more info
         than the USGS 'metadata' url
         """
-        base = resp.json()["value"]["timeSeries"][0]
+
+        if type(resp) == dict:
+            base = resp["value"]["timeSeries"][0]
+        else:
+            base = resp.json()["value"]["timeSeries"][0]
+
         loc = base["sourceInfo"]["geoLocation"]["geogLocation"]
         str_time = base["sourceInfo"]['timeZoneInfo']['defaultTimeZone']['zoneOffset']
         self._units = base["variable"]["unit"]["unitCode"]
@@ -55,7 +88,7 @@ class USGSPointData(PointData):
 
         return gpd.points_from_xy([loc["longitude"]], [loc["latitude"]])[0]
 
-    def _data_request(self, params, duration):
+    def _data_request(self, params):
         """
         Make request to USGS and return JSON
         Args:
@@ -66,22 +99,17 @@ class USGSPointData(PointData):
         """
 
         data = []
-        if duration in ["iv", "dv"]:
-            url = duration + "/"
-        else:
-            raise ValueError(f"duration '{duration}' not valid, must be 'iv' or 'dv'")
-
-        resp = requests.get(self.USGS_URL + url, params=params)
+        resp = requests.get(self.USGS_URL + self.duration + "/", params=params)
         resp.raise_for_status()
-        valid_data = self._check_response(resp)
+        valid_data = self.check_response(resp)
 
         if valid_data:
-            self._get_all_metadata(resp)
+            self._get_metadata()
             data = resp.json()["value"]["timeSeries"][0]["values"][0]["value"]
 
         return data
 
-    def _check_response(self, resp):
+    def check_response(self, resp):
         """
         Check data response from url.
 
@@ -159,7 +187,7 @@ class USGSPointData(PointData):
         response_data = []
         df_duration = duration_list[0]
         for duration in duration_list:
-            response_data = self._data_request(params, duration)
+            response_data = self._data_request(params)
             if response_data:
                 df_duration = duration
                 break
