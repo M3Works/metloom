@@ -167,4 +167,3 @@ class USGSVariables(VariableBase):
     STREAMFLOW = SensorDescription(
         "74082", "STREAMFLOW", "STREAMFLOW, DAILY VOLUME (AC-FT)"
     )
-

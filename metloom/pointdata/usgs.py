@@ -18,9 +18,9 @@ class USGSPointData(PointData):
     """
     Implement PointData methods for USGS data source.
 
-    APIs:
-        https://streamstats.usgs.gov/docs/streamstatsservices/#/
+    APIs and help
         https://waterservices.usgs.gov/rest/DV-Service.html#Service
+        https://waterservices.usgs.gov/rest/IV-Service.html#Service
         https://waterservices.usgs.gov/rest/Site-Test-Tool.html
 
     """
@@ -30,7 +30,7 @@ class USGSPointData(PointData):
     META_URL = USGS_URL + "site/"
     DATASOURCE = "USGS"
 
-    def __init__(self, station_id, name, metadata=None, duration="dv"):
+    def __init__(self, station_id, name, metadata=None, duration=None):
         """
         See docstring for PointData.__init__
         """
@@ -40,15 +40,11 @@ class USGSPointData(PointData):
         self.duration = duration
 
     def _get_metadata(self):
-        """ """
-
-        if self.duration in ["iv", "dv"]:
-            url = self.duration + "/"
-        else:
-            raise ValueError(
-                f"duration '{self.duration}' not valid, must be 'iv' or 'dv'"
-            )
-
+        """
+        Get metadata from data call
+        """
+        data = []
+        contains_data = True
         params = {
             'sites': self.id,
             'format': 'json',
@@ -56,11 +52,22 @@ class USGSPointData(PointData):
             'siteStatus': 'all'
         }
 
-        resp = requests.get(self.USGS_URL + url, params=params)
-        resp.raise_for_status()
-        valid_data = self.check_response(resp)
+        if not self.duration:
+            duration = "dv/"
 
-        if valid_data:
+        resp = requests.get(self.USGS_URL + duration, params=params)
+        resp.raise_for_status()
+        resp = resp.json()
+
+        if "value" not in resp:
+            LOG.warning(" Empty response from request")
+            contains_data = False
+
+        if len(resp["value"]["timeSeries"]) < 1:
+            LOG.warning(f" No data for site {self.id} with given parameters")
+            contains_data = False
+
+        if contains_data:
             data = self._get_all_metadata(resp)
 
         return data
@@ -69,6 +76,11 @@ class USGSPointData(PointData):
         """
         Use the full json response from site data url because it contains more info
         than the USGS 'metadata' url
+
+        Args:
+            resp: requests response from url
+        Returns:
+            geoDataFrame with lat and lon
         """
 
         if type(resp) == dict:
@@ -88,55 +100,44 @@ class USGSPointData(PointData):
 
         return gpd.points_from_xy([loc["longitude"]], [loc["latitude"]])[0]
 
-    def _data_request(self, params):
+    def _data_request(self, params, duration="dv"):
         """
         Make request to USGS and return JSON
+
         Args:
             params: dictionary of request parameters
-            duration: daily ("dv") or instantaneous ("iv")
+            duration: daily ("dv") or instantaneous ("iv") values
         Returns:
-            dictionary of response values
+            data: dict of response values
         """
 
         data = []
-        resp = requests.get(self.USGS_URL + self.duration + "/", params=params)
+        resp = requests.get(self.USGS_URL + duration + "/", params=params)
         resp.raise_for_status()
-        valid_data = self.check_response(resp)
-
-        if valid_data:
-            self._get_metadata()
-            data = resp.json()["value"]["timeSeries"][0]["values"][0]["value"]
-
-        return data
-
-    def check_response(self, resp):
-        """
-        Check data response from url.
-
-        Args:
-             resp: dict of request response
-        """
-        contains_data = True
         resp = resp.json()
+        contains_data = True
 
         if "value" not in resp:
-            # raise ValueError("Empty response from url request")
-            LOG.warning(" Empty response from url request")
+            LOG.warning(" Empty response from request")
             contains_data = False
 
         if len(resp["value"]["timeSeries"]) < 1:
-            # raise ValueError("No data, requested site may not have requested sensor")
-            LOG.warning(" No data, requested site may not have requested sensor")
+            LOG.warning(f" No data for site {self.id} with given parameters")
             contains_data = False
 
-        return contains_data
+        if contains_data:
+            self._get_metadata()
+            data = resp["value"]["timeSeries"][0]["values"][0]["value"]
+
+        return data
 
     def _sensor_response_to_df(
         self, response_data, sensor, final_columns, site_id, duration
     ):
         """
-        Convert the response data from the API to a GeoDataFrame
-        Format and map columns in the dataframe
+        Convert the response data from the API to a GeoDataFrame Format and map columns
+        in the dataframe
+
         Args:
             response_data: JSON list response from API
             sensor: SensorDescription obj
@@ -153,16 +154,11 @@ class USGSPointData(PointData):
         sensor_df.replace(-9999.0, np.nan, inplace=True)
         sensor_df["site"] = site_id
         sensor_df[f"{sensor.name}_units"] = self._units
+
         final_columns += [sensor.name, f"{sensor.name}_units"]
         column_map = {"dateTime": "datetime", "value": sensor.name}
-
-        sensor_df.rename(
-            columns=column_map,
-            inplace=True,
-        )
-
+        sensor_df.rename(columns=column_map, inplace=True)
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
-        a = sensor_df["datetime"][0]
 
         if duration == "dv":
             sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
@@ -173,32 +169,29 @@ class USGSPointData(PointData):
         sensor_df = sensor_df.loc[pd.notna(sensor_df[sensor.name])]
         return sensor_df
 
-    def _get_data_fallback(self, params, duration_list):
+    def _get_data_fallback(self, params, duration):
         """
-        Allow for fallback on finer resolution API durations with resample
-        if the desired duration does not return data
+        Fallback for different sample times than requested not yet implemented.
+
         Args:
             params: request params with or without dur_code
             duration_list: list of durations to try. First index is desired
                 durations
+        Returns:
+            response_data: dict of url response
+            duration:
         """
-        if len(duration_list) < 1:
-            raise ValueError("Duration list cannot be empty")
+
         response_data = []
-        df_duration = duration_list[0]
-        for duration in duration_list:
-            response_data = self._data_request(params)
-            if response_data:
-                df_duration = duration
-                break
-        return response_data, df_duration
+        response_data = self._data_request(params, duration)
+        return response_data, duration
 
     def _get_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
-        duration_list: List[str]
+        duration: str
     ):
         """
         Args:
@@ -222,22 +215,15 @@ class USGSPointData(PointData):
 
         df = None
         final_columns = ["geometry", "site"]
-        desired_duration = duration_list[0]
 
         for sensor in variables:
             params["parameterCd"] = sensor.code
             response_data, response_duration = self._get_data_fallback(
-                params, duration_list
+                params, duration
             )
             if response_data:
-                # don't resample if we have the desired duration
-                if response_duration == desired_duration:
-                    resample_duration = None
-                else:
-                    resample_duration = desired_duration
-
                 sensor_df = self._sensor_response_to_df(
-                    response_data, sensor, final_columns, self.id, desired_duration
+                    response_data, sensor, final_columns, self.id, duration
                 )
                 df = merge_df(df, sensor_df)
 
@@ -262,7 +248,7 @@ class USGSPointData(PointData):
         """
         See docstring for PointData.get_daily_data
         """
-        return self._get_data(start_date, end_date, variables, ["dv"])
+        return self._get_data(start_date, end_date, variables, "dv")
 
     def get_instantaneous_data(
         self,
@@ -271,9 +257,9 @@ class USGSPointData(PointData):
         variables: List[SensorDescription],
     ):
         """
-        USGS supplies daily and 'instantaneous' daily, which is 15 minutes.
+        USGS 'instantaneous' data, which is generally 15 minutes.
         """
-        return self._get_data(start_date, end_date, variables, ["iv"])
+        return self._get_data(start_date, end_date, variables, "iv")
 
     @staticmethod
     def _station_sensor_search(
@@ -314,7 +300,7 @@ class USGSPointData(PointData):
                 StringIO(data), delimiter="\t", skip_blank_lines=True, comment="#"
             )
         except ValueError:
-            LOG.error(f"Could not convert data to dataFrame")
+            LOG.error("Could not convert data to dataFrame")
             return None
 
         df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
@@ -334,10 +320,6 @@ class USGSPointData(PointData):
         Args:
             geometry: GeoDataFrame for shapefile from gpd.read_file
             variables: List of SensorDescription
-            within_geometry: filter the points to within the shapefile instead of
-                just the extents. Default True
-            buffer: buffer added to search box
-
         Returns:
             PointDataCollection
         """

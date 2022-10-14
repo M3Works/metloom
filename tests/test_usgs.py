@@ -25,9 +25,11 @@ class TestUSGSStation(BasePointDataTest):
                             ]}],
                         "sourceInfo": {
                             "geoLocation": {
-                                "geogLocation": {"longitude": -106.54, "latitude": 37.35}
+                                "geogLocation":
+                                    {"longitude": -106.54, "latitude": 37.35}
                             },
-                            "timeZoneInfo": {"defaultTimeZone": {"zoneOffset": "-5:00"}}
+                            "timeZoneInfo":
+                                {"defaultTimeZone": {"zoneOffset": "-5:00"}}
                         },
                         "variable": {"unit": {"unitCode": "cf/s"}}
                     }]}
@@ -87,7 +89,8 @@ class TestUSGSStation(BasePointDataTest):
                             ]}],
                         "sourceInfo": {
                             "geoLocation": {
-                                "geogLocation": {"longitude": -106.54, "latitude": 37.35}
+                                "geogLocation":
+                                    {"longitude": -106.54, "latitude": 37.35}
                             },
                             "timeZoneInfo": {"defaultTimeZone": {"zoneOffset": "-5:00"}}
                         },
