@@ -35,44 +35,72 @@ class USGSPointData(PointData):
         See docstring for PointData.__init__
         """
         super(USGSPointData, self).__init__(station_id, name, metadata=metadata)
-        self._tzinfo = timezone(timedelta(hours=0.0))
+        self._tzinfo = None
         self._raw_metadata = None
         self.duration = duration
+
+    def _get_all_metadata(self):
+        if self._raw_metadata is None:
+            params = {
+                "format": "rdb",
+                "sites": self.id,
+                "siteOutput": "expanded",
+                "siteStatus": "all"
+            }
+            resp = requests.get(self.META_URL, params=params)
+            resp.raise_for_status()
+            data = resp.text
+            try:
+                df = pd.read_csv(
+                    StringIO(data), delimiter="\t", skip_blank_lines=True,
+                    comment="#"
+                )
+            except ValueError:
+                LOG.error("Could not convert data to dataFrame")
+                return None
+            df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
+            self._raw_metadata = df
+
+        return self._raw_metadata
 
     def _get_metadata(self):
         """
         Get metadata from data call
         """
-        data = []
-        contains_data = True
-        params = {
-            'sites': self.id,
-            'format': 'json',
-            'siteType': 'ST',
-            'siteStatus': 'all'
+        raw_meta = self._get_all_metadata()
+        data = gpd.GeoDataFrame(
+            geometry=gpd.points_from_xy(
+                raw_meta["dec_long_va"],
+                raw_meta["dec_lat_va"],
+                z=raw_meta["alt_va"],
+            )
+        )
+        data = data.set_crs("EPSG:4269").to_crs("EPSG:4326")
+        return data.iloc[0]["geometry"]
+
+    @property
+    def tzinfo(self):
+        if self._tzinfo is None:
+            self._tzinfo = self._get_tzinfo()
+        return self._tzinfo
+
+    def _get_tzinfo(self):
+        raw_meta = self._get_all_metadata()
+        tz_abbrev = raw_meta.iloc[0]["tz_cd"]
+        tz_map = {
+            "PST": timedelta(hours=-8.0),
+            "PDT": timedelta(hours=-7.0),
+            "MST": timedelta(hours=-7.0),
+            "MDT": timedelta(hours=-6.0),
+            "CST": timedelta(hours=-6.0),
+            "CDT": timedelta(hours=-5.0),
+            "EST": timedelta(hours=-5.0),
+            "EDT": timedelta(hours=-4.0),
         }
+        default = timedelta(hours=0)
+        return timezone(tz_map.get(tz_abbrev, default))
 
-        if not self.duration:
-            duration = "dv/"
-
-        resp = requests.get(self.USGS_URL + duration, params=params)
-        resp.raise_for_status()
-        resp = resp.json()
-
-        if "value" not in resp:
-            LOG.warning(" Empty response from request")
-            contains_data = False
-
-        if len(resp["value"]["timeSeries"]) < 1:
-            LOG.warning(f" No data for site {self.id} with given parameters")
-            contains_data = False
-
-        if contains_data:
-            data = self._get_all_metadata(resp)
-
-        return data
-
-    def _get_all_metadata(self, resp):
+    def _parse_all_metadata(self, resp):
         """
         Use the full json response from site data url because it contains more info
         than the USGS 'metadata' url
@@ -126,7 +154,6 @@ class USGSPointData(PointData):
             contains_data = False
 
         if contains_data:
-            self._get_metadata()
             data = resp["value"]["timeSeries"][0]["values"][0]["value"]
 
         return data
@@ -153,6 +180,7 @@ class USGSPointData(PointData):
         )
         sensor_df.replace(-9999.0, np.nan, inplace=True)
         sensor_df["site"] = site_id
+        # TODO: can we parse this on a more variable specific level
         sensor_df[f"{sensor.name}_units"] = self._units
 
         final_columns += [sensor.name, f"{sensor.name}_units"]
@@ -160,8 +188,7 @@ class USGSPointData(PointData):
         sensor_df.rename(columns=column_map, inplace=True)
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
 
-        if duration == "dv":
-            sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
+        sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
 
         # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
@@ -355,6 +382,12 @@ class USGSPointData(PointData):
                 z=search_df["alt_va"],
             ),
         )
+
+        if not (search_df["dec_coord_datum_cd"] == "NAD83").all():
+            LOG.error("Projection assumption for USGS is incorrect."
+                      " Not all points are NAD 83")
+        # convert results from NAD83 to WGS 84
+        gdf = gdf.set_crs("EPSG:4269").to_crs("EPSG:4326")
         # filter to points within shapefile
         if kwargs['within_geometry']:
             filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
