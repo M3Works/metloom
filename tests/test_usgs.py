@@ -31,7 +31,8 @@ class TestUSGSStation(BasePointDataTest):
                             "timeZoneInfo":
                                 {"defaultTimeZone": {"zoneOffset": "-5:00"}}
                         },
-                        "variable": {"unit": {"unitCode": "cf/s"}}
+                        "variable": {"unit": {"unitCode": "cf/s"},
+                                     "noDataValue": -9999.0},
                     }]}
         }
 
@@ -94,7 +95,8 @@ class TestUSGSStation(BasePointDataTest):
                             },
                             "timeZoneInfo": {"defaultTimeZone": {"zoneOffset": "-5:00"}}
                         },
-                        "variable": {"unit": {"unitCode": "cf/s"}}
+                        "variable": {"unit": {"unitCode": "cf/s"},
+                                     "noDataValue": -9999.0},
                     }]}
         }
 

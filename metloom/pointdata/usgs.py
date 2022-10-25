@@ -65,7 +65,7 @@ class USGSPointData(PointData):
 
     def _get_metadata(self):
         """
-        Get metadata from data call
+        Get metadata
         """
         raw_meta = self._get_all_metadata()
         data = gpd.GeoDataFrame(
@@ -100,34 +100,6 @@ class USGSPointData(PointData):
         default = timedelta(hours=0)
         return timezone(tz_map.get(tz_abbrev, default))
 
-    def _parse_all_metadata(self, resp):
-        """
-        Use the full json response from site data url because it contains more info
-        than the USGS 'metadata' url
-
-        Args:
-            resp: requests response from url
-        Returns:
-            geoDataFrame with lat and lon
-        """
-
-        if type(resp) == dict:
-            base = resp["value"]["timeSeries"][0]
-        else:
-            base = resp.json()["value"]["timeSeries"][0]
-
-        loc = base["sourceInfo"]["geoLocation"]["geogLocation"]
-        str_time = base["sourceInfo"]['timeZoneInfo']['defaultTimeZone']['zoneOffset']
-        self._units = base["variable"]["unit"]["unitCode"]
-        offset = datetime.strptime(str_time.strip("-"), "%H:%M").hour
-        if "-" in str_time:
-            offset = -offset
-
-        self._tzinfo = timezone(timedelta(hours=offset))
-        self._metadata = gpd.points_from_xy([loc["longitude"]], [loc["latitude"]])[0]
-
-        return gpd.points_from_xy([loc["longitude"]], [loc["latitude"]])[0]
-
     def _data_request(self, params, duration="dv"):
         """
         Make request to USGS and return JSON
@@ -154,12 +126,12 @@ class USGSPointData(PointData):
             contains_data = False
 
         if contains_data:
-            data = resp["value"]["timeSeries"][0]["values"][0]["value"]
+            data = resp["value"]["timeSeries"][0]
 
         return data
 
     def _sensor_response_to_df(
-        self, response_data, sensor, final_columns, site_id, duration
+        self, response_data, sensor, final_columns, site_id
     ):
         """
         Convert the response data from the API to a GeoDataFrame Format and map columns
@@ -170,28 +142,37 @@ class USGSPointData(PointData):
             sensor: SensorDescription obj
             final_columns: List of columns used for filtering
             site_id: site id
-            duration: daily ("dv") or instantaneous ("iv")
         Returns:
             GeoDataFrame
         """
+
+        if "values" not in response_data:
+            LOG.warning(" Response does not contain expected data")
+            raise ValueError("Failed parsing response for data")
+
+        no_data_value = response_data["variable"]["noDataValue"]
+        units = response_data["variable"]["unit"]["unitCode"]
+
         sensor_df = gpd.GeoDataFrame.from_dict(
-            response_data,
-            geometry=[self.metadata] * len(response_data),
+            response_data["values"][0]["value"],
+            geometry=[self.metadata] * len(response_data["values"][0]["value"]),
         )
-        sensor_df.replace(-9999.0, np.nan, inplace=True)
+
+        sensor_df.replace(no_data_value, np.nan, inplace=True)
         sensor_df["site"] = site_id
-        # TODO: can we parse this on a more variable specific level
-        sensor_df[f"{sensor.name}_units"] = self._units
+        sensor_df[f"{sensor.name}_units"] = units
 
         final_columns += [sensor.name, f"{sensor.name}_units"]
         column_map = {"dateTime": "datetime", "value": sensor.name}
         sensor_df.rename(columns=column_map, inplace=True)
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
 
-        sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
+        if sensor_df["datetime"][0].tzinfo is None:
+            sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
 
         # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
+        sensor_df.index = sensor_df.index.tz_convert(self.desired_tzinfo)
         sensor_df = sensor_df.filter(final_columns)
         sensor_df = sensor_df.loc[pd.notna(sensor_df[sensor.name])]
         return sensor_df
@@ -202,14 +183,11 @@ class USGSPointData(PointData):
 
         Args:
             params: request params with or without dur_code
-            duration_list: list of durations to try. First index is desired
-                durations
+            duration: daily ("dv") or instantaneous ("iv")
         Returns:
             response_data: dict of url response
-            duration:
+            duration: daily ("dv") or instantaneous ("iv")
         """
-
-        response_data = []
         response_data = self._data_request(params, duration)
         return response_data, duration
 
@@ -226,7 +204,7 @@ class USGSPointData(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
-            duration_list: USGS duration code, "dv" or "iv"
+            duration: USGS duration code, "dv" or "iv"
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -250,7 +228,7 @@ class USGSPointData(PointData):
             )
             if response_data:
                 sensor_df = self._sensor_response_to_df(
-                    response_data, sensor, final_columns, self.id, duration
+                    response_data, sensor, final_columns, self.id
                 )
                 df = merge_df(df, sensor_df)
 
