@@ -2,15 +2,16 @@ from datetime import timezone, timedelta, datetime
 from os.path import join
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import re
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
 
 from metloom.pointdata import USGSPointData
 from metloom.variables import USGSVariables
 from tests.test_point_data import BasePointDataTest
-
 
 DATA_DIR = str(Path(__file__).parent.joinpath("data"))
 
@@ -40,6 +41,49 @@ class TestUSGSStation(BasePointDataTest):
                                      "noDataValue": -9999.0},
                     }]}
         }
+
+    @staticmethod
+    def station_search_response():
+        return [
+            pd.DataFrame.from_records(
+                [
+                    (
+                        "USGS",
+                        11276500,
+                        "TUOLUMNE"
+                        "R NR HETCH HETCHY CA",
+                        "ST",
+                        37.93742147,
+                        -119.7982326,
+                        "F",
+                        "NAD83",
+                        3430.00,
+                        20,
+                        "NGVD29",
+                        18040009
+                    ),
+                    (
+                        "USGS",
+                        11274790,
+                        "TUOLUMNE R A GRAND CYN OF TUOLUMNE AB HETCH HETCHY",
+                        "ST",
+                        37.9165884,
+                        -119.6598938,
+                        "S",
+                        "NAD83",
+                        3830,
+                        20,
+                        "NGVD29",
+                        18040009
+                    )
+                ],
+                columns=[
+                    "agency_cd", "site_no", "station_nm", "site_tp_cd", "dec_lat_va",
+                    "dec_long_va", "coord_acy_cd,", "dec_coord_datum_cd", "alt_va",
+                    "alt_acy_va", "alt_datum_cd", "huc_cd"
+                ],
+            )
+        ]
 
     @pytest.fixture(scope="function")
     def crp_station(self):
@@ -104,7 +148,6 @@ class TestUSGSStation(BasePointDataTest):
         return mock
 
     def test_get_metadata(self, crp_station):
-
         with patch("metloom.pointdata.usgs.requests") as mock_requests:
             mock_requests.get.side_effect = self.crp_side_effect
             metadata = crp_station.metadata
@@ -147,3 +190,21 @@ class TestUSGSStation(BasePointDataTest):
             )
             assert mock_get.call_count == 2
         pd.testing.assert_frame_equal(response, crp_daily_expected)
+
+    def test_points_from_geometry(self, shape_obj):
+        expected_url = (
+            'https://waterservices.usgs.gov/nwis/site/?format=rdb&bBox=-119.8%2C37.7'
+            '%2C-119.2%2C38.2&siteStatus=active&hasDataTypeCd=dv&parameterCd=00060'
+        )
+        names = [
+            'TUOLUMNER NR HETCH HETCHY CA',
+            'TUOLUMNE R A GRAND CYN OF TUOLUMNE AB HETCH HETCHY'
+        ]
+        with patch("metloom.pointdata.usgs.pd.read_csv") as mock_table_read:
+            mock_table_read.return_value = self.station_search_response()
+            result = USGSPointData.points_from_geometry(
+                shape_obj, [USGSVariables.DISCHARGE]
+            )
+            assert mock_table_read.call_args.args[0] == expected_url
+            assert len(result) == 2
+            assert [x.name in names for x in result.points]

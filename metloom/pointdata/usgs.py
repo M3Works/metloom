@@ -268,49 +268,38 @@ class USGSPointData(PointData):
 
     @staticmethod
     def _station_sensor_search(
-        url, bounds, sensor: SensorDescription, dur="dv", buffer=0.0
+        meta_url, bounds, sensor: SensorDescription, dur="dv", buffer=0.0
     ):
         """
         Search for USGS stations within a bounding box for the given sensor description.
 
         Args:
-            url: base url for metadata
+            meta_url: base url for metadata
             bounds: dictionary of lat/long bounds with keys minx, miny, maxx, maxy
             sensor: SensorDescription object
             dur: during (currently only supporting daily values "dv")
             buffer: buffer the bounding box
         """
         bounds = bounds.round(decimals=5)
+        minx = f"{bounds['minx'] - buffer}"
+        miny = f"{bounds['miny'] - buffer}"
+        maxx = f"{bounds['maxx'] + buffer}"
+        maxy = f"{bounds['maxy'] + buffer}"
 
-        params = {
-            "format": "rdb",
-            "bBox": rf"{bounds['minx'] - buffer},{bounds['miny'] - buffer},"
-                    rf"{bounds['maxx'] + buffer},{bounds['maxy'] + buffer}",
-            "siteStatus": "active",
-            "hasDataTypeCd": dur,
-            "parameterCd": sensor.code
-        }
-
-        resp = requests.get(url, params)
-        if resp.status_code == 404:
-            LOG.warning(
-                "No sites matching request withing given points, try changing "
-                "parameter or adding buffer"
-            )
-        resp.raise_for_status()
-        data = resp.text
+        url = (
+            f'{meta_url}?format=rdb&bBox={minx}%2C{miny}%2C{maxx}%2C'
+            f'{maxy}&siteStatus=active&hasDataTypeCd={dur}&parameterCd={sensor.code}'
+        )
 
         try:
-            df = pd.read_csv(
-                StringIO(data), delimiter="\t", skip_blank_lines=True, comment="#"
-            )
-        except ValueError:
-            LOG.error("Could not convert data to dataFrame")
-            return None
+            df = pd.read_csv(url, delimiter="\t", skip_blank_lines=True, comment="#")
+        except ValueError(f"Failed parsing {url}"):
+            LOG.error(f"Failed parsing {url}")
 
-        df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
+        if type(df) == list:
+            df = df[0]
 
-        return df
+        return df[df['agency_cd'] == "USGS"]
 
     @classmethod
     def points_from_geometry(
@@ -342,6 +331,7 @@ class USGSPointData(PointData):
                 cls.META_URL, bounds, variable, buffer=kwargs["buffer"],
                 **station_search_kwargs
             )
+
             if result_df is not None:
                 result_df["index_id"] = result_df["site_no"]
                 result_df.set_index("index_id", inplace=True)
