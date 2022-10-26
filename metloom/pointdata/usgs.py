@@ -6,6 +6,7 @@ import pandas as pd
 import requests
 import logging
 from io import StringIO
+from bs4 import BeautifulSoup
 
 from .base import PointData
 from ..variables import USGSVariables, SensorDescription
@@ -267,8 +268,42 @@ class USGSPointData(PointData):
         return self._get_data(start_date, end_date, variables, "iv")
 
     @staticmethod
+    def _get_url_response(url):
+        """
+        Get url response from USGS
+
+        Args:
+            url: url with formed query parameters
+
+        Returns:
+            response: DataFrame with query results
+        """
+        result = []
+        resp = requests.get(url)
+
+        if resp.status_code != 200:
+            if resp.status_code == 404:
+                error_msg = "Response 404"
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                status = soup.find('h1')
+                if status is not None:
+                    error_msg = status.get_text()
+            if resp.status_code == 400:
+                error_msg = "Response 400"
+
+            LOG.error(f"No data: {error_msg}")
+
+        else:
+            result = pd.read_csv(
+                StringIO(resp.text), delimiter="\t", skip_blank_lines=True, comment="#"
+            )
+            result = result[result['agency_cd'] == "USGS"]
+
+        return result
+
+    @classmethod
     def _station_sensor_search(
-        meta_url, bounds, sensor: SensorDescription, dur="dv", buffer=0.0
+        cls, meta_url, bounds, sensor: SensorDescription, dur="dv", buffer=0.0
     ):
         """
         Search for USGS stations within a bounding box for the given sensor description.
@@ -291,15 +326,7 @@ class USGSPointData(PointData):
             f'{maxy}&siteStatus=active&hasDataTypeCd={dur}&parameterCd={sensor.code}'
         )
 
-        try:
-            df = pd.read_csv(url, delimiter="\t", skip_blank_lines=True, comment="#")
-        except ValueError(f"Failed parsing {url}"):
-            LOG.error(f"Failed parsing {url}")
-
-        if type(df) == list:
-            df = df[0]
-
-        return df[df['agency_cd'] == "USGS"]
+        return cls._get_url_response(url)
 
     @classmethod
     def points_from_geometry(
@@ -332,7 +359,7 @@ class USGSPointData(PointData):
                 **station_search_kwargs
             )
 
-            if result_df is not None:
+            if len(result_df):
                 result_df["index_id"] = result_df["site_no"]
                 result_df.set_index("index_id", inplace=True)
                 search_df = append_df(

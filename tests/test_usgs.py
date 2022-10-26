@@ -42,46 +42,44 @@ class TestUSGSStation(BasePointDataTest):
 
     @staticmethod
     def station_search_response():
-        return [
-            pd.DataFrame.from_records(
-                [
-                    (
-                        "USGS",
-                        11276500,
-                        "TUOLUMNE"
-                        "R NR HETCH HETCHY CA",
-                        "ST",
-                        37.93742147,
-                        -119.7982326,
-                        "F",
-                        "NAD83",
-                        3430.00,
-                        20,
-                        "NGVD29",
-                        18040009
-                    ),
-                    (
-                        "USGS",
-                        11274790,
-                        "TUOLUMNE R A GRAND CYN OF TUOLUMNE AB HETCH HETCHY",
-                        "ST",
-                        37.9165884,
-                        -119.6598938,
-                        "S",
-                        "NAD83",
-                        3830,
-                        20,
-                        "NGVD29",
-                        18040009
-                    )
-                ],
-                columns=[
-                    "agency_cd", "site_no", "station_nm", "site_tp_cd", "dec_lat_va",
-                    "dec_long_va", "coord_acy_cd,", "dec_coord_datum_cd", "alt_va",
-                    "alt_acy_va", "alt_datum_cd", "huc_cd"
-                ],
-            )
-        ]
+        return pd.DataFrame.from_records(
+            [
+                (
+                    "USGS",
+                    11276500,
+                    "TUOLUMNE"
+                    "R NR HETCH HETCHY CA",
+                    "ST",
+                    37.93742147,
+                    -119.7982326,
+                    "F",
+                    "NAD83",
+                    3430.00,
+                    20,
+                    "NGVD29",
+                    18040009
+                ),
+                (
+                    "USGS",
+                    11274790,
+                    "TUOLUMNE R A GRAND CYN OF TUOLUMNE AB HETCH HETCHY",
+                    "ST",
+                    37.9165884,
+                    -119.6598938,
+                    "S",
+                    "NAD83",
+                    3830,
+                    20,
+                    "NGVD29",
+                    18040009
+                )
+            ],
+            columns=[
+                "agency_cd", "site_no", "station_nm", "site_tp_cd", "dec_lat_va",
+                "dec_long_va", "coord_acy_cd,", "dec_coord_datum_cd", "alt_va",
+                "alt_acy_va", "alt_datum_cd", "huc_cd"
+            ],
+        )
 
     @pytest.fixture(scope="function")
     def crp_station(self):
@@ -198,11 +196,11 @@ class TestUSGSStation(BasePointDataTest):
             'TUOLUMNER NR HETCH HETCHY CA',
             'TUOLUMNE R A GRAND CYN OF TUOLUMNE AB HETCH HETCHY'
         ]
-        with patch("metloom.pointdata.usgs.pd.read_csv") as mock_table_read:
-            mock_table_read.return_value = self.station_search_response()
+        with patch("metloom.pointdata.usgs.USGSPointData._get_url_response") as mock_tb:
+            mock_tb.return_value = self.station_search_response()
             result = USGSPointData.points_from_geometry(
                 shape_obj, [USGSVariables.DISCHARGE]
             )
-            assert mock_table_read.call_args.args[0] == expected_url
+            assert mock_tb.call_args[0][0] == expected_url
             assert len(result) == 2
             assert [x.name in names for x in result.points]
