@@ -279,6 +279,7 @@ class USGSPointData(PointData):
             response: DataFrame with query results
         """
         result = []
+        error_msg = []
         resp = requests.get(url)
 
         if resp.status_code != 200:
@@ -299,7 +300,7 @@ class USGSPointData(PointData):
             )
             result = result[result['agency_cd'] == "USGS"]
 
-        return result
+        return result, error_msg
 
     @classmethod
     def _station_sensor_search(
@@ -326,7 +327,8 @@ class USGSPointData(PointData):
             f'{maxy}&siteStatus=active&hasDataTypeCd={dur}&parameterCd={sensor.code}'
         )
 
-        return cls._get_url_response(url)
+        response, msg = cls._get_url_response(url)
+        return response
 
     @classmethod
     def points_from_geometry(

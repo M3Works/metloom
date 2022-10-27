@@ -42,7 +42,7 @@ class TestUSGSStation(BasePointDataTest):
 
     @staticmethod
     def station_search_response():
-        return pd.DataFrame.from_records(
+        df = pd.DataFrame.from_records(
             [
                 (
                     "USGS",
@@ -80,6 +80,7 @@ class TestUSGSStation(BasePointDataTest):
                 "alt_acy_va", "alt_datum_cd", "huc_cd"
             ],
         )
+        return df, []
 
     @pytest.fixture(scope="function")
     def crp_station(self):
@@ -128,6 +129,30 @@ class TestUSGSStation(BasePointDataTest):
             data_text = fp.read()
 
         return data_text
+
+    @staticmethod
+    def failure_response():
+        class Response:
+            status_code = 404
+            content = (
+                b'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" '
+                b'"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns='
+                b'"http://www.w3.org/1999/xhtml"><head><title>Error report</title>'
+                b'<style type="text/css"><!--H1 {font-family:Tahoma,Arial,sans-serif;'
+                b'color:white;background-color:#525D76;font-size:22px;} H2 {font-family'
+                b':Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-'
+                b'size:16px;} H3 {font-family:Tahoma,Arial,sans-serif;color:white;'
+                b'background-color:#525D76;font-size:14px;} BODY {font-family:Tahoma,'
+                b'Arial,sans-serif;color:black;background-color:white;} B {font-family:'
+                b'Tahoma,Arial,sans-serif;color:white;background-color:#525D76;} P '
+                b'{font-family:Tahoma,Arial,sans-serif;background:white;color:black;'
+                b'font-size:12px;}A {color : black;}HR {color : #525D76;}--></style> '
+                b'</head><body><h1>HTTP Status 404 - No sites found matching this '
+                b'request, server=[sdas01]</h1><hr/><p><b>type</b> Status report</p>'
+                b'<p><b>message</b>No sites found matching this request, server='
+                b'[sdas01]</p><p><b>description</b>The requested resource is not '
+                b'available.</p><hr/><h3>Error Report</h3></body></html>')
+        return Response
 
     @classmethod
     def crp_side_effect(cls, url, **kwargs):
@@ -204,3 +229,28 @@ class TestUSGSStation(BasePointDataTest):
             assert mock_tb.call_args[0][0] == expected_url
             assert len(result) == 2
             assert [x.name in names for x in result.points]
+
+    def test_points_from_geometry_failure(self, shape_obj):
+        expected_url = (
+            'https://waterservices.usgs.gov/nwis/site/?format=rdb&bBox=-119.8%2C37.7'
+            '%2C-119.2%2C38.2&siteStatus=active&hasDataTypeCd=dv&parameterCd=74082'
+        )
+        with patch("metloom.pointdata.usgs.requests.get") as mock_request:
+            mock_request.return_value = self.failure_response()
+            result = USGSPointData.points_from_geometry(
+                shape_obj, [USGSVariables.STREAMFLOW]
+            )
+            assert result.points == []
+            assert mock_request.call_args[0][0] == expected_url
+
+    def test_geometry_failure_message(self, shape_obj):
+        expected_error_msg = (
+            "HTTP Status 404 - No sites found matching this request, server=[sdas01]"
+        )
+        with patch("metloom.pointdata.usgs.requests.get") as mock_request:
+            mock_request.return_value = self.failure_response()
+            point = USGSPointData("123", "test")
+            result, error_msg = point._get_url_response("test")
+            assert result == []
+            assert error_msg == expected_error_msg
+
