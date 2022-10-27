@@ -2,6 +2,7 @@ from datetime import datetime
 from os.path import join
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import json
 
 import geopandas as gpd
 import pandas as pd
@@ -42,45 +43,10 @@ class TestUSGSStation(BasePointDataTest):
 
     @staticmethod
     def station_search_response():
-        df = pd.DataFrame.from_records(
-            [
-                (
-                    "USGS",
-                    11276500,
-                    "TUOLUMNE"
-                    "R NR HETCH HETCHY CA",
-                    "ST",
-                    37.93742147,
-                    -119.7982326,
-                    "F",
-                    "NAD83",
-                    3430.00,
-                    20,
-                    "NGVD29",
-                    18040009
-                ),
-                (
-                    "USGS",
-                    11274790,
-                    "TUOLUMNE R A GRAND CYN OF TUOLUMNE AB HETCH HETCHY",
-                    "ST",
-                    37.9165884,
-                    -119.6598938,
-                    "S",
-                    "NAD83",
-                    3830,
-                    20,
-                    "NGVD29",
-                    18040009
-                )
-            ],
-            columns=[
-                "agency_cd", "site_no", "station_nm", "site_tp_cd", "dec_lat_va",
-                "dec_long_va", "coord_acy_cd,", "dec_coord_datum_cd", "alt_va",
-                "alt_acy_va", "alt_datum_cd", "huc_cd"
-            ],
-        )
-        return df, []
+        with open(join(DATA_DIR, "station_search_response.txt")) as fp:
+            data_text = fp.read()
+
+        return data_text
 
     @pytest.fixture(scope="function")
     def crp_station(self):
@@ -88,22 +54,22 @@ class TestUSGSStation(BasePointDataTest):
 
     @pytest.fixture(scope="class")
     def crp_daily_expected(self):
-        points = gpd.points_from_xy([-106.54], [37.35], z=[1000.0])
+        points = gpd.points_from_xy([-106.5441667], [37.35490278], z=[9866.6])
         df = gpd.GeoDataFrame.from_dict(
             [
                 {
                     "datetime": pd.Timestamp("2020-07-01 07:00:00+0000", tz="UTC"),
-                    "DISCHARGE": '111',
-                    "DISCHARGE_units": "cf/s",
+                    "DISCHARGE": '721',
+                    "DISCHARGE_units": "ft3/s",
                     "site": "08245000",
-                    "datasource": "USGS"
+                    "datasource": "USGS",
                 },
                 {
                     "datetime": pd.Timestamp("2020-07-02 07:00:00+0000", tz="UTC"),
-                    "DISCHARGE": '112',
-                    "DISCHARGE_units": "cf/s",
+                    "DISCHARGE": '664',
+                    "DISCHARGE_units": "ft3/s",
                     "site": "08245000",
-                    "datasource": "USGS"
+                    "datasource": "USGS",
                 },
 
             ],
@@ -117,7 +83,7 @@ class TestUSGSStation(BasePointDataTest):
                 "DISCHARGE",
                 "site",
                 "DISCHARGE_units",
-                "datasource"
+                "datasource",
             ]
         )
         df.set_index(keys=["datetime", "site"], inplace=True)
@@ -152,6 +118,7 @@ class TestUSGSStation(BasePointDataTest):
                 b'<p><b>message</b>No sites found matching this request, server='
                 b'[sdas01]</p><p><b>description</b>The requested resource is not '
                 b'available.</p><hr/><h3>Error Report</h3></body></html>')
+
         return Response
 
     @classmethod
@@ -167,6 +134,13 @@ class TestUSGSStation(BasePointDataTest):
             raise ValueError("unknown scenario")
 
         return mock
+
+    @classmethod
+    def get_url_response(cls):
+        with open(join(DATA_DIR, "daily_response.txt")) as fp:
+            data = json.load(fp)
+
+        return data
 
     def test_get_metadata(self, crp_station):
         with patch("metloom.pointdata.usgs.requests") as mock_requests:
@@ -188,28 +162,15 @@ class TestUSGSStation(BasePointDataTest):
         assert expected == metadata
 
     def test_get_daily_data(self, crp_station, crp_daily_expected):
-        with patch("metloom.pointdata.usgs.requests") as mock_requests:
-            mock_get = mock_requests.get
-            mock_get.side_effect = self.crp_side_effect
+        with patch("metloom.pointdata.usgs.USGSPointData._get_url_response") \
+                as mock_request:
+            mock_request.return_value = self.get_url_response()
             response = crp_station.get_daily_data(
                 datetime(2020, 7, 1),
                 datetime(2020, 7, 2),
                 [USGSVariables.DISCHARGE],
             )
 
-            mock_get.assert_any_call(
-                "https://waterservices.usgs.gov/nwis/dv/",
-                params={
-                    'startDT': datetime(2020, 7, 1).date().isoformat(),
-                    'endDT': datetime(2020, 7, 2).date().isoformat(),
-                    'sites': '08245000',
-                    'parameterCd': '00060',
-                    'format': 'json',
-                    'siteType': 'ST',
-                    'siteStatus': 'all'
-                },
-            )
-            assert mock_get.call_count == 2
         pd.testing.assert_frame_equal(response, crp_daily_expected)
 
     def test_points_from_geometry(self, shape_obj):
@@ -219,7 +180,9 @@ class TestUSGSStation(BasePointDataTest):
         )
         names = [
             'TUOLUMNER NR HETCH HETCHY CA',
-            'TUOLUMNE R A GRAND CYN OF TUOLUMNE AB HETCH HETCHY'
+            'TUOLUMNE R A GRAND CYN OF TUOLUMNE AB HETCH HETCHY',
+            'MILL C BL LUNDY LK NR LEE VINING CA',
+            'LEE VINING C BL SADDLEBAG LK NR LEE VINING CA'
         ]
         with patch("metloom.pointdata.usgs.USGSPointData._get_url_response") as mock_tb:
             mock_tb.return_value = self.station_search_response()
@@ -227,7 +190,7 @@ class TestUSGSStation(BasePointDataTest):
                 shape_obj, [USGSVariables.DISCHARGE]
             )
             assert mock_tb.call_args[0][0] == expected_url
-            assert len(result) == 2
+            assert len(result) == 10
             assert [x.name in names for x in result.points]
 
     def test_points_from_geometry_failure(self, shape_obj):
@@ -243,14 +206,15 @@ class TestUSGSStation(BasePointDataTest):
             assert result.points == []
             assert mock_request.call_args[0][0] == expected_url
 
-    def test_geometry_failure_message(self, shape_obj):
+    def test_geometry_failure_message(self, caplog, shape_obj):
         expected_error_msg = (
-            "HTTP Status 404 - No sites found matching this request, server=[sdas01]"
+            "No data: HTTP Status 404 - No sites found matching this request, "
+            "server=[sdas01]"
         )
         with patch("metloom.pointdata.usgs.requests.get") as mock_request:
             mock_request.return_value = self.failure_response()
             point = USGSPointData("123", "test")
-            result, error_msg = point._get_url_response("test")
+            result = point._get_url_response("test")
             assert result == []
-            assert error_msg == expected_error_msg
 
+        assert expected_error_msg in caplog.text

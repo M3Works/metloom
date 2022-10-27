@@ -113,10 +113,9 @@ class USGSPointData(PointData):
         """
 
         data = []
-        resp = requests.get(self.USGS_URL + duration + "/", params=params)
-        resp.raise_for_status()
-        resp = resp.json()
         contains_data = True
+        url = self.USGS_URL + duration + "/"
+        resp = self._get_url_response(url, params=params, parse='json')
 
         if "value" not in resp:
             LOG.warning(" Empty response from request")
@@ -268,19 +267,23 @@ class USGSPointData(PointData):
         return self._get_data(start_date, end_date, variables, "iv")
 
     @staticmethod
-    def _get_url_response(url):
+    def _get_url_response(url, params=None, parse='text'):
         """
         Get url response from USGS
 
         Args:
             url: url with formed query parameters
+            params: optional dict of additional url call parameters
+            parse: parsing format, either 'text' or 'json'
 
         Returns:
             response: DataFrame with query results
         """
         result = []
-        error_msg = []
-        resp = requests.get(url)
+        if params:
+            resp = requests.get(url, params)
+        else:
+            resp = requests.get(url)
 
         if resp.status_code != 200:
             if resp.status_code == 404:
@@ -289,18 +292,23 @@ class USGSPointData(PointData):
                 status = soup.find('h1')
                 if status is not None:
                     error_msg = status.get_text()
-            if resp.status_code == 400:
+            elif resp.status_code == 400:
                 error_msg = "Response 400"
+            else:
+                resp.raise_for_status()
+                error_msg = "Error with request url"
 
             LOG.error(f"No data: {error_msg}")
 
         else:
-            result = pd.read_csv(
-                StringIO(resp.text), delimiter="\t", skip_blank_lines=True, comment="#"
-            )
-            result = result[result['agency_cd'] == "USGS"]
+            if parse == 'json':
+                result = resp.json()
+            elif parse == 'text':
+                result = resp.text
+            else:
+                raise ValueError(f"Format '{parse}' not supported")
 
-        return result, error_msg
+        return result
 
     @classmethod
     def _station_sensor_search(
@@ -313,9 +321,10 @@ class USGSPointData(PointData):
             meta_url: base url for metadata
             bounds: dictionary of lat/long bounds with keys minx, miny, maxx, maxy
             sensor: SensorDescription object
-            dur: during (currently only supporting daily values "dv")
-            buffer: buffer the bounding box
+            dur: duration ("dv" or "iv")
+            buffer: float of lat/lon degrees, buffer for bounding box
         """
+        result = []
         bounds = bounds.round(decimals=5)
         minx = f"{bounds['minx'] - buffer}"
         miny = f"{bounds['miny'] - buffer}"
@@ -327,8 +336,14 @@ class USGSPointData(PointData):
             f'{maxy}&siteStatus=active&hasDataTypeCd={dur}&parameterCd={sensor.code}'
         )
 
-        response, msg = cls._get_url_response(url)
-        return response
+        response = cls._get_url_response(url, parse='text')
+
+        if len(response):
+            result = pd.read_csv(
+                StringIO(response), delimiter="\t", skip_blank_lines=True, comment="#"
+            )
+            result = result[result['agency_cd'] == "USGS"]
+        return result
 
     @classmethod
     def points_from_geometry(
