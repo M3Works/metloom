@@ -18,30 +18,6 @@ DATA_DIR = str(Path(__file__).parent.joinpath("data"))
 class TestUSGSStation(BasePointDataTest):
 
     @staticmethod
-    def usgs_daily_discharge_response():
-        return {
-            "value": {
-                "timeSeries": [
-                    {
-                        "values": [
-                            {"value": [
-                                {"value": '111', "dateTime": "2020-07-01T00:00:00.000"},
-                                {"value": '112', "dateTime": "2020-07-02T00:00:00.000"}
-                            ]}],
-                        "sourceInfo": {
-                            "geoLocation": {
-                                "geogLocation":
-                                    {"longitude": -106.54, "latitude": 37.35}
-                            },
-                            "timeZoneInfo":
-                                {"defaultTimeZone": {"zoneOffset": "-5:00"}}
-                        },
-                        "variable": {"unit": {"unitCode": "cf/s"},
-                                     "noDataValue": -9999.0},
-                    }]}
-        }
-
-    @staticmethod
     def station_search_response():
         with open(join(DATA_DIR, "station_search_response.txt")) as fp:
             data_text = fp.read()
@@ -128,8 +104,6 @@ class TestUSGSStation(BasePointDataTest):
 
         if "startDT" not in params:
             mock.text = cls.crp_meta_return()
-        elif "startDT" in params:
-            mock.json.return_value = cls.usgs_daily_discharge_response()
         else:
             raise ValueError("unknown scenario")
 
