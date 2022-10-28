@@ -15,6 +15,7 @@ requirements = [
     'pandas>1.0.0',
     'lxml==4.9.1',
     'requests>2.0.0,<3.0.0',
+    'beautifulsoup4>4,<5',
     'zeep>4.0.0'
 ]
 
@@ -50,6 +51,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/M3Works/metloom',
-    version='0.2.14',
+    version='0.3.0',
     zip_safe=False,
 )

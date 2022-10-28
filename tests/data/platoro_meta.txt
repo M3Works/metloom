@@ -1,0 +1,62 @@
+#
+#
+# US Geological Survey
+# retrieved: 2022-10-25 13:07:18 -04:00	(sdas01)
+#
+# The Site File stores location and general information about groundwater,
+# surface water, and meteorological sites
+# for sites in USA.
+#
+# File-format description:  http://help.waterdata.usgs.gov/faq/about-tab-delimited-output
+# Automated-retrieval info: http://waterservices.usgs.gov/rest/Site-Service.html
+#
+# Contact:   gs-w_support_nwisweb@usgs.gov
+#
+# The following selected fields are included in this output:
+#
+#  agency_cd       -- Agency
+#  site_no         -- Site identification number
+#  station_nm      -- Site name
+#  site_tp_cd      -- Site type
+#  lat_va          -- DMS latitude
+#  long_va         -- DMS longitude
+#  dec_lat_va      -- Decimal latitude
+#  dec_long_va     -- Decimal longitude
+#  coord_meth_cd   -- Latitude-longitude method
+#  coord_acy_cd    -- Latitude-longitude accuracy
+#  coord_datum_cd  -- Latitude-longitude datum
+#  dec_coord_datum_cd -- Decimal Latitude-longitude datum
+#  district_cd     -- District code
+#  state_cd        -- State code
+#  county_cd       -- County code
+#  country_cd      -- Country code
+#  land_net_ds     -- Land net location description
+#  map_nm          -- Name of location map
+#  map_scale_fc    -- Scale of location map
+#  alt_va          -- Altitude of Gage/land surface
+#  alt_meth_cd     -- Method altitude determined
+#  alt_acy_va      -- Altitude accuracy
+#  alt_datum_cd    -- Altitude datum
+#  huc_cd          -- Hydrologic unit code
+#  basin_cd        -- Drainage basin code
+#  topo_cd         -- Topographic setting code
+#  instruments_cd  -- Flags for instruments at site
+#  construction_dt -- Date of first construction
+#  inventory_dt    -- Date site established or inventoried
+#  drain_area_va   -- Drainage area
+#  contrib_drain_area_va -- Contributing drainage area
+#  tz_cd           -- Time Zone abbreviation
+#  local_time_fg   -- Site honors Daylight Savings Time
+#  reliability_cd  -- Data reliability code
+#  gw_file_cd      -- Data-other GW files
+#  nat_aqfr_cd     -- National aquifer code
+#  aqfr_cd         -- Local aquifer code
+#  aqfr_type_cd    -- Local aquifer type code
+#  well_depth_va   -- Well depth
+#  hole_depth_va   -- Hole depth
+#  depth_src_cd    -- Source of depth data
+#  project_no      -- Project number
+#
+agency_cd	site_no	station_nm	site_tp_cd	lat_va	long_va	dec_lat_va	dec_long_va	coord_meth_cd	coord_acy_cd	coord_datum_cd	dec_coord_datum_cd	district_cd	state_cd	county_cd	country_cd	land_net_ds	map_nm	map_scale_fc	alt_va	alt_meth_cd	alt_acy_va	alt_datum_cd	huc_cd	basin_cd	topo_cd	instruments_cd	construction_dt	inventory_dt	drain_area_va	contrib_drain_area_va	tz_cd	local_time_fg	reliability_cd	gw_file_cd	nat_aqfr_cd	aqfr_cd	aqfr_type_cd	well_depth_va	hole_depth_va	depth_src_cd	project_no
+5s	15s	50s	7s	16s	16s	16s	16s	1s	1s	10s	10s	3s	2s	3s	2s	23s	20s	7s	8s	1s	3s	10s	16s	2s	1s	30s	8s	8s	8s	8s	6s	1s	1s	30s	10s	8s	1s	8s	8s	1s	12s
+USGS	08245000	CONEJOS RIVER BELOW PLATORO RESERVOIR, CO	ST	372117.65	1063239.0	37.35	-106.54	N	5	NAD83	NAD83	08	08	021	US	  SWNWS22 T036N R004E	PLATORO, CO	  24000	 1000.0	L	 15	NGVD29	13010005	08		NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN			40		MST	Y		NNNNNNNN

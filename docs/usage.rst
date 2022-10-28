@@ -36,6 +36,28 @@ Use metloom to find snow courses within a geometry from CDEC::
     df = points.to_dataframe()
     print(df)
 
+USGS
+----
+
+You can use ``point.get_daily_data()`` similarly to the SNOTEL example above to get
+daily data, and ``USGSPointData.points_from_geometry()`` similarly to the CDEC example above. To
+use metloom to find 15-minute streamflow from USGS::
+
+    from metloom.pointdata import USGSPointData
+    from datetime import datetime
+
+    stn_code = "13206000"
+    stn_name = "BOISE RIVER AT GLENWOOD BRIDGE NR BOISE ID"
+
+    point = USGSPointData(stn_code, stn_name)
+
+    df = point.get_instantaneous_data(
+        datetime(2020, 1, 2), datetime(2020, 1, 20),
+        [point.ALLOWED_VARIABLES.DISCHARGE]
+    )
+    print(df)
+
+
 Mesowest
 --------
 You can also use the Mesowest network if you sign up for an API token which is
