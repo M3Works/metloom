@@ -5,7 +5,7 @@ Credits
 Development Lead
 ----------------
 
-* M3Works <m3worksllc@gmail.com>
+* M3Works <info@m3works.io>
 
 Contributors
 ------------
