@@ -149,11 +149,21 @@ class USGSPointData(PointData):
             contains_data = False
 
         if len(resp["value"]["timeSeries"]) < 1:
-            LOG.warning(f" No data for site {self.id} with given parameters")
+            LOG.warning(
+                " Requested site, sensor(s), and date range resulted in no data "
+                "returned."
+            )
             contains_data = False
 
         if contains_data:
             data = resp["value"]["timeSeries"][0]
+
+            if not data["values"][0]["value"]:
+                LOG.warning(
+                    " Requested site, sensor(s), and date range resulted in no data "
+                    "returned."
+                )
+                data = []
 
         return data
 
@@ -184,6 +194,10 @@ class USGSPointData(PointData):
             response_data["values"][0]["value"],
             geometry=[self.metadata] * len(response_data["values"][0]["value"]),
         )
+
+        if sensor_df.empty:
+            LOG.warning(" Data request resulted in no data returned")
+            return []
 
         sensor_df.replace(no_data_value, np.nan, inplace=True)
         sensor_df["site"] = site_id
