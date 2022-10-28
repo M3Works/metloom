@@ -209,9 +209,14 @@ class USGSPointData(PointData):
             GeoDataFrame of data, indexed on datetime, site
         """
 
+        if hasattr(start_date, 'hour'):
+            start_date = start_date.date()
+        if hasattr(end_date, 'hour'):
+            end_date = end_date.date()
+
         params = {
-            'startDT': start_date.date().isoformat(),
-            'endDT': end_date.date().isoformat(),
+            'startDT': start_date.isoformat(),
+            'endDT': end_date.isoformat(),
             'sites': self.id,
             'format': 'json',
             'siteType': 'ST',
@@ -231,6 +236,7 @@ class USGSPointData(PointData):
                     response_data, sensor, final_columns, self.id
                 )
                 df = merge_df(df, sensor_df)
+                df[sensor.name] = df[sensor.name].astype(float)
 
         if df is not None:
             if len(df.index) > 0:
@@ -242,6 +248,7 @@ class USGSPointData(PointData):
             else:
                 df = None
         self.validate_sensor_df(df)
+
         return df
 
     def get_daily_data(
