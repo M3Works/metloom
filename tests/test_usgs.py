@@ -59,14 +59,14 @@ class TestUSGSStation(BasePointDataTest):
             [
                 {
                     "datetime": pd.Timestamp("2020-07-01 07:00:00+0000", tz="UTC"),
-                    "DISCHARGE": '721',
+                    "DISCHARGE": 721.0,
                     "DISCHARGE_units": "ft3/s",
                     "site": "08245000",
                     "datasource": "USGS",
                 },
                 {
                     "datetime": pd.Timestamp("2020-07-02 07:00:00+0000", tz="UTC"),
-                    "DISCHARGE": '664',
+                    "DISCHARGE": 664.0,
                     "DISCHARGE_units": "ft3/s",
                     "site": "08245000",
                     "datasource": "USGS",
