@@ -124,6 +124,12 @@ class SnotelVariables(VariableBase):
     # TODO for the SCAN network this appears to be "RHUM", we may need a new class
     RH = SensorDescription("RHUMV", "RELATIVE HUMIDITY", "RELATIVE HUMIDITY")
     # SOILMOIS = SensorDescription("SMS", "SOIL MOISTURE", "SOIL MOISTURE")
+    STREAMVOLUMEOBS = SensorDescription(
+        "SRVO", "STREAM VOLUME OBS", "STREAM VOLUME OBS"
+    )
+    STREAMVOLUMEADJ = SensorDescription(
+        "SRVOX", "STREAM VOLUME ADJ", "STREAM VOLUME ADJ"
+    )
 
 
 class MesowestVariables(VariableBase):
@@ -149,3 +155,15 @@ class MesowestVariables(VariableBase):
     SWE = SensorDescription("snow_water_equiv", "SWE")
     NETSHORTWAVE = SensorDescription("net_radiation_sw", "NET SHORTWAVE RADIATION")
     NETLONGWAVE = SensorDescription("net_radiation_lw", "NET LONGWAVE RADIATION")
+    STREAMFLOW = SensorDescription("stream_flow", "STREAMFLOW")
+
+
+class USGSVariables(VariableBase):
+    """
+    To add more sensors:
+    https://help.waterdata.usgs.gov/codes-and-parameters/parameters
+    """
+    DISCHARGE = SensorDescription("00060", "DISCHARGE", "DISCHARGE (CFS)")
+    STREAMFLOW = SensorDescription(
+        "74082", "STREAMFLOW", "STREAMFLOW, DAILY VOLUME (AC-FT)"
+    )

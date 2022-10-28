@@ -15,6 +15,7 @@ requirements = [
     'pandas>1.0.0',
     'lxml==4.9.1',
     'requests>2.0.0,<3.0.0',
+    'beautifulsoup4>4,<5',
     'zeep>4.0.0'
 ]
 
