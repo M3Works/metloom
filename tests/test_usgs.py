@@ -1,7 +1,7 @@
 from datetime import datetime
 from os.path import join
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import json
 
 import geopandas as gpd
@@ -30,7 +30,7 @@ class TestUSGSStation(BasePointDataTest):
 
     @pytest.fixture(scope="class")
     def crp_daily_expected(self):
-        points = gpd.points_from_xy([-106.5441667], [37.35490278], z=[9866.6])
+        points = gpd.points_from_xy([-106.54], [37.35], z=[9866.6])
         df = gpd.GeoDataFrame.from_dict(
             [
                 {
@@ -66,13 +66,6 @@ class TestUSGSStation(BasePointDataTest):
         return df
 
     @staticmethod
-    def crp_meta_return():
-        with open(join(DATA_DIR, "platoro_meta.txt")) as fp:
-            data_text = fp.read()
-
-        return data_text
-
-    @staticmethod
     def failure_response():
         class Response:
             status_code = 404
@@ -98,53 +91,37 @@ class TestUSGSStation(BasePointDataTest):
         return Response
 
     @classmethod
-    def crp_side_effect(cls, url, **kwargs):
-        mock = MagicMock()
-        params = kwargs["params"]
-
-        if "startDT" not in params:
-            mock.text = cls.crp_meta_return()
-        else:
-            raise ValueError("unknown scenario")
-
-        return mock
-
-    @classmethod
-    def get_url_response(cls):
-        with open(join(DATA_DIR, "daily_response.txt")) as fp:
-            data = json.load(fp)
+    def get_url_response(cls, resp="daily"):
+        if resp == 'daily':
+            with open(join(DATA_DIR, "daily_response.txt")) as fp:
+                data = json.load(fp)
+        if resp == 'metadata':
+            with open(join(DATA_DIR, "platoro_meta.txt")) as fp:
+                data = fp.read()
 
         return data
 
     def test_get_metadata(self, crp_station):
-        with patch("metloom.pointdata.usgs.requests") as mock_requests:
-            mock_requests.get.side_effect = self.crp_side_effect
+        with patch("metloom.pointdata.usgs.USGSPointData._get_url_response") \
+                as mock_request:
+            mock_request.return_value = self.get_url_response(resp="metadata")
             metadata = crp_station.metadata
-            mock_get = mock_requests.get
-            assert mock_get.call_count == 1
-            mock_get.assert_called_with(
-                "https://waterservices.usgs.gov/nwis/site/",
-                params={
-                    "format": "rdb",
-                    "sites": "08245000",
-                    "siteOutput": "expanded",
-                    "siteStatus": "all"
-                },
-            )
 
-        expected = gpd.points_from_xy([-106.54], [37.35], z=[1000.0])[0]
+        expected = gpd.points_from_xy([-106.54], [37.35], z=[9866.6])[0]
         assert expected == metadata
 
     def test_get_daily_data(self, crp_station, crp_daily_expected):
         with patch("metloom.pointdata.usgs.USGSPointData._get_url_response") \
-                as mock_request:
-            mock_request.return_value = self.get_url_response()
+                as mock_requests:
+            mock_requests.side_effect = [
+                self.get_url_response(),
+                self.get_url_response(resp='metadata')
+            ]
             response = crp_station.get_daily_data(
                 datetime(2020, 7, 1),
                 datetime(2020, 7, 2),
                 [USGSVariables.DISCHARGE],
             )
-
         pd.testing.assert_frame_equal(response, crp_daily_expected)
 
     def test_points_from_geometry(self, shape_obj):

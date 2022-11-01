@@ -41,6 +41,7 @@ class USGSPointData(PointData):
         self.duration = duration
 
     def _get_all_metadata(self):
+        df = []
         if self._raw_metadata is None:
             params = {
                 "format": "rdb",
@@ -48,18 +49,15 @@ class USGSPointData(PointData):
                 "siteOutput": "expanded",
                 "siteStatus": "all"
             }
-            resp = requests.get(self.META_URL, params=params)
-            resp.raise_for_status()
-            data = resp.text
-            try:
+            resp = self._get_url_response(self.META_URL, params=params, parse='text')
+
+            if resp:
                 df = pd.read_csv(
-                    StringIO(data), delimiter="\t", skip_blank_lines=True,
+                    StringIO(resp), delimiter="\t", skip_blank_lines=True,
                     comment="#"
                 )
-            except ValueError:
-                LOG.error("Could not convert data to dataFrame")
-                return None
-            df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
+                df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
+
             self._raw_metadata = df
 
         return self._raw_metadata
