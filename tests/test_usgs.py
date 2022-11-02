@@ -169,3 +169,27 @@ class TestUSGSStation(BasePointDataTest):
             assert result == []
 
         assert expected_error_msg in caplog.text
+
+    def test_check_dates(self, crp_station):
+        start_date = datetime(2020, 7, 1, 1, 1, 1)
+        end_date = datetime(2020, 7, 2, 1, 1, 1)
+        checked_start, checked_end = crp_station._check_dates(
+            start_date, end_date
+        )
+
+        assert start_date.date() == checked_start
+        assert end_date.date() == checked_end
+
+    def test_dates_fail(self, crp_station, caplog):
+        start_date = datetime(2020, 7, 2, 1, 1, 1)
+        end_date = datetime(2020, 7, 1, 1, 1, 1)
+        error_msg = (
+            f" end_date '{end_date.date()}' must be later than "
+            f"start_date '{start_date.date()}'"
+        )
+        with pytest.raises(ValueError):
+            checked_start, checked_end = crp_station._check_dates(
+                start_date, end_date
+            )
+
+        assert error_msg in caplog.text
