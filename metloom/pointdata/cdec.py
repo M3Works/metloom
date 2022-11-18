@@ -409,12 +409,19 @@ class CDECPointData(PointData):
         # return empty collection if we didn't find any points
         if search_df is None:
             return cls.ITERATOR_CLASS([])
+        clms = search_df.columns.values
+        if "ElevationFeet" in clms:
+            elev_key = "ElevationFeet"
+        elif "Elevation Feet" in clms:
+            elev_key = "Elevation Feet"
+        else:
+            raise RuntimeError("No key for elevation")
         gdf = gpd.GeoDataFrame(
             search_df,
             geometry=gpd.points_from_xy(
                 search_df["Longitude"],
                 search_df["Latitude"],
-                z=search_df["ElevationFeet"],
+                z=search_df[elev_key],
             ),
         )
         # filter to points within shapefile
