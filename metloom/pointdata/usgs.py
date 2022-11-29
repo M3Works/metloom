@@ -48,18 +48,15 @@ class USGSPointData(PointData):
                 "siteOutput": "expanded",
                 "siteStatus": "all"
             }
-            resp = requests.get(self.META_URL, params=params)
-            resp.raise_for_status()
-            data = resp.text
-            try:
+            resp = self._get_url_response(self.META_URL, params=params, parse='text')
+
+            if resp:
                 df = pd.read_csv(
-                    StringIO(data), delimiter="\t", skip_blank_lines=True,
+                    StringIO(resp), delimiter="\t", skip_blank_lines=True,
                     comment="#"
                 )
-            except ValueError:
-                LOG.error("Could not convert data to dataFrame")
-                return None
-            df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
+                df.drop(df[df['agency_cd'] != "USGS"].index, inplace=True)
+
             self._raw_metadata = df
 
         return self._raw_metadata
@@ -78,6 +75,33 @@ class USGSPointData(PointData):
         )
         data = data.set_crs("EPSG:4269").to_crs("EPSG:4326")
         return data.iloc[0]["geometry"]
+
+    @staticmethod
+    def _check_dates(start_date: datetime, end_date: datetime):
+        """
+        Ensure that datetimes are date only, without hour and minute, and that
+        end_date is later than start_date.
+
+        Args:
+            start_date: datetime
+            end_date: datetime
+
+        Returns:
+            start_date: datetime, date only
+            end_date: datetime, date only
+        """
+        if hasattr(start_date, 'hour'):
+            start_date = start_date.date()
+        if hasattr(end_date, 'hour'):
+            end_date = end_date.date()
+
+        if not end_date > start_date:
+            LOG.error(
+                f" end_date '{end_date}' must be later than start_date '{start_date}'"
+            )
+            raise ValueError("end_date must be later than start_date")
+
+        return start_date, end_date
 
     @property
     def tzinfo(self):
@@ -122,11 +146,21 @@ class USGSPointData(PointData):
             contains_data = False
 
         if len(resp["value"]["timeSeries"]) < 1:
-            LOG.warning(f" No data for site {self.id} with given parameters")
+            LOG.warning(
+                " Requested site, sensor(s), and date range resulted in no data "
+                "returned."
+            )
             contains_data = False
 
         if contains_data:
             data = resp["value"]["timeSeries"][0]
+
+            if not data["values"][0]["value"]:
+                LOG.warning(
+                    " Requested site, sensor(s), and date range resulted in no data "
+                    "returned."
+                )
+                data = []
 
         return data
 
@@ -157,6 +191,10 @@ class USGSPointData(PointData):
             response_data["values"][0]["value"],
             geometry=[self.metadata] * len(response_data["values"][0]["value"]),
         )
+
+        if sensor_df.empty:
+            LOG.warning(" Data request resulted in no data returned")
+            return []
 
         sensor_df.replace(no_data_value, np.nan, inplace=True)
         sensor_df["site"] = site_id
@@ -209,10 +247,7 @@ class USGSPointData(PointData):
             GeoDataFrame of data, indexed on datetime, site
         """
 
-        if hasattr(start_date, 'hour'):
-            start_date = start_date.date()
-        if hasattr(end_date, 'hour'):
-            end_date = end_date.date()
+        start_date, end_date = self._check_dates(start_date, end_date)
 
         params = {
             'startDT': start_date.isoformat(),
