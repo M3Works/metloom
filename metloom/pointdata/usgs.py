@@ -41,7 +41,6 @@ class USGSPointData(PointData):
         self.duration = duration
 
     def _get_all_metadata(self):
-        df = []
         if self._raw_metadata is None:
             params = {
                 "format": "rdb",
