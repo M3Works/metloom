@@ -38,10 +38,10 @@ class CDECPointData(PointData):
 
     def _parse_meta_page(self, df):
         result = {}
-        # resetructure the dataframes into a usable format
+        # restructure the dataframes into a usable format
         df_loc = df[0]
-        df1 = df_loc.loc[:, :1].transpose()
-        df2 = df_loc.loc[:, 2:].transpose()
+        df1 = df_loc.iloc[:, :2].transpose()
+        df2 = df_loc.iloc[:, 2:].transpose()
         result["location"] = pd.DataFrame(
             df1.values[1:], columns=df1.iloc[0]
         ).join(
