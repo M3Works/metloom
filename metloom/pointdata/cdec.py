@@ -24,7 +24,7 @@ class CDECPointData(PointData):
 
     ALLOWED_VARIABLES = CdecStationVariables
     CDEC_URL = "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet"
-    META_URL = "http://cdec.water.ca.gov/cdecstation2/CDecServlet/getStationInfo"
+    META_URL = "https://cdec.water.ca.gov/dynamicapp/staMeta"
     DATASOURCE = "CDEC"
 
     def __init__(self, station_id, name, metadata=None):
@@ -36,6 +36,32 @@ class CDECPointData(PointData):
         # CDEC has datetimes that aren't found in US/Pacific. Use this instead
         self._tzinfo = timezone(timedelta(hours=-8.0))
 
+    def _parse_meta_page(self, df):
+        result = {}
+        # resetructure the dataframes into a usable format
+        df_loc = df[0]
+        df1 = df_loc.loc[:, :1].transpose()
+        df2 = df_loc.loc[:, 2:].transpose()
+        result["location"] = pd.DataFrame(
+            df1.values[1:], columns=df1.iloc[0]
+        ).join(
+            pd.DataFrame(df2.values[1:], columns=df2.iloc[0])
+        )
+
+        # parse and cleanup the sensor info
+        df_sensors = pd.DataFrame(
+            df[1].values, columns=[
+                "Sensor Description", "Sensor Number", "Duration",
+                "Plot", "Data Collection", "Data Available"
+            ]
+        )
+        df_sensors["Duration"] = df_sensors["Duration"].map(
+            lambda x: x.replace("(", "").replace(")", "").strip()
+        )
+        result["sensors"] = df_sensors
+
+        return result
+
     def _get_all_metadata(self):
         """
         Get all the raw metadata for a station. This is a list of sensor
@@ -44,17 +70,31 @@ class CDECPointData(PointData):
             A list of dictionaries describing the sensors at a station
         """
         if self._raw_metadata is None:
-            resp = requests.get(self.META_URL, params={"stationID": self.id})
-            resp.raise_for_status()
-            self._raw_metadata = resp.json()["STATION"]
+            url = self.META_URL + f"?station_id={self.id}"
+            df = pd.read_html(url)
+            self._raw_metadata = self._parse_meta_page(df)
         return self._raw_metadata
+
+    def _check_snowcourse_sensors(self):
+        """
+        Returns a list of booleans for snow sensors that checks if they
+        are monthly in cadence
+        """
+        snow_sensors = [18, 3, 82]
+        data = self._get_all_metadata()
+        sensors = data["sensors"]
+        manual_check = []
+        for d, num in zip(sensors["Duration"], sensors["Sensor Number"]):
+            if int(num) in snow_sensors:
+                manual_check.append(d == "monthly")
+        return manual_check
 
     def is_only_snow_course(self, variables: List[SensorDescription]):
         """
         Determine if a station only has snow course measurements
         """
-        data = self._get_all_metadata()
-        manual_check = [d["DUR_CODE"] == "M" for d in data if d["SENS_GRP"] == "snow"]
+        manual_check = self._check_snowcourse_sensors()
+
         result = False
         if len(manual_check) > 0 and all(manual_check):
             result = True
@@ -82,43 +122,42 @@ class CDECPointData(PointData):
         interval
         Assumption: Monthly snow sensor measurements are snow courses
         """
-        data = self._get_all_metadata()
-        return any([d["DUR_CODE"] == "M" for d in data if d["SENS_GRP"] == "snow"])
+        result = self._check_snowcourse_sensors()
+        return any(result)
 
     def is_only_monthly(self):
         """
         determine if all sensors for a station are on a monthly interval
         """
         data = self._get_all_metadata()
-        manual_check = [d["DUR_CODE"] == "M" for d in data]
+        duration = data["sensors"]["Duration"].values
+        manual_check = [d == "monthly" for d in duration]
         if len(manual_check) > 0 and all(manual_check):
             return True
         return False
+
+    @staticmethod
+    def _parse_str_deg(value):
+        return float(value.replace("°", ""))
+
+    @staticmethod
+    def _parse_elevation(value):
+        num, unit = value.split(" ")
+        if unit.lower() not in ["ft", "feet"]:
+            raise RuntimeError("Unexpected unit for elevation")
+        return float(num)
 
     def _get_metadata(self):
         """
         See docstring for PointData._get_metadata
         """
         data = self._get_all_metadata()
-        # TODO: Should this be sensor specific?
-        metadata_by_name = {d["SENS_LONG_NAME"]: d for d in data}
-        # default to the first sensor
-        chosen_sensor_data = data[0]
-        # try to replace it with a desired sensor
-        # TODO: Change this
-        for choice in [
-            "SNOW, WATER CONTENT",
-            "SNOW DEPTH",
-            "PRECIPITATION, ACCUMULATED",
-        ]:
-            if metadata_by_name.get(choice) is not None:
-                chosen_sensor_data = metadata_by_name[choice]
-                break
+        location_data = data["location"].iloc[0]
 
         return gpd.points_from_xy(
-            [chosen_sensor_data["LONGITUDE"]],
-            [chosen_sensor_data["LATITUDE"]],
-            z=[chosen_sensor_data["ELEVATION"]],
+            [self._parse_str_deg(location_data["Longitude"])],
+            [self._parse_str_deg(location_data["Latitude"])],
+            z=[self._parse_elevation(location_data["Elevation"])],
         )[0]
 
     def _data_request(self, params):
