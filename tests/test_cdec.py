@@ -445,7 +445,9 @@ class TestCDECStation(BasePointDataTest):
         mock_read_html.assert_called_once()
         pd.testing.assert_frame_equal(response, tny_daily_expected)
 
-    def test_get_daily_from_hourly_data(self,  mock_read_html, tny_station, expected_points):
+    def test_get_daily_from_hourly_data(
+        self, mock_read_html, tny_station, expected_points
+    ):
         """
         Check that we fall back on resampled hourly data if we don't find
         daily data
@@ -478,7 +480,7 @@ class TestCDECStation(BasePointDataTest):
                 response, expected, check_exact=False, check_like=True
             )
 
-    def test_points_from_geometry(self,  mock_read_html, shape_obj):
+    def test_points_from_geometry(self, mock_read_html, shape_obj):
         expected_url = (
             "https://cdec.water.ca.gov/dynamicapp/staSearch?"
             "sta=&sensor_chk=on&sensor=3"
@@ -514,7 +516,7 @@ class TestCDECStation(BasePointDataTest):
         result_val = match.split("=")[-1]
         return float(result_val)
 
-    def test_points_from_geometry_buffer(self, mock_read_html,  shape_obj):
+    def test_points_from_geometry_buffer(self, mock_read_html, shape_obj):
         CDECPointData.points_from_geometry(
             shape_obj, [CdecStationVariables.SWE], buffer=0.1
         )
