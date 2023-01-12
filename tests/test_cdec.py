@@ -497,7 +497,7 @@ class TestCDECStation(BasePointDataTest):
             shape_obj, [CdecStationVariables.SWE]
         )
         calls = mock_read_html.call_args_list
-        assert calls[0].args[0] == expected_url
+        assert calls[0][0][0] == expected_url
         assert len(result) == 6
         assert [st.id for st in result] == [
             "GIN", "DAN", "TNY", "GFL", "TUM", "SLI"
@@ -520,10 +520,8 @@ class TestCDECStation(BasePointDataTest):
         CDECPointData.points_from_geometry(
             shape_obj, [CdecStationVariables.SWE], buffer=0.1
         )
-        "&loc_chk=on&lon1=-119.8"
-        "&lon2=-119.2&lat1=37.7"
-        "&lat2=38.2"
-        result_str = mock_read_html.call_args_list[0].args[0]
+
+        result_str = mock_read_html.call_args_list[0][0][0]
         expected = {
             'lat2': 38.3, 'lat1': 37.6,
             'lon2': -119.1, 'lon1': -119.9
