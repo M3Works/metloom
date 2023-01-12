@@ -6,7 +6,9 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
+import shapely
 from pandas import Timestamp
+from pathlib import Path
 
 from metloom.pointdata import CDECPointData, PointDataCollection
 from metloom.variables import CdecStationVariables
@@ -14,6 +16,8 @@ from tests.test_point_data import BasePointDataTest, side_effect_error
 
 
 class TestCDECStation(BasePointDataTest):
+    CDEC_MOCKS_DIR = Path(__file__).parent.joinpath("data/cdec_mocks")
+
     @staticmethod
     def cdec_daily_precip_response():
         return [
@@ -133,8 +137,11 @@ class TestCDECStation(BasePointDataTest):
         return CDECPointData("TNY", "Tenaya Lake")
 
     @pytest.fixture(scope="class")
-    def tny_daily_expected(self):
-        points = gpd.points_from_xy([-119.0], [42.0], z=[1000.0])
+    def expected_points(self):
+        return gpd.points_from_xy([-119.448], [37.838], z=[1000.0])
+
+    @pytest.fixture(scope="class")
+    def tny_daily_expected(self, expected_points):
         df = gpd.GeoDataFrame.from_dict(
             [
                 {
@@ -175,7 +182,7 @@ class TestCDECStation(BasePointDataTest):
                     "datasource": "CDEC"
                 },
             ],
-            geometry=[points[0]] * 4,
+            geometry=[expected_points[0]] * 4,
         )
         # needed to reorder the columns for the pd testing compare
         df = df.filter(
@@ -194,18 +201,28 @@ class TestCDECStation(BasePointDataTest):
         df.set_index(keys=["datetime", "site"], inplace=True)
         return df
 
-    @staticmethod
-    def tny_meta_return():
-        return {
-            "STATION": [
-                {
-                    "SENS_LONG_NAME": "SNOW, WATER CONTENT",
-                    "ELEVATION": 1000.0,
-                    "LATITUDE": 42.0,
-                    "LONGITUDE": -119.0,
-                }
-            ]
-        }
+    @classmethod
+    def tny_meta_return(cls):
+        result = [
+            pd.read_csv(cls.CDEC_MOCKS_DIR.joinpath("raw_tny_locations.csv")),
+            pd.read_csv(cls.CDEC_MOCKS_DIR.joinpath("raw_tny_sensors.csv")),
+            pd.read_csv(cls.CDEC_MOCKS_DIR.joinpath("raw_tny_notes.csv"))
+        ]
+        return result
+
+    def read_html_side_effect(self, url, **kwargs):
+        if "dynamicapp/staSearch" in url:
+            return self.station_search_side_effect(url)
+        elif "dynamicapp/staMeta" in url:
+            return self.tny_meta_return()
+        else:
+            raise ValueError("Unknown html scenario in the test mocks")
+
+    @pytest.fixture
+    def mock_read_html(self):
+        with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
+            mock_table_read.side_effect = self.read_html_side_effect
+            yield mock_table_read
 
     @classmethod
     def tny_side_effect(cls, url, **kwargs):
@@ -217,8 +234,6 @@ class TestCDECStation(BasePointDataTest):
             mock.json.return_value = cls.cdec_daily_temp_response()
         elif params.get("dur_code") == "H":
             raise NotImplementedError()
-        elif "getStationInfo" in url:
-            mock.json.return_value = cls.tny_meta_return()
         else:
             raise ValueError("unknown scenario")
         return mock
@@ -395,20 +410,17 @@ class TestCDECStation(BasePointDataTest):
     def test_class_variables(self):
         assert CDECPointData("no", "no").tzinfo == timezone(timedelta(hours=-8.0))
 
-    def test_get_metadata(self, tny_station):
-        with patch("metloom.pointdata.cdec.requests") as mock_requests:
-            mock_requests.get.side_effect = self.tny_side_effect
-            metadata = tny_station.metadata
-            mock_get = mock_requests.get
-            assert mock_get.call_count == 1
-            mock_get.assert_called_with(
-                "http://cdec.water.ca.gov/cdecstation2/CDecServlet/getStationInfo",
-                params={"stationID": "TNY"},
-            )
-        expected = gpd.points_from_xy([-119.0], [42.0], z=[1000.0])[0]
-        assert expected == metadata
+    def test_get_metadata(self, mock_read_html, tny_station, expected_points):
+        metadata = tny_station.metadata
 
-    def test_get_daily_data(self, tny_station, tny_daily_expected):
+        mock_read_html.assert_called_once_with(
+            "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=TNY"
+        )
+
+        # elevation is 1000 just to make sure our mocks are working
+        assert expected_points[0] == metadata
+
+    def test_get_daily_data(self, mock_read_html, tny_station, tny_daily_expected):
         with patch("metloom.pointdata.cdec.requests") as mock_requests:
             mock_get = mock_requests.get
             mock_get.side_effect = self.tny_side_effect
@@ -429,10 +441,13 @@ class TestCDECStation(BasePointDataTest):
                     "SensorNums": "30",
                 },
             )
-            assert mock_get.call_count == 3
+            assert mock_get.call_count == 2
+        mock_read_html.assert_called_once()
         pd.testing.assert_frame_equal(response, tny_daily_expected)
 
-    def test_get_daily_from_hourly_data(self, tny_station):
+    def test_get_daily_from_hourly_data(
+        self, mock_read_html, tny_station, expected_points
+    ):
         """
         Check that we fall back on resampled hourly data if we don't find
         daily data
@@ -445,7 +460,8 @@ class TestCDECStation(BasePointDataTest):
                 datetime(2021, 5, 16),
                 [CdecStationVariables.TEMPAVG],
             )
-            assert mock_get.call_count == 3
+            assert mock_get.call_count == 2
+            mock_read_html.assert_called_once()
             expected = gpd.GeoDataFrame.from_dict(
                 {
                     'AVG AIR TEMP': {
@@ -457,14 +473,14 @@ class TestCDECStation(BasePointDataTest):
                     'datasource': {
                         (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
                          'TNY'): 'CDEC'}
-                }, geometry=gpd.points_from_xy([-119.0], [42.0], z=[1000.0])
+                }, geometry=expected_points
             )
             expected.index.set_names(["datetime", "site"], inplace=True)
             pd.testing.assert_frame_equal(
                 response, expected, check_exact=False, check_like=True
             )
 
-    def test_points_from_geometry(self, shape_obj):
+    def test_points_from_geometry(self, mock_read_html, shape_obj):
         expected_url = (
             "https://cdec.water.ca.gov/dynamicapp/staSearch?"
             "sta=&sensor_chk=on&sensor=3"
@@ -477,14 +493,15 @@ class TestCDECStation(BasePointDataTest):
             "&hydro=NONE+SPECIFIED&county=NONE+SPECIFIED"
             "&agency_num=160&display=sta"
         )
-        with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
-            mock_table_read.return_value = self.station_search_response()
-            result = CDECPointData.points_from_geometry(
-                shape_obj, [CdecStationVariables.SWE]
-            )
-            mock_table_read.assert_called_with(expected_url)
-            assert len(result) == 5
-            assert [st.id for st in result] == ["GIN", "DAN", "TNY", "TUM", "SLI"]
+        result = CDECPointData.points_from_geometry(
+            shape_obj, [CdecStationVariables.SWE]
+        )
+        calls = mock_read_html.call_args_list
+        assert calls[0][0][0] == expected_url
+        assert len(result) == 6
+        assert [st.id for st in result] == [
+            "GIN", "DAN", "TNY", "GFL", "TUM", "SLI"
+        ]
 
     @staticmethod
     def check_str_for_float(whole_string, key):
@@ -499,16 +516,12 @@ class TestCDECStation(BasePointDataTest):
         result_val = match.split("=")[-1]
         return float(result_val)
 
-    def test_points_from_geometry_buffer(self, shape_obj):
-        with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
-            mock_table_read.return_value = self.station_search_response()
-            CDECPointData.points_from_geometry(
-                shape_obj, [CdecStationVariables.SWE], buffer=0.1
-            )
-            "&loc_chk=on&lon1=-119.8"
-            "&lon2=-119.2&lat1=37.7"
-            "&lat2=38.2"
-            result_str = mock_table_read.call_args[0][0]
+    def test_points_from_geometry_buffer(self, mock_read_html, shape_obj):
+        CDECPointData.points_from_geometry(
+            shape_obj, [CdecStationVariables.SWE], buffer=0.1
+        )
+
+        result_str = mock_read_html.call_args_list[0][0][0]
         expected = {
             'lat2': 38.3, 'lat1': 37.6,
             'lon2': -119.1, 'lon1': -119.9
@@ -517,29 +530,26 @@ class TestCDECStation(BasePointDataTest):
             result = self.check_str_for_float(result_str, k)
             assert v == pytest.approx(result)
 
-    def test_points_from_geometry_multi_sensor(self, shape_obj):
-        with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
-            # patch the snowcourse check so we don't fetch metadata
-            with patch.object(
-                CDECPointData, 'is_only_snow_course', return_value=False
-            ):
-                mock_table_read.side_effect = self.station_search_side_effect
-                result = CDECPointData.points_from_geometry(
-                    shape_obj,
-                    [CdecStationVariables.SWE, CdecStationVariables.SNOWDEPTH],
-                    within_geometry=False
-                )
-                expected_names = [
-                    "A Fake Station", "B Fake Station", "GIN FLAT",
-                    "DANA MEADOWS", "TENAYA LAKE", "GIN FLAT (COURSE)",
-                    "TUOLUMNE MEADOWS", "SLIDE CANYON"
-                ]
-                expected_codes = [
-                    "AAA", "BBB", "GIN", "DAN", "TNY", "TUM", "SLI", "GFL"
-                ]
-                assert len(result) == 8
-                assert all([st.id in expected_codes for st in result])
-                assert all([st.name in expected_names for st in result])
+    def test_points_from_geometry_multi_sensor(self, mock_read_html, shape_obj):
+        with patch.object(
+            CDECPointData, 'is_only_snow_course', return_value=False
+        ):
+            result = CDECPointData.points_from_geometry(
+                shape_obj,
+                [CdecStationVariables.SWE, CdecStationVariables.SNOWDEPTH],
+                within_geometry=False
+            )
+            expected_names = [
+                "A Fake Station", "B Fake Station", "GIN FLAT",
+                "DANA MEADOWS", "TENAYA LAKE", "GIN FLAT (COURSE)",
+                "TUOLUMNE MEADOWS", "SLIDE CANYON"
+            ]
+            expected_codes = [
+                "AAA", "BBB", "GIN", "DAN", "TNY", "TUM", "SLI", "GFL"
+            ]
+            assert len(result) == 8
+            assert all([st.id in expected_codes for st in result])
+            assert all([st.name in expected_names for st in result])
 
     def test_points_from_geometry_fail(self, shape_obj):
         with patch("metloom.pointdata.cdec.pd") as mock_pd:
@@ -549,20 +559,19 @@ class TestCDECStation(BasePointDataTest):
             )
             assert result.points == []
 
-    def test_point_collection_to_dataframe(self, shape_obj):
-        with patch("metloom.pointdata.cdec.pd.read_html") as mock_table_read:
-            mock_table_read.return_value = self.station_search_response()
-            result = CDECPointData.points_from_geometry(
-                shape_obj, [CdecStationVariables.SWE]
-            )
-            assert isinstance(result, PointDataCollection)
-            points_df = result.to_dataframe()
-            for idp, point in enumerate(result):
-                point_row = points_df.iloc[idp]
-                assert point.name == point_row["name"]
-                assert point.id == point_row["id"]
-                assert point.metadata == point_row["geometry"]
-                assert point.DATASOURCE == point_row["datasource"]
+    def test_point_collection_to_dataframe(self, mock_read_html, shape_obj):
+        result = CDECPointData.points_from_geometry(
+            shape_obj, [CdecStationVariables.SWE]
+        )
+        assert mock_read_html.call_count == 7
+        assert isinstance(result, PointDataCollection)
+        points_df = result.to_dataframe()
+        for idp, point in enumerate(result):
+            point_row = points_df.iloc[idp]
+            assert point.name == point_row["name"]
+            assert point.id == point_row["id"]
+            assert point.metadata == point_row["geometry"]
+            assert point.DATASOURCE == point_row["datasource"]
 
     def test_can_parse_dates(self, tny_station):
         df = pd.DataFrame.from_records([
@@ -575,3 +584,27 @@ class TestCDECStation(BasePointDataTest):
         df.set_index("datetime", inplace=True)
         df.index = df.index.tz_localize(tny_station.tzinfo)
         df.tz_convert("UTC")
+
+
+class TestCdecUptime:
+    """
+    Live tests of cdec
+    """
+    @pytest.fixture(scope="class")
+    def tum(self):
+        point = CDECPointData("TUM", "Tuolumne Meadows")
+        # call metadata once so we cache it off
+        print(point.metadata)
+        return point
+
+    def test_metadata(self, tum):
+        assert tum.metadata == shapely.geometry.Point(-119.35, 37.873, 8600)
+
+    def test_is_snowcourse(self, tum):
+        assert tum.is_partly_snow_course()
+
+    def test_is_only_monthly(self, tum):
+        assert not tum.is_only_monthly()
+
+    def test_is_only_snowcourse(self, tum):
+        assert not tum.is_only_snow_course([tum.ALLOWED_VARIABLES.SWE])
