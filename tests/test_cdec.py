@@ -608,3 +608,26 @@ class TestCdecUptime:
 
     def test_is_only_snowcourse(self, tum):
         assert not tum.is_only_snow_course([tum.ALLOWED_VARIABLES.SWE])
+
+
+class TestCdecUptimeTRK:
+    @pytest.fixture(scope="class")
+    def stn(self):
+        point = CDECPointData("TRK", "Truckee River Near Truckee")
+        # call metadata once so we cache it off
+        print(point.metadata)
+        return point
+
+    def test_metadata(self, stn):
+        assert stn.metadata == shapely.geometry.Point(
+            -120.205475, 39.296295, 5858
+        )
+
+    def test_is_snowcourse(self, stn):
+        assert not stn.is_partly_snow_course()
+
+    def test_is_only_monthly(self, stn):
+        assert not stn.is_only_monthly()
+
+    def test_is_only_snowcourse(self, stn):
+        assert not stn.is_only_snow_course([stn.ALLOWED_VARIABLES.SWE])
