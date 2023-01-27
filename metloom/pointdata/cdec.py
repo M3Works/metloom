@@ -36,6 +36,26 @@ class CDECPointData(PointData):
         # CDEC has datetimes that aren't found in US/Pacific. Use this instead
         self._tzinfo = timezone(timedelta(hours=-8.0))
 
+    def _parse_sensor_table(self, df):
+        df_sensors = pd.DataFrame(
+            df.values, columns=[
+                "Sensor Description", "Sensor Number", "Duration",
+                "Plot", "Data Collection", "Data Available"
+            ]
+        )
+        df_sensors["Duration"] = df_sensors["Duration"].map(
+            lambda x: x.replace("(", "").replace(")", "").strip()
+        )
+        duration_values = df_sensors["Duration"].values
+        if any(
+            [k in duration_values for k in
+             ["monthly", "daily", "hourly", "event"]]
+        ):
+            return df_sensors
+        else:
+            # If we didn't find any valid durations, we have the wrong table
+            return None
+
     def _parse_meta_page(self, df):
         result = {}
         # restructure the dataframes into a usable format
@@ -47,17 +67,19 @@ class CDECPointData(PointData):
         ).join(
             pd.DataFrame(df2.values[1:], columns=df2.iloc[0])
         )
+        # Make sure we read the expected table
+        if "Longitude" not in result["location"].columns.values:
+            LOG.error(result["location"])
+            raise RuntimeError(f"Failed parsing metadata for {self.id}")
 
         # parse and cleanup the sensor info
-        df_sensors = pd.DataFrame(
-            df[1].values, columns=[
-                "Sensor Description", "Sensor Number", "Duration",
-                "Plot", "Data Collection", "Data Available"
-            ]
-        )
-        df_sensors["Duration"] = df_sensors["Duration"].map(
-            lambda x: x.replace("(", "").replace(")", "").strip()
-        )
+        df_sensors = self._parse_sensor_table(df[1])
+        if df_sensors is None:
+            df_sensors = self._parse_sensor_table(df[2])
+            if df_sensors is None:
+                LOG.error(f"Failed to find sensor info for {self.id}")
+                raise RuntimeError(f"Failed to find sensor info for {self.id}")
+
         result["sensors"] = df_sensors
 
         return result
