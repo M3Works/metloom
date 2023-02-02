@@ -56,9 +56,9 @@ def merge_df(
     Returns:
         The merged dataframe
     """
-    if df is None:
+    if df is None or len(df) == 0:
         result_df = new_df
-    elif new_df is None:
+    elif new_df is None or len(new_df) == 0:
         result_df = df
     else:
         try:
