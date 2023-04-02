@@ -14,7 +14,6 @@ from metloom.pointdata import CDECPointData, PointDataCollection
 from metloom.variables import CdecStationVariables
 from tests.test_point_data import BasePointDataTest, side_effect_error
 
-from pytest import approx
 
 class TestCDECStation(BasePointDataTest):
     CDEC_MOCKS_DIR = Path(__file__).parent.joinpath("data/cdec_mocks")
