@@ -37,24 +37,32 @@ class CDECPointData(PointData):
         self._tzinfo = timezone(timedelta(hours=-8.0))
 
     def _parse_sensor_table(self, df):
-        df_sensors = pd.DataFrame(
-            df.values, columns=[
-                "Sensor Description", "Sensor Number", "Duration",
-                "Plot", "Data Collection", "Data Available"
-            ]
-        )
-        df_sensors["Duration"] = df_sensors["Duration"].map(
-            lambda x: x.replace("(", "").replace(")", "").strip()
-        )
-        duration_values = df_sensors["Duration"].values
-        if any(
-            [k in duration_values for k in
-             ["monthly", "daily", "hourly", "event"]]
-        ):
-            return df_sensors
-        else:
-            # If we didn't find any valid durations, we have the wrong table
-            return None
+        expected_cols = [
+            "Sensor Description", "Sensor Number", "Duration",
+            "Plot", "Data Collection", "Data Available"
+        ]
+
+        df_sensors = None
+
+        if len(df.columns) == len(expected_cols):
+            df_sensors = pd.DataFrame(
+                df.values, columns=[
+                    "Sensor Description", "Sensor Number", "Duration",
+                    "Plot", "Data Collection", "Data Available"
+                ]
+            )
+            df_sensors["Duration"] = df_sensors["Duration"].map(
+                lambda x: x.replace("(", "").replace(")", "").strip()
+            )
+            duration_values = df_sensors["Duration"].values
+            if not any(
+                [k in duration_values for k in
+                 ["monthly", "daily", "hourly", "event"]]
+            ):
+                df_sensors = None
+
+        # If we didn't find any valid durations, we have the wrong table
+        return df_sensors
 
     def _parse_meta_page(self, df):
         result = {}
