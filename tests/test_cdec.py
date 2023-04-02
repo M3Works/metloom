@@ -14,6 +14,7 @@ from metloom.pointdata import CDECPointData, PointDataCollection
 from metloom.variables import CdecStationVariables
 from tests.test_point_data import BasePointDataTest, side_effect_error
 
+from pytest import approx
 
 class TestCDECStation(BasePointDataTest):
     CDEC_MOCKS_DIR = Path(__file__).parent.joinpath("data/cdec_mocks")
@@ -598,7 +599,7 @@ class TestCdecUptime:
         return point
 
     def test_metadata(self, tum):
-        assert tum.metadata == shapely.geometry.Point(-119.35, 37.873, 8600)
+        assert tum.metadata == shapely.geometry.Point(-119.348096, 37.876406, 8600)
 
     def test_is_snowcourse(self, tum):
         assert tum.is_partly_snow_course()
