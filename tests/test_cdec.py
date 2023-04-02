@@ -598,7 +598,7 @@ class TestCdecUptime:
         return point
 
     def test_metadata(self, tum):
-        assert tum.metadata == shapely.geometry.Point(-119.35, 37.873, 8600)
+        assert tum.metadata == shapely.geometry.Point(-119.348096, 37.876406, 8600)
 
     def test_is_snowcourse(self, tum):
         assert tum.is_partly_snow_course()
