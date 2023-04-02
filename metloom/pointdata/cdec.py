@@ -38,9 +38,9 @@ class CDECPointData(PointData):
 
     def _parse_sensor_table(self, df):
         expected_cols = [
-                "Sensor Description", "Sensor Number", "Duration",
-                "Plot", "Data Collection", "Data Available"
-            ]
+            "Sensor Description", "Sensor Number", "Duration",
+            "Plot", "Data Collection", "Data Available"
+        ]
 
         df_sensors = None
 
