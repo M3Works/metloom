@@ -121,9 +121,20 @@ class SnotelVariables(VariableBase):
     TEMPGROUND20IN = SensorDescription(
         "STO", "GROUND TEMPERATURE -20IN", "GROUND TEMPERATURE OBS -20IN"
     )
+    SOILMOISTURE2IN = SensorDescription(
+        "SMS", "SOIL MOISTURE -2IN", "SOIL MOISTURE PERCENT -2IN"
+    )
+    SOILMOISTURE4IN = SensorDescription(
+        "SMS", "SOIL MOISTURE -4IN", "SOIL MOISTURE PERCENT -4IN"
+    )
+    SOILMOISTURE8IN = SensorDescription(
+        "SMS", "SOIL MOISTURE -8IN", "SOIL MOISTURE PERCENT -8IN"
+    )
+    SOILMOISTURE20IN = SensorDescription(
+        "SMS", "SOIL MOISTURE -20IN", "SOIL MOISTURE PERCENT -20IN"
+    )
     # TODO for the SCAN network this appears to be "RHUM", we may need a new class
     RH = SensorDescription("RHUMV", "RELATIVE HUMIDITY", "RELATIVE HUMIDITY")
-    # SOILMOIS = SensorDescription("SMS", "SOIL MOISTURE", "SOIL MOISTURE")
     STREAMVOLUMEOBS = SensorDescription(
         "SRVO", "STREAM VOLUME OBS", "STREAM VOLUME OBS"
     )
