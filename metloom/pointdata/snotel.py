@@ -116,7 +116,7 @@ class SnotelPointData(PointData):
         for variable in variables:
             # need to add extra_params for ground temp call, this may not be the
             # best logic
-            if 'GROUND' in variable.name:
+            if 'GROUND' in variable.name or 'SOIL' in variable.name:
                 params = extra_params[variable.name]
             else:
                 params = {}
@@ -246,7 +246,7 @@ class SnotelPointData(PointData):
         Get additional necessary fixed arguments for sensors that need heightDepth
         params (soil moisture and soil temp)
         """
-
+        # TODO: this could be refactored into properties of the variable
         extra_params_map = {
             self.ALLOWED_VARIABLES.TEMPGROUND2IN: {
                 'height_depth': {"value": -2, "unitCd": "in"}
@@ -260,7 +260,18 @@ class SnotelPointData(PointData):
             self.ALLOWED_VARIABLES.TEMPGROUND20IN: {
                 'height_depth': {"value": -20, "unitCd": "in"}
             },
-
+            self.ALLOWED_VARIABLES.SOILMOISTURE2IN: {
+                'height_depth': {"value": -2, "unitCd": "in"}
+            },
+            self.ALLOWED_VARIABLES.SOILMOISTURE4IN: {
+                'height_depth': {"value": -4, "unitCd": "in"}
+            },
+            self.ALLOWED_VARIABLES.SOILMOISTURE8IN: {
+                'height_depth': {"value": -8, "unitCd": "in"}
+            },
+            self.ALLOWED_VARIABLES.SOILMOISTURE20IN: {
+                'height_depth': {"value": -20, "unitCd": "in"}
+            },
         }
 
         extra_params = {}
