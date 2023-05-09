@@ -315,7 +315,9 @@ class SnotelPointData(PointData):
         projected_geom = geometry.to_crs(4326)
         bounds = projected_geom.bounds.iloc[0]
         # TODO: network may need to change to get streamflow
-        network = "SNOW" if kwargs['snow_courses'] else ["SNTL", "USGS", "BOR", "COOP"]
+        network = "SNOW" if kwargs['snow_courses'] else [
+            "SNTL", "USGS", "BOR", "COOP", "SNTLT"
+        ]
         point_codes = []
         buffer = kwargs["buffer"]
         search_kwargs = {
