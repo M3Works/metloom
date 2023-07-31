@@ -36,7 +36,9 @@ class USGSPointData(PointData):
         """
         See docstring for PointData.__init__
         """
-        super(USGSPointData, self).__init__(station_id, name, metadata=metadata)
+        super(USGSPointData, self).__init__(
+            str(station_id), name, metadata=metadata
+        )
         self._tzinfo = None
         self._raw_metadata = None
         self.duration = duration
@@ -203,10 +205,13 @@ class USGSPointData(PointData):
         sensor_df["site"] = site_id
         sensor_df[f"{sensor.name}_units"] = units
 
+        # cast values to float
+        sensor_df["value"] = sensor_df["value"].astype('float32')
+
         final_columns += [sensor.name, f"{sensor.name}_units"]
         column_map = {"dateTime": "datetime", "value": sensor.name}
         sensor_df.rename(columns=column_map, inplace=True)
-        sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
+        sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"], utc=True)
 
         if resample_duration:
             sensor_df = resample_whole_df(
@@ -214,9 +219,6 @@ class USGSPointData(PointData):
                 interval=resample_duration
             ).reset_index()
             sensor_df = GeoDataFrame(sensor_df, geometry=sensor_df["geometry"])
-
-        if sensor_df["datetime"][0].tzinfo is None:
-            sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
 
         # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
@@ -268,7 +270,6 @@ class USGSPointData(PointData):
             'endDT': end_date.isoformat(),
             'sites': self.id,
             'format': 'json',
-            'siteType': 'ST',
             'siteStatus': 'all'
         }
 
