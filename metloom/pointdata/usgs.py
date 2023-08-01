@@ -7,10 +7,11 @@ import requests
 import logging
 from io import StringIO
 from bs4 import BeautifulSoup
+from geopandas import GeoDataFrame
 
 from .base import PointData
 from ..variables import USGSVariables, SensorDescription
-from ..dataframe_utils import merge_df, append_df
+from ..dataframe_utils import merge_df, append_df, resample_whole_df
 
 LOG = logging.getLogger(__name__)
 
@@ -35,7 +36,9 @@ class USGSPointData(PointData):
         """
         See docstring for PointData.__init__
         """
-        super(USGSPointData, self).__init__(station_id, name, metadata=metadata)
+        super(USGSPointData, self).__init__(
+            str(station_id), name, metadata=metadata
+        )
         self._tzinfo = None
         self._raw_metadata = None
         self.duration = duration
@@ -95,7 +98,7 @@ class USGSPointData(PointData):
         if hasattr(end_date, 'hour'):
             end_date = end_date.date()
 
-        if not end_date > start_date:
+        if not end_date >= start_date:
             LOG.error(
                 f" end_date '{end_date}' must be later than start_date '{start_date}'"
             )
@@ -165,7 +168,8 @@ class USGSPointData(PointData):
         return data
 
     def _sensor_response_to_df(
-        self, response_data, sensor, final_columns, site_id
+        self, response_data, sensor, final_columns, site_id,
+        resample_duration=None
     ):
         """
         Convert the response data from the API to a GeoDataFrame Format and map columns
@@ -176,6 +180,7 @@ class USGSPointData(PointData):
             sensor: SensorDescription obj
             final_columns: List of columns used for filtering
             site_id: site id
+            resample_duration: To resample the array. [None, 'D', 'H']
         Returns:
             GeoDataFrame
         """
@@ -200,13 +205,42 @@ class USGSPointData(PointData):
         sensor_df["site"] = site_id
         sensor_df[f"{sensor.name}_units"] = units
 
+        # cast values to float
+        sensor_df["value"] = sensor_df["value"].astype('float32')
+
         final_columns += [sensor.name, f"{sensor.name}_units"]
         column_map = {"dateTime": "datetime", "value": sensor.name}
         sensor_df.rename(columns=column_map, inplace=True)
-        sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
 
-        if sensor_df["datetime"][0].tzinfo is None:
-            sensor_df["datetime"] = sensor_df["datetime"].apply(self._handle_df_tz)
+        # Daily data doesn't have timezone built in
+        if pd.to_datetime(sensor_df["datetime"])[0].tzinfo is None:
+            sensor_df["datetime"] = pd.DatetimeIndex(
+                pd.to_datetime(sensor_df["datetime"])
+            )
+            # We will handle the timezone after resample to avoid
+            # the case where resampling resets values to 0 hour of the day
+            # for daily data
+            handle_tz_after_resample = True
+
+        # convert hourly or instantaneous data to utc prior to resample
+        else:
+            sensor_df["datetime"] = pd.to_datetime(
+                sensor_df["datetime"], utc=True
+            )
+            handle_tz_after_resample = False
+
+        if resample_duration:
+            sensor_df = resample_whole_df(
+                sensor_df.set_index("datetime"), sensor,
+                interval=resample_duration
+            ).reset_index()
+            sensor_df = GeoDataFrame(sensor_df, geometry=sensor_df["geometry"])
+
+        if handle_tz_after_resample:
+            # handle the timezone if we didn't already
+            sensor_df["datetime"] = sensor_df["datetime"].apply(
+                self._handle_df_tz
+            )
 
         # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
@@ -234,7 +268,8 @@ class USGSPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
-        duration: str
+        duration_list: List[str],
+        resample_duration=None
     ):
         """
         Args:
@@ -242,10 +277,13 @@ class USGSPointData(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
-            duration: USGS duration code, "dv" or "iv"
+            duration_list: list of USGS duration code, "dv" or "iv"
+            resample_duration: optional if we need to resample the data
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
+        if not isinstance(duration_list, list):
+            raise ValueError("duration list must be a list")
 
         start_date, end_date = self._check_dates(start_date, end_date)
 
@@ -254,7 +292,6 @@ class USGSPointData(PointData):
             'endDT': end_date.isoformat(),
             'sites': self.id,
             'format': 'json',
-            'siteType': 'ST',
             'siteStatus': 'all'
         }
 
@@ -263,12 +300,20 @@ class USGSPointData(PointData):
 
         for sensor in variables:
             params["parameterCd"] = sensor.code
-            response_data, response_duration = self._get_data_fallback(
-                params, duration
-            )
+            response_data = None
+            for duration in duration_list:
+                response_data, response_duration = self._get_data_fallback(
+                    params, duration
+                )
+                # Break if we got data
+                if response_data:
+                    break
+
+            # format the data if we have any
             if response_data:
                 sensor_df = self._sensor_response_to_df(
-                    response_data, sensor, final_columns, self.id
+                    response_data, sensor, final_columns, self.id,
+                    resample_duration=resample_duration
                 )
                 df = merge_df(df, sensor_df)
                 df[sensor.name] = df[sensor.name].astype(float)
@@ -295,7 +340,20 @@ class USGSPointData(PointData):
         """
         See docstring for PointData.get_daily_data
         """
-        return self._get_data(start_date, end_date, variables, "dv")
+        return self._get_data(
+            start_date, end_date, variables, ["dv", "iv"],
+            resample_duration="24H"
+        )
+
+    def get_hourly_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        return self._get_data(
+            start_date, end_date, variables, ["iv"], resample_duration="H"
+        )
 
     def get_instantaneous_data(
         self,
@@ -306,7 +364,7 @@ class USGSPointData(PointData):
         """
         USGS 'instantaneous' data, which is generally 15 minutes.
         """
-        return self._get_data(start_date, end_date, variables, "iv")
+        return self._get_data(start_date, end_date, variables, ["iv"])
 
     @staticmethod
     def _get_url_response(url, params=None, parse='text'):
@@ -354,7 +412,7 @@ class USGSPointData(PointData):
 
     @classmethod
     def _station_sensor_search(
-        cls, meta_url, bounds, sensor: SensorDescription, dur="dv", buffer=0.0
+        cls, meta_url, bounds, sensor: SensorDescription, dur="dv,iv", buffer=0.0
     ):
         """
         Search for USGS stations within a bounding box for the given sensor description.

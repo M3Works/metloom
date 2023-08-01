@@ -12,7 +12,7 @@ from metloom.pointdata import USGSPointData
 from metloom.variables import USGSVariables
 from tests.test_point_data import BasePointDataTest
 
-DATA_DIR = str(Path(__file__).parent.joinpath("data"))
+DATA_DIR = str(Path(__file__).parent.joinpath("data/usgs_mocks"))
 
 
 class TestUSGSStation(BasePointDataTest):
@@ -95,9 +95,14 @@ class TestUSGSStation(BasePointDataTest):
         if resp == 'daily':
             with open(join(DATA_DIR, "daily_response.txt")) as fp:
                 data = json.load(fp)
-        if resp == 'metadata':
+        elif resp == 'metadata':
             with open(join(DATA_DIR, "platoro_meta.txt")) as fp:
                 data = fp.read()
+        elif resp == 'hourly':
+            with open(join(DATA_DIR, "hourly_response.json")) as fp:
+                data = json.load(fp)
+        else:
+            raise RuntimeError(f"{resp} is an unknown option")
 
         return data
 
@@ -124,10 +129,32 @@ class TestUSGSStation(BasePointDataTest):
             )
         pd.testing.assert_frame_equal(response, crp_daily_expected)
 
+    def test_get_hourly_data(self, crp_station, crp_daily_expected):
+        """
+        Test that we resample from 15m to 1 hour correctly
+        """
+        with patch("metloom.pointdata.usgs.USGSPointData._get_url_response") \
+                as mock_requests:
+            mock_requests.side_effect = [
+                self.get_url_response(resp='hourly'),
+                self.get_url_response(resp='metadata')
+            ]
+            response = crp_station.get_hourly_data(
+                datetime(2023, 1, 13),
+                datetime(2023, 1, 13),
+                [USGSVariables.DISCHARGE],
+            )
+        response = response.reset_index()
+        assert response["datetime"].values[0] == pd.to_datetime("2023-01-13 07")
+        assert response["datetime"].values[-1] == pd.to_datetime("2023-01-14 06")
+        assert response["DISCHARGE"].values[0] == 300.0
+        assert response["DISCHARGE"].values[-1] == 283.25
+        assert all(response["site"].values == "08245000")
+
     def test_points_from_geometry(self, shape_obj):
         expected_url = (
             'https://waterservices.usgs.gov/nwis/site/?format=rdb&bBox=-119.8%2C37.7'
-            '%2C-119.2%2C38.2&siteStatus=active&hasDataTypeCd=dv&parameterCd=00060'
+            '%2C-119.2%2C38.2&siteStatus=active&hasDataTypeCd=dv,iv&parameterCd=00060'
         )
         names = [
             'TUOLUMNER NR HETCH HETCHY CA',
@@ -147,7 +174,7 @@ class TestUSGSStation(BasePointDataTest):
     def test_points_from_geometry_failure(self, shape_obj):
         expected_url = (
             'https://waterservices.usgs.gov/nwis/site/?format=rdb&bBox=-119.8%2C37.7'
-            '%2C-119.2%2C38.2&siteStatus=active&hasDataTypeCd=dv&parameterCd=74082'
+            '%2C-119.2%2C38.2&siteStatus=active&hasDataTypeCd=dv,iv&parameterCd=74082'
         )
         with patch("metloom.pointdata.usgs.requests.get") as mock_request:
             mock_request.return_value = self.failure_response()
