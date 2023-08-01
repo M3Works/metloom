@@ -178,3 +178,7 @@ class USGSVariables(VariableBase):
     STREAMFLOW = SensorDescription(
         "74082", "STREAMFLOW", "STREAMFLOW, DAILY VOLUME (AC-FT)"
     )
+    SNOWDEPTH = SensorDescription("72189", "SNOWDEPTH", "Snow depth, Meters")
+    SWE = SensorDescription(
+        "72341", "SWE", "Water content of snow, millimeters"
+    )
