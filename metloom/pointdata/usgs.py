@@ -98,7 +98,7 @@ class USGSPointData(PointData):
         if hasattr(end_date, 'hour'):
             end_date = end_date.date()
 
-        if not end_date > start_date:
+        if not end_date >= start_date:
             LOG.error(
                 f" end_date '{end_date}' must be later than start_date '{start_date}'"
             )
@@ -211,7 +211,23 @@ class USGSPointData(PointData):
         final_columns += [sensor.name, f"{sensor.name}_units"]
         column_map = {"dateTime": "datetime", "value": sensor.name}
         sensor_df.rename(columns=column_map, inplace=True)
-        sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"], utc=True)
+
+        # Daily data doesn't have timezone built in
+        if pd.to_datetime(sensor_df["datetime"])[0].tzinfo is None:
+            sensor_df["datetime"] = pd.DatetimeIndex(
+                pd.to_datetime(sensor_df["datetime"])
+            )
+            # We will handle the timezone after resample to avoid
+            # the case where resampling resets values to 0 hour of the day
+            # for daily data
+            handle_tz_after_resample = True
+
+        # convert hourly or instantaneous data to utc prior to resample
+        else:
+            sensor_df["datetime"] = pd.to_datetime(
+                sensor_df["datetime"], utc=True
+            )
+            handle_tz_after_resample = False
 
         if resample_duration:
             sensor_df = resample_whole_df(
@@ -219,6 +235,12 @@ class USGSPointData(PointData):
                 interval=resample_duration
             ).reset_index()
             sensor_df = GeoDataFrame(sensor_df, geometry=sensor_df["geometry"])
+
+        if handle_tz_after_resample:
+            # handle the timezone if we didn't already
+            sensor_df["datetime"] = sensor_df["datetime"].apply(
+                self._handle_df_tz
+            )
 
         # set index so joining works
         sensor_df.set_index("datetime", inplace=True)
@@ -320,7 +342,7 @@ class USGSPointData(PointData):
         """
         return self._get_data(
             start_date, end_date, variables, ["dv", "iv"],
-            resample_duration="D"
+            resample_duration="24H"
         )
 
     def get_hourly_data(
