@@ -94,6 +94,11 @@ PointData methods that get point data return a GeoDataFrame indexed
 on *both* datetime and station code. To reset the index simply run
 ``df.reset_index(inplace=True)``
 
+Simple usage examples are provided in this readme and in the docs. See
+our `examples <https://github.com/M3Works/metloom/tree/main/examples>`_ and
+`tutorial <https://github.com/M3Works/metloom/tree/main/examples/tutorial>`_
+for code walkthroughs and more complicated use cases.
+
 Usage Examples
 ==============
 
