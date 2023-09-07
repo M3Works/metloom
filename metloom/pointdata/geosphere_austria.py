@@ -130,18 +130,21 @@ class GeoSphere(PointData):
         values = params[sensor.code]["data"]
         unit = params[sensor.code]["unit"]
         # Build the dataframe
-        sensor_df = gpd.GeoDataFrame.from_dict(
+        sensor_df = pd.DataFrame.from_dict(
             {
                 "datetime": dt_values,
                 sensor.name: values,
                 f"{sensor.name}_units":  [unit] * len(values),
                 "site": [self.id] * len(values)
-            },
-            geometry=[self.metadata] * len(values),
+            }
         )
         sensor_df.loc[sensor_df[sensor.name] == None] = np.nan
+        sensor_df = gpd.GeoDataFrame(
+            sensor_df,
+            geometry=[self.metadata] * len(values),
+        )
 
-        final_columns += [sensor.name, f"{sensor.name}_units"]
+        final_columns = [sensor.name, f"{sensor.name}_units"] + final_columns
         sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
 
         # resample if necessary
