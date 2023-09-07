@@ -185,15 +185,19 @@ class USGSVariables(VariableBase):
 
 
 class GeoSphereVariables(VariableBase):
-    TEMP = SensorDescription("t", "AIR TEMP")
-    TEMPMIN = SensorDescription("tmin", "AIR TEMP MAX")
-    TEMPMAX = SensorDescription("tmax", "AIR TEMP MIN")
+    TEMP = SensorDescription("TL", "Air Temperature")
     SNOWDEPTH = SensorDescription(
-        "schnee", "TOTAL SNOW DEPTH."
-    )
-    SWE = SensorDescription(
-
+        "SCHNEE", "Snowdepth"
     )
     PRECIPITATION = SensorDescription(
-        "nied", "TOTAL PRECIPITATION"
+        "RR", "Rainfall in the last 10 minutes", accumulated=True
+    )
+    TEMPGROUND10CM = SensorDescription(
+        "TB1", "Soil temperature at a depth of 10cm"
+    )
+    TEMPGROUND20CM = SensorDescription(
+        "TB2", "Soil temperature at a depth of 20cm"
+    )
+    TEMPGROUND50CM = SensorDescription(
+        "TB3", "Soil temperature at a depth of 50cm"
     )
