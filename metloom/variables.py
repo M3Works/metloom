@@ -182,3 +182,18 @@ class USGSVariables(VariableBase):
     SWE = SensorDescription(
         "72341", "SWE", "Water content of snow, millimeters"
     )
+
+
+class GeoSphereVariables(VariableBase):
+    TEMP = SensorDescription("t", "AIR TEMP")
+    TEMPMIN = SensorDescription("tmin", "AIR TEMP MAX")
+    TEMPMAX = SensorDescription("tmax", "AIR TEMP MIN")
+    SNOWDEPTH = SensorDescription(
+        "schnee", "TOTAL SNOW DEPTH."
+    )
+    SWE = SensorDescription(
+
+    )
+    PRECIPITATION = SensorDescription(
+        "nied", "TOTAL PRECIPITATION"
+    )
