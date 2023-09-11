@@ -74,7 +74,7 @@ class GeoSphere(PointData):
             meta_df = all_meta[all_meta["id"] == self.id]
             if len(meta_df) == 0:
                 raise RuntimeError(f"No matching metadata for {self.id}")
-            self._raw_metadata = meta_df.to_dict(orient="rows")[0]
+            self._raw_metadata = meta_df.to_dict(orient="records")[0]
         return self._raw_metadata
 
     def _get_metadata(self):
