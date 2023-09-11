@@ -1,8 +1,6 @@
 import json
-import os
 from collections import OrderedDict
 from datetime import datetime
-from os import path
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -61,14 +59,15 @@ class TestGeospherePointData(BasePointDataTest):
                     '2021-01-01T01:20+00:00', '2021-01-01T01:30+00:00',
                     '2021-01-01T01:40+00:00', '2021-01-01T01:50+00:00',
                     '2021-01-01T02:00+00:00'], 'features': [
-                {'type': 'Feature', 'geometry': {'type': 'Point',
-                                                 'coordinates': [16.35638888888889,
-                                                                 48.24861111111111]},
-                 'properties': {'parameters': {
-                     'TL': {'name': 'Lufttemperatur', 'unit': '°C',
-                            'data': [1.0, 2.0, 1.0, 3.0, 2.9, 5.0, 0.0,
-                                     0.3, 0.2, 0.5, 1.1, 1.1, 1.1]}},
-                                'station': '11035'}}]}
+                    {'type': 'Feature', 'geometry': {'type': 'Point',
+                                                     'coordinates': [
+                                                         16.35638888888889,
+                                                         48.24861111111111]},
+                     'properties': {'parameters': {
+                         'TL': {'name': 'Lufttemperatur', 'unit': '°C',
+                                'data': [1.0, 2.0, 1.0, 3.0, 2.9, 5.0, 0.0,
+                                         0.3, 0.2, 0.5, 1.1, 1.1, 1.1]}},
+                         'station': '11035'}}]}
             mock_obj = MagicMock()
             mock_obj.json.return_value = obj
             return mock_obj
@@ -81,7 +80,9 @@ class TestGeospherePointData(BasePointDataTest):
         ("11035", 16.35638888888889, 48.24861111111111, 649.60632),
     ])
     def test_get_metadata(self, station, stid, long, lat, elev):
-        with patch("metloom.pointdata.geosphere_austria.requests") as mock_requests:
+        with patch(
+            "metloom.pointdata.geosphere_austria.requests"
+        ) as mock_requests:
             mock_get = mock_requests.get
             mock_get.side_effect = self._meta_response
             expected = gpd.points_from_xy([long], [lat], z=[elev])[0]
@@ -89,8 +90,12 @@ class TestGeospherePointData(BasePointDataTest):
             assert result
 
     @pytest.mark.parametrize('var, expected_values, expected_dates', [
-        (GeoSphereVariables.TEMP, [2.4833333333333334, 0.5333333333333333, 1.1],
-         ['2021-01-1T00:00:00+00:00', '2021-01-1T01:00:00+00:00', '2021-01-1T02:00:00+00:00']),
+        (
+            GeoSphereVariables.TEMP,
+            [2.4833333333333334, 0.5333333333333333, 1.1],
+            ['2021-01-1T00:00:00+00:00', '2021-01-1T01:00:00+00:00',
+             '2021-01-1T02:00:00+00:00']
+        ),
     ])
     def test_get_hourly_data(
         self, station, var, expected_values, expected_dates
@@ -125,10 +130,12 @@ class TestGeospherePointData(BasePointDataTest):
         pd.testing.assert_frame_equal(df, expected)
 
     @pytest.mark.parametrize('w_geom, expected_sid, buffer', [
-        (False, ['11266', '11125', '11121', '11320', '11123'], 0.15),  # Use just bounds of the shapefile
+        (False, ['11266', '11125', '11121', '11320', '11123'], 0.15),
+        # Use just bounds of the shapefile
         (True, ['11266'], 0.0),  # Filter to within the shapefile
     ])
-    def test_points_from_geometry(self, shape_obj, w_geom, expected_sid, buffer):
+    def test_points_from_geometry(self, shape_obj, w_geom, expected_sid,
+                                  buffer):
         with patch("metloom.pointdata.geosphere_austria.requests.get",
                    side_effect=self.mock_station_response):
             pnts = GeoSphere.points_from_geometry(

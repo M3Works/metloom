@@ -1,6 +1,4 @@
-import json
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
+from datetime import datetime
 from typing import List
 
 import geopandas as gpd
@@ -13,7 +11,7 @@ from geopandas import GeoDataFrame
 
 from .base import PointData
 from ..variables import CdecStationVariables, SensorDescription
-from ..dataframe_utils import append_df, merge_df, resample_whole_df, \
+from ..dataframe_utils import merge_df, resample_whole_df, \
     shp_to_box
 
 LOG = logging.getLogger("metloom.pointdata.geosphere_austria")
@@ -95,7 +93,6 @@ class GeoSphere(PointData):
 
     def _data_request(self, params):
         """
-        https://dataset.api.hub.geosphere.at/v1/station/historical/tawes-v1-10min?parameters=TL&station_ids=11035&start=2021-01-01T00%3A00%3A00&end=2021-01-01T02%3A00%3A00
         Make get request and return JSON
         Args:
             params: dictionary of request parameters
@@ -138,11 +135,11 @@ class GeoSphere(PointData):
             {
                 "datetime": dt_values,
                 sensor.name: values,
-                f"{sensor.name}_units":  [unit] * len(values),
+                f"{sensor.name}_units": [unit] * len(values),
                 "site": [self.id] * len(values)
             }
         )
-        sensor_df.loc[sensor_df[sensor.name] == None] = np.nan
+        sensor_df.loc[pd.isna(sensor_df[sensor.name])] = np.nan
         sensor_df = gpd.GeoDataFrame(
             sensor_df,
             geometry=[self.metadata] * len(values),
@@ -174,7 +171,8 @@ class GeoSphere(PointData):
         desired_duration: str,
     ):
         """
-        Example: https://dataset.api.hub.geosphere.at/v1/station/current/tawes-v1-10min?parameters=TL&station_ids=11035
+        Example: https://dataset.api.hub.geosphere.at/v1/station/current/
+        tawes-v1-10min?parameters=TL&station_ids=11035
 
         Args:
             start_date: datetime object for start of data collection period
