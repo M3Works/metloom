@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List
@@ -12,7 +13,8 @@ from geopandas import GeoDataFrame
 
 from .base import PointData
 from ..variables import CdecStationVariables, SensorDescription
-from ..dataframe_utils import append_df, merge_df, resample_whole_df
+from ..dataframe_utils import append_df, merge_df, resample_whole_df, \
+    shp_to_box
 
 LOG = logging.getLogger("metloom.pointdata.geosphere_austria")
 
@@ -50,12 +52,14 @@ class GeoSphere(PointData):
         """
         Get the metadata we can search through for stations. The assumption
         is that we ONLY WANT TAWES stations
+
+        The endpoint returns a json object with both `parameters` and
+        `stations`. Parameters maps to ALL VARIABLES and stations
+        maps to ALL STATIONS
         """
         url = cls.URL + "/v1/station/current/tawes-v1-10min/metadata"
-        # url = cls.URL + "/v1/station/historical/klima-v1-1d/metadata"
         resp = requests.get(url)
         resp.raise_for_status()
-        # obj = resp.json()["parameters"]  # variables
         obj = resp.json()["stations"]
         df = pd.DataFrame.from_dict(obj)
         return df
@@ -170,8 +174,7 @@ class GeoSphere(PointData):
         desired_duration: str,
     ):
         """
-        https://dataset.api.hub.geosphere.at/v1/station/current/tawes-v1-10min?parameters=TL&station_ids=11035
-
+        Example: https://dataset.api.hub.geosphere.at/v1/station/current/tawes-v1-10min?parameters=TL&station_ids=11035
 
         Args:
             start_date: datetime object for start of data collection period
@@ -182,7 +185,6 @@ class GeoSphere(PointData):
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
-        # TODO: Make this fallback for hourly
         params = {
             "parameters": ",".join([v.code for v in variables]),
             "station_ids": self.id,
@@ -238,26 +240,6 @@ class GeoSphere(PointData):
         """
         return self._get_data(start_date, end_date, variables, "H")
 
-    @staticmethod
-    def _station_sensor_search(
-        bounds, sensor: SensorDescription, dur=None, collect=None,
-        buffer=0.0
-    ):
-        """
-        Station search form https://cdec.water.ca.gov/dynamicapp/staSearch?
-        Search for stations using the CDEC station search utility
-        Args:
-            bounds: dictionary of Longitude and Latitidue bounds with keys
-                minx, maxx, miny, maxy
-            sensor: SensorDescription object
-            dur: optional CDEC duration code ['M', 'H', 'D']
-            collect: optional CDEC collection type string i.e. 'MANUAL+ENTRY'
-        Returns:
-            Pandas Dataframe of table result or None if no table found
-
-        """
-        pass
-
     @classmethod
     def points_from_geometry(
         cls,
@@ -268,11 +250,14 @@ class GeoSphere(PointData):
         """
         See docstring for PointData.points_from_geometry
 
+        The Austria Geosphere API does not allow filtering by variable.
+        As a result, we do not filter according to which points have specific
+        variables. The function arguments allow variables to be passed in
+        to keep consistency with the same function from other classes.
+
         Args:
             geometry: GeoDataFrame for shapefile from gpd.read_file
-            variables: List of SensorDescription
-            snow_courses: Boolean for including only snowcourse data or no
-            snowcourse data
+            variables: List of SensorDescription. NOT USED FOR THIS CLASS
             within_geometry: filter the points to within the shapefile
             instead of just the extents. Default True
             buffer: buffer added to search box
@@ -284,52 +269,42 @@ class GeoSphere(PointData):
         kwargs = cls._add_default_kwargs(kwargs)
 
         # Assume station search result is in 4326
-        projected_geom = geometry.to_crs(4326)
-        bounds = projected_geom.bounds.iloc[0]
-        search_df = None
-        station_search_kwargs = {}
+        projected_geom = geometry.to_crs("EPSG:4326")
 
-        # Filter to manual, monthly measurements if looking for snow courses
-        for variable in variables:
-            result_df = cls._station_sensor_search(
-                bounds, variable, buffer=kwargs["buffer"],
-                **station_search_kwargs
-            )
-            if result_df is not None:
-                result_df["index_id"] = result_df["ID"]
-                result_df.set_index("index_id", inplace=True)
-                search_df = append_df(
-                    search_df, result_df
-                ).drop_duplicates(subset=['ID'])
+        # add buffer to geometry
+        search_geom = projected_geom.buffer(kwargs["buffer"])
+
+        # get metadata for all stations
+        all_meta = cls._retrieve_all_metadata()
+
         # return empty collection if we didn't find any points
-        if search_df is None:
+        if all_meta is None:
             return cls.ITERATOR_CLASS([])
-        clms = search_df.columns.values
-        if "ElevationFeet" in clms:
-            elev_key = "ElevationFeet"
-        elif "Elevation Feet" in clms:
-            elev_key = "Elevation Feet"
-        else:
-            raise RuntimeError("No key for elevation")
+
+        # convert to a geodataframe
         gdf = gpd.GeoDataFrame(
-            search_df,
+            all_meta,
             geometry=gpd.points_from_xy(
-                search_df["Longitude"],
-                search_df["Latitude"],
-                z=search_df[elev_key],
-            ),
+                all_meta["lon"], all_meta["lat"],
+                all_meta["altitude"] * M_TO_FT
+            )
         )
+        # TODO: is this correct?
+        gdf = gdf.set_crs("EPSG:4326")
+
         # filter to points within shapefile
         if kwargs['within_geometry']:
             filtered_gdf = gdf[gdf.within(projected_geom.iloc[0]["geometry"])]
+        # filter to the overall bounding box
         else:
-            filtered_gdf = gdf
+            box_df = shp_to_box(search_geom)
+            filtered_gdf = gdf[gdf.within(box_df.iloc[0]["geometry"])]
 
         points = [
             cls(row[0], row[1], metadata=row[2])
             for row in zip(
-                filtered_gdf.index,
-                filtered_gdf["Station Name"],
+                filtered_gdf["id"],
+                filtered_gdf["name"],
                 filtered_gdf["geometry"],
             )
         ]

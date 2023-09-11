@@ -3,6 +3,7 @@ import os
 from collections import OrderedDict
 from datetime import datetime
 from os import path
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -15,15 +16,11 @@ from tests.test_point_data import BasePointDataTest
 
 
 class TestGeospherePointData(BasePointDataTest):
+    DATA_DIR = Path(__file__).parent.joinpath("data")
 
     @pytest.fixture(scope="class")
-    def data_dir(self):
-        this_dir = path.dirname(__file__)
-        return path.join(this_dir, "data")
-
-    @pytest.fixture(scope="class")
-    def shape_obj(self, data_dir):
-        fp = path.join(data_dir, "triangle.shp")
+    def shape_obj(self):
+        fp = self.DATA_DIR.joinpath("austria_box.shp")
         return gpd.read_file(fp)
 
     def _meta_response(self, *args, **kwargs):
@@ -35,57 +32,14 @@ class TestGeospherePointData(BasePointDataTest):
         url = args[0]
 
         if 'metadata' in url:
-            # ("11035", 16.35638888888889, 48.24861111111111, 649.60632),
-            response = {
-                'stations': [{
-                    'id': '11035',
-                    'lat': 48.24861111111111,
-                    'lon': 16.35638888888889,
-                    'altitude': 198.0,
-                }]
-            }
+            with open(
+                self.DATA_DIR.joinpath("geosphere_mocks/meta_mock.json")
+            ) as fp:
+                response = json.load(fp)
+
         else:
-            raise ValueError('Invalid test STID provided')
+            raise ValueError('Invalid test url provided')
 
-        mock.json.return_value = response
-        return mock
-
-    @pytest.fixture(scope="class")
-    def nodata_response(self):
-        """
-        Mesowest api return when no data is found for a variable for one
-        station
-        """
-        mock = MagicMock()
-        response = {
-            "SUMMARY": {
-                "RESPONSE_MESSAGE": 'No stations found for this request.'
-            }
-        }
-        mock.json.return_value = response
-        return mock
-
-    @pytest.fixture()
-    def bbox_response(self):
-        """
-        Metadata response from mesowest using a bbox
-        """
-        mock = MagicMock()
-        response = {'STATION': [{'ELEVATION': '9409',
-                                 'NAME': 'IN TRIANGLE',
-                                 'STID': 'INTRI',
-                                 'LONGITUDE': '-119.5',
-                                 'LATITUDE': '38.0',
-                                 'TIMEZONE': 'America/Los_Angeles',
-                                 },
-                                {'ELEVATION': '7201',
-                                 'NAME': 'OUT TRIANGLE W/IN BOUNDS',
-                                 'STID': 'OUTTRI',
-                                 'TIMEZONE': 'America/Los_Angeles',
-                                 'LONGITUDE': '-119.7',
-                                 'LATITUDE': '38.0',
-                                 }
-                                ]}
         mock.json.return_value = response
         return mock
 
@@ -139,7 +93,8 @@ class TestGeospherePointData(BasePointDataTest):
          ['2021-01-1T00:00:00+00:00', '2021-01-1T01:00:00+00:00', '2021-01-1T02:00:00+00:00']),
     ])
     def test_get_hourly_data(
-        self, station, var, expected_values, expected_dates):
+        self, station, var, expected_values, expected_dates
+    ):
         # Patch in the made up response
         with patch("metloom.pointdata.geosphere_austria.requests.get",
                    side_effect=self.mock_station_response):
@@ -169,39 +124,19 @@ class TestGeospherePointData(BasePointDataTest):
         expected.set_index(keys=["datetime", "site"], inplace=True)
         pd.testing.assert_frame_equal(df, expected)
 
-
-    @pytest.mark.parametrize('w_geom, expected_sid', [
-        (False, ['INTRI', 'OUTTRI']),  # Use just bounds of the shapefile
-        (True, ['INTRI']),  # Filter to within the shapefile
+    @pytest.mark.parametrize('w_geom, expected_sid, buffer', [
+        (False, ['11266', '11125', '11121', '11320', '11123'], 0.15),  # Use just bounds of the shapefile
+        (True, ['11266'], 0.0),  # Filter to within the shapefile
     ])
-    def test_points_from_geometry(self, token_file, shape_obj, w_geom, expected_sid):
-        # TODO: THIS
-        pass
-        # with patch("metloom.pointdata.mesowest.requests") as mock_requests:
-        #     mock_get = mock_requests.get
-        #     mock_get.side_effect = self._meta_response
-        # pnts = GeoSphere.points_from_geometry(
-        #     shape_obj,
-        #     [GeoSphereVariables.TEMP],
-        #     within_geometry=w_geom,
-        # )
+    def test_points_from_geometry(self, shape_obj, w_geom, expected_sid, buffer):
+        with patch("metloom.pointdata.geosphere_austria.requests.get",
+                   side_effect=self.mock_station_response):
+            pnts = GeoSphere.points_from_geometry(
+                shape_obj,
+                [GeoSphereVariables.TEMP],
+                within_geometry=w_geom,
+                buffer=buffer
+            )
 
         df = pnts.to_dataframe()
-        # assert df['id'].values == pytest.approx(expected_sid)
-
-    # def test_points_from_geometry_buffer(self, token_file, shape_obj):
-    #
-        # with patch("metloom.pointdata.mesowest.requests") as mock_requests:
-        #     mock_get = mock_requests.get
-        #     mock_get.side_effect = self._meta_response
-        #     MesowestPointData.points_from_geometry(
-        #         shape_obj, [MesowestVariables.TEMP],
-        #         within_geometry=False, token_json=token_file,
-        #         buffer=0.1
-        #     )
-        #     call_params = mock_get.call_args_list[0][1]["params"]
-        #
-        # results = [float(v) for v in call_params["bbox"].split(',')]
-        # expected = [-119.9, 37.6, -119.1, 38.3]
-        # for result, exp in zip(results, expected):
-        #     assert exp == pytest.approx(result)
+        assert df['id'].values == pytest.approx(expected_sid)

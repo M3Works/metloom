@@ -1,7 +1,8 @@
 from logging import getLogger
 from typing import Optional
-
+import geopandas as gpd
 import pandas as pd
+from shapely.geometry import Polygon
 
 from .variables import SensorDescription
 
@@ -165,3 +166,29 @@ def resample_whole_df(raw_df: pd.DataFrame, variable: SensorDescription,
         df = None
 
     return df
+
+
+def shp_to_box(geometry):
+    """
+    Convert a shapefiles geodataframe to the bounding box of the shapefile
+    as a new geodataframe
+
+    Args:
+        geometry: geodataframe polygon
+
+    Returns:
+        geodataframe of the bounding box
+    """
+    bounds = geometry.total_bounds  # Returns a tuple (minx, miny, maxx, maxy)
+
+    # Create a Polygon from the bounding box coordinates
+    bounding_box = Polygon([
+        (bounds[0], bounds[1]),
+        (bounds[0], bounds[3]),
+        (bounds[2], bounds[3]),
+        (bounds[2], bounds[1])
+    ])
+
+    # Create a new GeoDataFrame to hold the bounding box geometry
+    gdf_bbox = gpd.GeoDataFrame({'geometry': [bounding_box]}, crs=geometry.crs)
+    return gdf_bbox
