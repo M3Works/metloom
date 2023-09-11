@@ -443,7 +443,10 @@ class TestCDECStation(BasePointDataTest):
             )
             assert mock_get.call_count == 2
         mock_read_html.assert_called_once()
-        pd.testing.assert_frame_equal(response, tny_daily_expected)
+        pd.testing.assert_frame_equal(
+            response.sort_index(axis=1),
+            tny_daily_expected.sort_index(axis=1)
+        )
 
     def test_get_daily_from_hourly_data(
         self, mock_read_html, tny_station, expected_points

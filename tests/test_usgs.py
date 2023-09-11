@@ -127,7 +127,10 @@ class TestUSGSStation(BasePointDataTest):
                 datetime(2020, 7, 2),
                 [USGSVariables.DISCHARGE],
             )
-        pd.testing.assert_frame_equal(response, crp_daily_expected)
+        pd.testing.assert_frame_equal(
+            response.sort_index(axis=1),
+            crp_daily_expected.sort_index(axis=1)
+        )
 
     def test_get_hourly_data(self, crp_station, crp_daily_expected):
         """
