@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 import geopandas as gpd
-from metloom.pointdata.geosphere_austria import GeoSphere
+from metloom.pointdata.geosphere_austria import GeoSpherePointData
 from metloom.variables import GeoSphereVariables
 from tests.test_point_data import BasePointDataTest
 
@@ -74,7 +74,7 @@ class TestGeospherePointData(BasePointDataTest):
 
     @pytest.fixture()
     def station(self):
-        return GeoSphere("11035", "Tester")
+        return GeoSpherePointData("11035", "Tester")
 
     @pytest.mark.parametrize('stid, long, lat, elev', [
         ("11035", 16.35638888888889, 48.24861111111111, 649.60632),
@@ -138,7 +138,7 @@ class TestGeospherePointData(BasePointDataTest):
                                   buffer):
         with patch("metloom.pointdata.geosphere_austria.requests.get",
                    side_effect=self.mock_station_response):
-            pnts = GeoSphere.points_from_geometry(
+            pnts = GeoSpherePointData.points_from_geometry(
                 shape_obj,
                 [GeoSphereVariables.TEMP],
                 within_geometry=w_geom,

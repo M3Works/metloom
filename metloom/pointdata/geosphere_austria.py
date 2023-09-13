@@ -19,7 +19,7 @@ LOG = logging.getLogger("metloom.pointdata.geosphere_austria")
 M_TO_FT = 3.28084
 
 
-class GeoSphere(PointData):
+class GeoSpherePointData(PointData):
     """
     Implement PointData methods for GeoSphere Austria data source
     API documentation here
@@ -41,7 +41,7 @@ class GeoSphere(PointData):
         """
         See docstring for PointData.__init__
         """
-        super(GeoSphere, self).__init__(station_id, name, metadata=metadata)
+        super(GeoSpherePointData, self).__init__(station_id, name, metadata=metadata)
         self._raw_metadata = None
         self._tzinfo = None
 
@@ -139,6 +139,8 @@ class GeoSphere(PointData):
                 "site": [self.id] * len(values)
             }
         )
+        if all(pd.isna(sensor_df[sensor.name].values)):
+            return None
         sensor_df.loc[pd.isna(sensor_df[sensor.name])] = np.nan
         sensor_df = gpd.GeoDataFrame(
             sensor_df,
