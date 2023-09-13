@@ -10,7 +10,9 @@ import logging
 from geopandas import GeoDataFrame
 
 from .base import PointData
-from ..variables import CdecStationVariables, SensorDescription
+from ..variables import (
+    GeoSphereCurrentVariables, SensorDescription, GeoSphereHistVariables
+)
 from ..dataframe_utils import merge_df, resample_whole_df, \
     shp_to_box
 
@@ -19,7 +21,7 @@ LOG = logging.getLogger("metloom.pointdata.geosphere_austria")
 M_TO_FT = 3.28084
 
 
-class GeoSpherePointData(PointData):
+class GeoSpherePointDataBase(PointData):
     """
     Implement PointData methods for GeoSphere Austria data source
     API documentation here
@@ -33,15 +35,16 @@ class GeoSpherePointData(PointData):
     and most current
     """
 
-    ALLOWED_VARIABLES = CdecStationVariables
+    ALLOWED_VARIABLES = None
     URL = "https://dataset.api.hub.geosphere.at"
     DATASOURCE = "GEOSPHERE"
+    META_EXTENSION = None
 
     def __init__(self, station_id, name, metadata=None):
         """
         See docstring for PointData.__init__
         """
-        super(GeoSpherePointData, self).__init__(station_id, name, metadata=metadata)
+        super(GeoSpherePointDataBase, self).__init__(station_id, name, metadata=metadata)
         self._raw_metadata = None
         self._tzinfo = None
 
@@ -55,7 +58,7 @@ class GeoSpherePointData(PointData):
         `stations`. Parameters maps to ALL VARIABLES and stations
         maps to ALL STATIONS
         """
-        url = cls.URL + "/v1/station/current/tawes-v1-10min/metadata"
+        url = cls.URL + cls.META_EXTENSION
         resp = requests.get(url)
         resp.raise_for_status()
         obj = resp.json()["stations"]
@@ -99,10 +102,7 @@ class GeoSpherePointData(PointData):
         Returns:
             dictionary of response values
         """
-        url = self.URL + "/v1/station/historical/tawes-v1-10min"
-        resp = requests.get(url, params=params)
-        resp.raise_for_status()
-        return resp.json()
+        raise NotImplementedError("Need to implement")
 
     def _handle_df_tz(self, val):
         """
@@ -173,8 +173,6 @@ class GeoSpherePointData(PointData):
         desired_duration: str,
     ):
         """
-        Example: https://dataset.api.hub.geosphere.at/v1/station/current/
-        tawes-v1-10min?parameters=TL&station_ids=11035
 
         Args:
             start_date: datetime object for start of data collection period
@@ -215,31 +213,6 @@ class GeoSpherePointData(PointData):
         self.validate_sensor_df(df)
         return df
 
-    def get_daily_data(
-        self,
-        start_date: datetime,
-        end_date: datetime,
-        variables: List[SensorDescription],
-    ):
-        """
-        See docstring for PointData.get_daily_data
-        Example query:
-        https://dataset.api.hub.geosphere.at/v1/station/current/
-        tawes-v1-10min?parameters=TL&station_ids=11035
-        """
-        return self._get_data(start_date, end_date, variables, "D")
-
-    def get_hourly_data(
-        self,
-        start_date: datetime,
-        end_date: datetime,
-        variables: List[SensorDescription],
-    ):
-        """
-        See docstring for PointData.get_hourly_data
-        """
-        return self._get_data(start_date, end_date, variables, "H")
-
     @classmethod
     def points_from_geometry(
         cls,
@@ -260,7 +233,8 @@ class GeoSpherePointData(PointData):
             variables: List of SensorDescription. NOT USED FOR THIS CLASS
             within_geometry: filter the points to within the shapefile
             instead of just the extents. Default True
-            buffer: buffer added to search box
+            buffer: buffer added to search box,
+            filter_to_active: filter to active stations
 
         Returns:
             PointDataCollection
@@ -300,6 +274,10 @@ class GeoSpherePointData(PointData):
             box_df = shp_to_box(search_geom)
             filtered_gdf = gdf[gdf.within(box_df.iloc[0]["geometry"])]
 
+        # filter to active stations
+        if kwargs["filter_to_active"]:
+            filtered_gdf = filtered_gdf.loc[filtered_gdf["is_active"] == "true"]
+
         points = [
             cls(row[0], row[1], metadata=row[2])
             for row in zip(
@@ -309,3 +287,107 @@ class GeoSpherePointData(PointData):
             )
         ]
         return cls.ITERATOR_CLASS(points)
+
+
+class GeoSphereCurrentPointData(GeoSpherePointDataBase):
+    """
+    Implement PointData methods for GeoSphere Austria data source
+    API documentation here
+    https://dataset.api.hub.geosphere.at/v1/docs/index.html
+    https://dataset.api.hub.geosphere.at/v1/docs/user-guide/resource.html
+
+    Datasets available here https://data.hub.geosphere.at/dataset/
+
+    We use tawes-v1 data which consists of data from the last 3 months
+    in 10 minute increment
+    """
+
+    ALLOWED_VARIABLES = GeoSphereCurrentVariables
+    URL = "https://dataset.api.hub.geosphere.at"
+    DATASOURCE = "GEOSPHERE"
+    META_EXTENSION = "/v1/station/current/tawes-v1-10min/metadata"
+
+    def _data_request(self, params):
+        """
+        Make get request and return JSON
+        Args:
+            params: dictionary of request parameters
+        Returns:
+            dictionary of response values
+        """
+        url = self.URL + "/v1/station/historical/tawes-v1-10min"
+        resp = requests.get(url, params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_daily_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        """
+        See docstring for PointData.get_daily_data
+        Example query:
+        https://dataset.api.hub.geosphere.at/v1/station/current/
+        tawes-v1-10min?parameters=TL&station_ids=11035
+        """
+        return self._get_data(start_date, end_date, variables, "D")
+
+    def get_hourly_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        """
+        See docstring for PointData.get_hourly_data
+        """
+        return self._get_data(start_date, end_date, variables, "H")
+
+
+class GeoSphereHistPointData(GeoSpherePointDataBase):
+    """
+    Implement PointData methods for GeoSphere Austria data source
+    API documentation here
+    https://dataset.api.hub.geosphere.at/v1/docs/index.html
+    https://dataset.api.hub.geosphere.at/v1/docs/user-guide/resource.html
+
+    Datasets available here https://data.hub.geosphere.at/dataset/
+
+    We use klima-v1-1d data which consists of historical daily data.
+    There is historical hourly data, but the parameter names are different
+    and as such this has not bee implemented
+    """
+
+    ALLOWED_VARIABLES = GeoSphereCurrentVariables
+    URL = "https://dataset.api.hub.geosphere.at"
+    DATASOURCE = "GEOSPHERE"
+    META_EXTENSION = "/v1/station/historical/klima-v1-1d/metadata"
+
+    def _data_request(self, params):
+        """
+        Make get request and return JSON
+        Args:
+            params: dictionary of request parameters
+        Returns:
+            dictionary of response values
+        """
+        url = self.URL + "/v1/station/historical/klima-v1-1d"
+        resp = requests.get(url, params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_daily_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        """
+        See docstring for PointData.get_daily_data
+        Example query:
+        https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-1d
+        ?station_ids=11401&start=2023-04-12&end=2023-04-14&parameters=schnee
+        """
+        return self._get_data(start_date, end_date, variables, None)
