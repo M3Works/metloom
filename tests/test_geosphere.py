@@ -206,7 +206,7 @@ class TestGeoSphereHistPointData(BasePointDataTest):
                                 "unit": "cm",
                                 "data": [3.0, 18.0, 22.0, 18.0, 18.0, 14.0]
                             }
-                        }, "station":"8807"}}
+                        }, "station": "8807"}}
                 ]
             }
             mock_obj = MagicMock()
