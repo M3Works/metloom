@@ -44,7 +44,9 @@ class GeoSpherePointDataBase(PointData):
         """
         See docstring for PointData.__init__
         """
-        super(GeoSpherePointDataBase, self).__init__(station_id, name, metadata=metadata)
+        super(GeoSpherePointDataBase, self).__init__(
+            station_id, name, metadata=metadata
+        )
         self._raw_metadata = None
         self._tzinfo = None
 

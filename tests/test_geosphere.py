@@ -201,12 +201,12 @@ class TestGeoSphereHistPointData(BasePointDataTest):
                     }, "properties": {
                         "parameters": {
                             "schnee": {
-                                "name": "Gesamtschneehöhe zum 07 Uhr MEZ Termin",
+                                "name": "Gesamtschneehöhe zum 07 Uhr"
+                                        "MEZ Termin",
                                 "unit": "cm",
                                 "data": [3.0, 18.0, 22.0, 18.0, 18.0, 14.0]
                             }
-                        }, "station":"8807"}
-                     }
+                        }, "station":"8807"}}
                 ]
             }
             mock_obj = MagicMock()
@@ -215,7 +215,7 @@ class TestGeoSphereHistPointData(BasePointDataTest):
 
     @pytest.fixture()
     def station(self):
-        return GeoSphereCurrentPointData("8807", "Tester2")
+        return GeoSphereHistPointData("8807", "Tester2")
 
     @pytest.mark.parametrize('stid, long, lat, elev', [
         ("8807", 11.700833, 47.5075, 3074.14708),
@@ -286,7 +286,7 @@ class TestGeoSphereHistPointData(BasePointDataTest):
                                   buffer):
         with patch("metloom.pointdata.geosphere_austria.requests.get",
                    side_effect=self.mock_station_response):
-            pnts = GeoSphereCurrentPointData.points_from_geometry(
+            pnts = GeoSphereHistPointData.points_from_geometry(
                 shape_obj,
                 [GeoSphereCurrentVariables.TEMP],
                 within_geometry=w_geom,
