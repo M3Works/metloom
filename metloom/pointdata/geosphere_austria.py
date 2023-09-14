@@ -360,7 +360,7 @@ class GeoSphereHistPointData(GeoSpherePointDataBase):
     and as such this has not bee implemented
     """
 
-    ALLOWED_VARIABLES = GeoSphereCurrentVariables
+    ALLOWED_VARIABLES = GeoSphereHistVariables
     URL = "https://dataset.api.hub.geosphere.at"
     DATASOURCE = "GEOSPHERE"
     META_EXTENSION = "/v1/station/historical/klima-v1-1d/metadata"
