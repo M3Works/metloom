@@ -239,13 +239,13 @@ class TestGeoSphereHistPointData(BasePointDataTest):
              '2023-01-24T00:00:00+00:00', '2023-01-25T00:00:00+00:00']
         ),
     ])
-    def test_get_hourly_data(
+    def test_get_daily_data(
         self, station, var, expected_values, expected_dates
     ):
         # Patch in the made up response
         with patch("metloom.pointdata.geosphere_austria.requests.get",
                    side_effect=self.mock_station_response):
-            df = station.get_hourly_data(
+            df = station.get_daily_data(
                 datetime(2023, 1, 20),
                 datetime(2023, 1, 25),
                 [var],
