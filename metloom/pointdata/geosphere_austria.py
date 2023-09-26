@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import List
 
 import geopandas as gpd
@@ -121,7 +121,7 @@ class GeoSpherePointDataBase(PointData):
         Convert the response data from the API to a GeoDataFrame
         Format and map columns in the dataframe
         Args:
-            response_data: JSON list response from CDEC API
+            response_data: JSON list response from API
             sensor: SensorDescription obj
             final_columns: List of columns used for filtering
             resample_duration: duration to resample to
@@ -322,6 +322,25 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         resp.raise_for_status()
         return resp.json()
 
+    def _validate_dates(self, end_date):
+        """
+        Validate that the dates will work
+
+        Args:
+            end_date: datetime object for the end of the request
+        """
+        today = date.today()
+        data_valid_start = (
+            pd.to_datetime(today.replace(month=today.month-3))
+        )
+
+        if pd.to_datetime(end_date) < data_valid_start:
+            raise ValueError(
+                f"This datasource does not have data older than 3 months. We "
+                f"cannot fetch data for dates before"
+                f" {data_valid_start.isoformat()}"
+            )
+
     def get_daily_data(
         self,
         start_date: datetime,
@@ -334,6 +353,7 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         https://dataset.api.hub.geosphere.at/v1/station/current/
         tawes-v1-10min?parameters=TL&station_ids=11035
         """
+        self._validate_dates(end_date)
         return self._get_data(start_date, end_date, variables, "D")
 
     def get_hourly_data(
@@ -345,6 +365,7 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         """
         See docstring for PointData.get_hourly_data
         """
+        self._validate_dates(end_date)
         return self._get_data(start_date, end_date, variables, "H")
 
 

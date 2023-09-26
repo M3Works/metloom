@@ -1,6 +1,6 @@
 import json
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -17,8 +17,14 @@ from metloom.variables import (
 from tests.test_point_data import BasePointDataTest
 
 
+TODAY = date.today()
+
+
 class TestGeoSphereCurrentPointData(BasePointDataTest):
     DATA_DIR = Path(__file__).parent.joinpath("data")
+    EXPECTED_DATETIMES = pd.date_range(
+        TODAY.isoformat(), periods=3, freq='H', tz='UTC'
+    )
 
     @pytest.fixture(scope="class")
     def shape_obj(self):
@@ -52,17 +58,15 @@ class TestGeoSphereCurrentPointData(BasePointDataTest):
         if "metadata" in args[0]:
             return self._meta_response(*args)
         else:
+            t_values = pd.date_range(
+                TODAY.isoformat(), periods=13, freq='10 min', tz='UTC'
+            )
             obj = {
                 'media_type': 'application/json', 'type': 'FeatureCollection',
                 'version': 'v1',
                 'timestamps': [
-                    '2021-01-01T00:00+00:00', '2021-01-01T00:10+00:00',
-                    '2021-01-01T00:20+00:00', '2021-01-01T00:30+00:00',
-                    '2021-01-01T00:40+00:00', '2021-01-01T00:50+00:00',
-                    '2021-01-01T01:00+00:00', '2021-01-01T01:10+00:00',
-                    '2021-01-01T01:20+00:00', '2021-01-01T01:30+00:00',
-                    '2021-01-01T01:40+00:00', '2021-01-01T01:50+00:00',
-                    '2021-01-01T02:00+00:00'], 'features': [
+                    t.isoformat() for t in t_values
+                ], 'features': [
                     {'type': 'Feature', 'geometry': {'type': 'Point',
                                                      'coordinates': [
                                                          16.35638888888889,
@@ -93,12 +97,26 @@ class TestGeoSphereCurrentPointData(BasePointDataTest):
             result = station.metadata == expected
             assert result
 
+    def test_get_hourly_data_fails(
+        self, station
+    ):
+        """
+        Test that we fail with dates greater than 3 months old
+        """
+        with patch("metloom.pointdata.geosphere_austria.requests.get",
+                   side_effect=self.mock_station_response):
+            with pytest.raises(ValueError):
+                station.get_hourly_data(
+                    datetime(2021, 1, 1, 0),
+                    datetime(2021, 1, 1, 2),
+                    [GeoSphereCurrentVariables.TEMP],
+                )
+
     @pytest.mark.parametrize('var, expected_values, expected_dates', [
         (
             GeoSphereCurrentVariables.TEMP,
             [2.4833333333333334, 0.5333333333333333, 1.1],
-            ['2021-01-1T00:00:00+00:00', '2021-01-1T01:00:00+00:00',
-             '2021-01-1T02:00:00+00:00']
+            [t.isoformat() for t in EXPECTED_DATETIMES]
         ),
     ])
     def test_get_hourly_data(
@@ -108,8 +126,8 @@ class TestGeoSphereCurrentPointData(BasePointDataTest):
         with patch("metloom.pointdata.geosphere_austria.requests.get",
                    side_effect=self.mock_station_response):
             df = station.get_hourly_data(
-                datetime(2021, 1, 1, 0),
-                datetime(2021, 1, 1, 2),
+                datetime(TODAY.year, TODAY.month, TODAY.day, 0),
+                datetime(TODAY.year, TODAY.month, TODAY.day, 2),
                 [var],
             )
 
