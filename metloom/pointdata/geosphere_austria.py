@@ -331,7 +331,7 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         """
         today = date.today()
         data_valid_start = (
-            pd.to_datetime(today.replace(month=today.month-3))
+            pd.to_datetime(today.replace(month=today.month - 3))
         )
 
         if pd.to_datetime(end_date) < data_valid_start:
