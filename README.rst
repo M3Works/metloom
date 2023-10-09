@@ -53,11 +53,23 @@ Install
 
     python3 -m pip install metloom
 
+* Common install issues:
+    * Macbook M1 and M2 chips: some python packages run into issues with the new M chips
+        * ``error : from lxml import etree in utils.py ((mach-o file, but is an incompatible architecture (have 'x86_64', need 'arm64)``
+            The solution is the following
+
+            .. code-block:: bash
+
+                pip uninstall lxml
+                pip install --no-binary lxml lxml
+
+
 
 Local install for dev
 ---------------------
 The recommendation is to use virtualenv, but other local python
 environment isolation tools will work (pipenv, conda)
+
 .. code-block:: bash
 
     python3 -m pip install --upgrade pip
@@ -130,6 +142,19 @@ Use metloom to find snow courses within a geometry
     points = CDECPointData.points_from_geometry(obj, vrs, snow_courses=True)
     df = points.to_dataframe()
     print(df)
+
+Tutorials
+---------
+In the ``Examples`` folder, there are multiple Jupyter notbook based
+tutorials. You can edit and run these notebooks by running Jupyter Lab
+from the command line
+
+.. code-block:: bash
+
+    pip install jupyterlab
+    jupyter lab
+
+This will open a Jupyter Lab session in your default browser.
 
 
 Credits
