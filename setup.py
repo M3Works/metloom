@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'geopandas>=0.9.0,<1.0.0',
     'pandas>1.0.0',
-    'lxml==4.9.1',
+    'lxml==4.9.3',
     'requests>2.0.0,<3.0.0',
     'beautifulsoup4>4,<5',
     'zeep>4.0.0'
