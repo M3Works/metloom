@@ -42,6 +42,7 @@ Features
     * `SNOTEL <https://www.nrcs.usda.gov/wps/portal/wcc/home/dataAccessHelp/webService/webServiceReference/>`_
     * `MESOWEST <https://developers.synopticdata.com/mesonet/>`_
     * `USGS <https://waterservices.usgs.gov/rest/>`_
+    * `GEOSPHERE AUSTRIA <https://data.hub.geosphere.at/dataset/>`_
 
 Requirements
 ------------
