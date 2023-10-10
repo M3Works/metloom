@@ -340,7 +340,9 @@ class TestSnotelPointData(BasePointDataTest):
             expected_dts, vals, station, points,
             include_measurement_date="snow_course" in fn_name
         )
-        pd.testing.assert_frame_equal(result, expected)
+        pd.testing.assert_frame_equal(
+            result.sort_index(axis=1), expected
+        )
 
     def test_get_hourly_data_multi_sensor(self, points, mock_zeep_client):
         expected_dts = [
@@ -362,7 +364,9 @@ class TestSnotelPointData(BasePointDataTest):
         expected = self.expected_response(
             expected_dts, expected_vals_obj, station, points
         )
-        pd.testing.assert_frame_equal(result, expected)
+        pd.testing.assert_frame_equal(
+            result.sort_index(axis=1), expected
+        )
 
     def test_points_from_geometry(self, shape_obj, mock_zeep_client):
         result = SnotelPointData.points_from_geometry(

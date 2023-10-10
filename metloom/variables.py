@@ -182,3 +182,39 @@ class USGSVariables(VariableBase):
     SWE = SensorDescription(
         "72341", "SWE", "Water content of snow, millimeters"
     )
+
+
+class GeoSphereCurrentVariables(VariableBase):
+    TEMP = SensorDescription("TL", "Air Temperature")
+    SNOWDEPTH = SensorDescription(
+        "SCHNEE", "Snowdepth"
+    )
+    PRECIPITATION = SensorDescription(
+        "RR", "Rainfall in the last 10 minutes", accumulated=True
+    )
+    TEMPGROUND10CM = SensorDescription(
+        "TB1", "Soil temperature at a depth of 10cm"
+    )
+    TEMPGROUND20CM = SensorDescription(
+        "TB2", "Soil temperature at a depth of 20cm"
+    )
+    TEMPGROUND50CM = SensorDescription(
+        "TB3", "Soil temperature at a depth of 50cm"
+    )
+
+
+class GeoSphereHistVariables(VariableBase):
+    """
+    Variables that correspond to the DAILY historical Klima dataset
+
+    Daily and hourly have different variable names
+    https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-1h/metadata
+    https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-1d/metadata
+    """
+    TEMP = SensorDescription("t7", "Air temperature 2m on observation date")
+    SNOWDEPTH = SensorDescription(
+        "schnee", "Snowdepth"
+    )
+    PRECIPITATION = SensorDescription(
+        "nied", "Precipitation Total", accumulated=True
+    )

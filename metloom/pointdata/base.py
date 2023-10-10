@@ -72,7 +72,7 @@ class PointData(object):
     # Default kwargs for function points from geometry
     POINTS_FROM_GEOM_DEFAULTS = {
         'within_geometry': True, 'snow_courses': False,
-        'buffer': 0.0
+        'buffer': 0.0, "filter_to_active": False
     }
 
     def __init__(self, station_id, name, metadata=None):

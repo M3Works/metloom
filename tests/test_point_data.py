@@ -59,4 +59,4 @@ class BasePointDataTest(object):
                 *var_keys, "datasource"]
         )
         df.set_index(keys=["datetime", "site"], inplace=True)
-        return df
+        return df.sort_index(axis=1)
