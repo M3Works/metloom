@@ -1,9 +1,15 @@
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import List
 
+import geopandas as gpd
+import pandas as pd
 import requests
 
+from metloom.dataframe_utils import append_df
 from metloom.pointdata.base import PointData
+from metloom.variables import SensorDescription, MetNorwayVariables
 
 
 class MetNorwayPointData(PointData):
@@ -39,13 +45,17 @@ class MetNorwayPointData(PointData):
     # TODO: read concepts
     # TODO: implement scheme for getting observation times based
         on documentation of time calculation
-    # TODO: make user - possible auth example https://frost.met.no/oauth2_python
 
     Concepts: https://frost.met.no/concepts2.html
 
     """
-
+    ALLOWED_VARIABLES = MetNorwayVariables
     URL = "https://frost.met.no/"
+    POINTS_FROM_GEOM_DEFAULTS = {
+        'within_geometry': True,
+        'token_json': "~/.frost_token.json",
+        'buffer': 0.0
+    }
 
     def __init__(
         self, station_id, name, token_json="~/.frost_token.json",
@@ -55,24 +65,31 @@ class MetNorwayPointData(PointData):
             station_id, name, metadata=metadata
         )
         self._token_path = token_json
-        # read in credentials
-        with open(token_json, "r") as fp:
-            obj = json.load(fp)
-            self._client_id = obj["client_id"]
-            self._client_secret = obj["client_secret"]
 
         # track how long the token is valid
         self._token_expires = None
         self._auth_header = None
 
-    def _get_token(self):
+    @classmethod
+    def _get_token(cls, token_json):
         """
         Get token for authorization
+        Args:
+            token_json: path to json with credentials
+        Returns:
+            (auth headers, timestamp of expire)
         """
-        url = self.URL + "auth/accessToken"
+        # read in credentials
+        token_json = Path(token_json).expanduser().absolute()
+        with open(token_json, "r") as fp:
+            obj = json.load(fp)
+            _client_id = obj["client_id"]
+            _client_secret = obj["client_secret"]
+
+        url = cls.URL + "auth/accessToken"
         params = {
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
+            "client_id": _client_id,
+            "client_secret": _client_secret,
             "grant_type": "client_credentials"
         }
         resp = requests.post(url, data=params)
@@ -81,10 +98,12 @@ class MetNorwayPointData(PointData):
         # get the token
         token = result["access_token"]
         # set the time when it expires
-        self._token_expires = datetime.now() + timedelta(
+        _token_expires = datetime.now() + timedelta(
             seconds=result["expires_in"]
         )
-        return token
+        return {
+            "Authorization": f"Bearer {token}"
+        }, _token_expires
 
     def _token_is_valid(self):
         """
@@ -99,18 +118,21 @@ class MetNorwayPointData(PointData):
     def auth_header(self):
         # get a new header if we need to
         if self._auth_header is None or not self._token_is_valid():
-            token = self._get_token()
-            self._auth_header = {
-                "Authorization": f"Bearer {token}"
-            }
+            token, expires = self._get_token(self._token_path)
+            # Save when the token expires
+            self._token_expires = expires
+            # set auth header
+            self._auth_header = token
         return self._auth_header
 
+    @classmethod
     def _get_sources(
-        self, ids=None, types="SensorSystem", elements=None, geometry=None,
-        validtime=None, name=None
+        cls, token_json="~/.frost_token.json", ids=None, types="SensorSystem",
+        elements=None, geometry=None, validtime=None, name=None,
     ):
         """
         Args:
+            token_json: path to json file with credentials
             ids: The Frost API source ID(s) that you want metadata for.
                 Enter a comma-separated list to select multiple sources.
                 For sources of type SensorSystem or RegionDataset, the source
@@ -138,11 +160,88 @@ class MetNorwayPointData(PointData):
             name: If specified, only sources whose 'name' attribute matches
                 this search filter may be included in the result.
         """
-        url = self.URL + "sources/v0"
+        url = cls.URL + "sources/v0.jsonld"
+        geo_info = str(geometry.iloc[0].geometry)
+
         params = dict(
-            ids=ids, types=types, elements=elements, geometry=geometry,
+            ids=ids, types=types, elements=elements, geometry=geo_info,
             validtime=validtime, name=name
         )
-        resp = requests.get(url, params=params, headers=self.auth_header)
+        auth_header, _ = cls._get_token(token_json)
+        resp = requests.get(url, params=params, headers=auth_header)
         resp.raise_for_status()
-        return resp.json()
+        return resp.json()["data"]
+
+    @classmethod
+    def points_from_geometry(
+        cls,
+        geometry: gpd.GeoDataFrame,
+        variables: List[SensorDescription],
+        **kwargs
+    ):
+        """
+        See docstring for PointData.points_from_geometry
+
+        Args:
+            geometry: GeoDataFrame for shapefile from gpd.read_file
+            variables: List of SensorDescription
+            within_geometry: filter the points to within the shapefile
+                instead of just the extents. Default True
+            buffer: buffer added to search box
+            token_json: Path to the public token for the mesowest api
+                        default = "~/.frost_token.json"
+
+        Returns:
+            PointDataCollection
+        """
+        kwargs = cls._add_default_kwargs(kwargs)
+
+        token_json = kwargs['token_json']
+        projected_geom = geometry.to_crs("EPSG:4326")
+        # buffer the geometry
+        buffer = kwargs["buffer"]
+        projected_geom = gpd.GeoDataFrame(
+            geometry=projected_geom.dissolve().buffer(buffer)
+        )
+        # Take the outer bounds if we are not within the geometry
+        if not kwargs["within_geometry"]:
+            projected_geom = gpd.GeoDataFrame(geometry=projected_geom.envelope)
+
+        # Loop over each variable and create a set of points.
+        # _get_sources returns only points that have ALL variables passed
+        # in, so looping over allows us to not exclude any points
+        points_df = pd.DataFrame()
+        for v in variables:
+            source_info = cls._get_sources(
+                token_json=token_json, geometry=projected_geom,
+                elements=[v.code]
+            )
+            df = pd.DataFrame.from_records(source_info)
+            # build our final list
+            points_df = append_df(
+                points_df, df
+            ).drop_duplicates(subset=['id'])
+
+        gdf = gpd.GeoDataFrame(
+            points_df,
+            # We don't get elevation back
+            geometry=gpd.points_from_xy(
+                [p['coordinates'][0] for p in points_df["geometry"].values],
+                [p['coordinates'][1] for p in points_df["geometry"].values],
+                # z=search_df[elev_key],
+            ),
+        )
+        points = [
+            cls(
+                row[0], row[1],
+                # For now, let's not pass in metadata
+                # metadata=row[2]
+            )
+            for row in zip(
+                gdf["id"],
+                gdf["name"],
+                gdf["geometry"],
+            )
+        ]
+        # return a points iterator
+        return cls.ITERATOR_CLASS(points)
