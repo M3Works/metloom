@@ -58,6 +58,7 @@ class MetNorwayPointData(PointData):
     Concepts: https://frost.met.no/concepts2.html
 
     """
+    DATASOURCE = "MET Norway"
     ALLOWED_VARIABLES = MetNorwayVariables
     URL = "https://frost.met.no/"
     POINTS_FROM_GEOM_DEFAULTS = {
@@ -241,8 +242,9 @@ class MetNorwayPointData(PointData):
             result = resp.json()["data"]
         return result
 
+    @staticmethod
     def _time_info_to_observation_time(
-        self, reference_time, time_offset, time_resolution, timeseries_id
+        reference_time, time_offset, time_resolution, timeseries_id
     ):
         """
         Get the observation time from the time info of an observation
@@ -255,7 +257,6 @@ class MetNorwayPointData(PointData):
         Returns:
             observation_time
         """
-        # TODO: test this
         reference_time = pd.to_datetime(reference_time)
         time_offset = pd.to_timedelta(time_offset)
         time_resolution = pd.to_timedelta(time_resolution)
@@ -268,6 +269,7 @@ class MetNorwayPointData(PointData):
         self, response_data, sensor, final_columns,
         resample_duration=None
     ):
+        # TODO: filter on data quality?
         records = []
         for obs in response_data:
             ref_time = obs["referenceTime"]
