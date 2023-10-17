@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List
@@ -6,10 +7,14 @@ from typing import List
 import geopandas as gpd
 import pandas as pd
 import requests
+from geopandas import GeoDataFrame
 
-from metloom.dataframe_utils import append_df
+from metloom.dataframe_utils import append_df, merge_df, resample_whole_df
 from metloom.pointdata.base import PointData
 from metloom.variables import SensorDescription, MetNorwayVariables
+
+
+LOG = logging.getLogger(__name__)
 
 
 class MetNorwayPointData(PointData):
@@ -33,6 +38,10 @@ class MetNorwayPointData(PointData):
 
     For this class we will use default levels and timeoffsets. See more
     info here https://frost.met.no/concepts2.html#level-offset-filter
+
+    It is important to note that this class does NOT implement all
+    of the functionality of the frost API. The frost documentation
+    is extensive and worth looking through.
 
 
     # TODO: look into data quality flags
@@ -202,6 +211,194 @@ class MetNorwayPointData(PointData):
             [location_data[0]],
             [location_data[1]],
         )[0]
+
+    def _get_observations(self, ids, start_date, end_date, variables_names):
+        """
+        Args:
+            ids: list of station ids
+            start_date: datetime start date
+            end_date: datetime end date
+            variables_names: list of element names
+        """
+        url = self.URL + "observations/v0.jsonld"
+        params = {
+            "sources": ids,
+            "referencetime": f"{start_date.isoformat()}/{end_date.isoformat()}",
+            "elements": variables_names,
+            # Defaults https://frost.met.no/concepts2.html#level-offset-filter
+            "timeoffsets": "default",
+            "levels": "default"
+        }
+        resp = requests.get(url, params=params, headers=self.auth_header)
+        # 412 means there was no data found
+        if resp.status_code == 412:
+            # we could use /observations/availableTimeSeries/v0
+            # to check this first
+            LOG.debug(f"No data found for {ids}, {variables_names}")
+            result = None
+        else:
+            resp.raise_for_status()
+            result = resp.json()["data"]
+        return result
+
+    def _time_info_to_observation_time(
+        self, reference_time, time_offset, time_resolution, timeseries_id
+    ):
+        """
+        Get the observation time from the time info of an observation
+        https://frost.met.no/concepts2.html#relationshipreftime
+
+        Args:
+            reference_time: string reference time
+            time_offset: string time offset (PT1H)
+            time_resolution: string time resolution (PT12H)
+        Returns:
+            observation_time
+        """
+        # TODO: test this
+        reference_time = pd.to_datetime(reference_time)
+        time_offset = pd.to_timedelta(time_offset)
+        time_resolution = pd.to_timedelta(time_resolution)
+        observation_time = (
+            reference_time + time_offset + time_resolution * timeseries_id
+        )
+        return observation_time
+
+    def _sensor_response_to_df(
+        self, response_data, sensor, final_columns,
+        resample_duration=None
+    ):
+        records = []
+        for obs in response_data:
+            ref_time = obs["referenceTime"]
+            # filter to the relevant responses
+            relevant_obs = [
+                o for o in obs["observations"] if o["elementId"] == sensor.code
+            ]
+            if len(relevant_obs) == 0:
+                # skip no data
+                continue
+            if len(relevant_obs) > 1:
+                raise RuntimeError("This case is not implemented")
+            else:
+                # this is our winner
+                o = relevant_obs[0]
+                observation_time = self._time_info_to_observation_time(
+                    ref_time, o["timeOffset"], o["timeResolution"],
+                    o["timeSeriesId"]
+                )
+                records.append({
+                    "datetime": observation_time,
+                    "site": self.id,
+                    sensor.name: o["value"],
+                    f"{sensor.name}_units": o["unit"],
+                })
+        # return None for no data
+        if not records:
+            return None
+
+        # keep the column names
+        final_columns += [sensor.name, f"{sensor.name}_units"]
+
+        # create df
+        sensor_df = pd.DataFrame.from_records(records)
+        frequency = pd.infer_freq(pd.DatetimeIndex(sensor_df["datetime"]))
+        sensor_df = GeoDataFrame(
+            sensor_df, geometry=[self.metadata] * len(sensor_df)
+        ).set_index("datetime")
+
+        # resample to the desired duration
+        if frequency != resample_duration and resample_duration is not None:
+            sensor_df = resample_whole_df(
+                sensor_df, sensor,
+                interval=resample_duration
+            )
+            sensor_df = GeoDataFrame(sensor_df, geometry=sensor_df["geometry"])
+
+        # double check utc conversion
+        sensor_df = sensor_df.tz_convert(self.desired_tzinfo)
+
+        # set index so joining works
+        sensor_df = sensor_df.filter(final_columns)
+        sensor_df = sensor_df.loc[pd.notna(sensor_df[sensor.name])]
+        return sensor_df
+
+    def _get_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+        desired_duration=None,
+    ):
+        """
+        Args:
+            start_date: datetime object for start of data collection period
+            end_date: datetime object for end of data collection period
+            variables: List of metloom.variables.SensorDescription object
+                from self.ALLOWED_VARIABLES
+        Returns:
+            GeoDataFrame of data, indexed on datetime, site
+        """
+
+        df = None
+        final_columns = ["geometry", "site"]
+        # Get data from the API
+        response_data = self._get_observations(
+            [self.id], start_date, end_date, [v.code for v in variables]
+        )
+        if response_data:
+            # Parse data for each variable
+            for sensor in variables:
+                sensor_df = self._sensor_response_to_df(
+                    response_data, sensor, final_columns,
+                    resample_duration=desired_duration
+                )
+                df = merge_df(df, sensor_df)
+
+        if df is not None:
+            if len(df.index) > 0:
+                # Set the datasource
+                df["datasource"] = [self.DATASOURCE] * len(df.index)
+                df.reset_index(inplace=True)
+                df.set_index(keys=["datetime", "site"], inplace=True)
+                df.index.set_names(["datetime", "site"], inplace=True)
+            else:
+                df = None
+        self.validate_sensor_df(df)
+        return df
+
+    def get_daily_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        return self._get_data(
+            start_date, end_date, variables, desired_duration="D"
+        )
+
+    def get_hourly_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        return self._get_data(
+            start_date, end_date, variables, desired_duration="H"
+        )
+
+    def get_event_data(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        variables: List[SensorDescription],
+    ):
+        """
+        Get data in original frequency from API
+        """
+        return self._get_data(
+            start_date, end_date, variables, desired_duration=None
+        )
 
     @classmethod
     def points_from_geometry(
