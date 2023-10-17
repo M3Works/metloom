@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List
 
@@ -70,6 +70,9 @@ class MetNorwayPointData(PointData):
         self._token_expires = None
         self._auth_header = None
 
+        # default UTC time
+        self._tzinfo = timezone(timedelta(hours=0))
+
     @classmethod
     def _get_token(cls, token_json):
         """
@@ -131,6 +134,10 @@ class MetNorwayPointData(PointData):
         elements=None, geometry=None, validtime=None, name=None,
     ):
         """
+        Get metadata for the source entitites defined in the Frost API.
+        Use the query parameters to filter the set of sources returned.
+        Leave the query parameters blank to select all sources.
+
         Args:
             token_json: path to json file with credentials
             ids: The Frost API source ID(s) that you want metadata for.
@@ -161,7 +168,10 @@ class MetNorwayPointData(PointData):
                 this search filter may be included in the result.
         """
         url = cls.URL + "sources/v0.jsonld"
-        geo_info = str(geometry.iloc[0].geometry)
+        if geometry is not None:
+            geo_info = str(geometry.iloc[0].geometry)
+        else:
+            geo_info = None
 
         params = dict(
             ids=ids, types=types, elements=elements, geometry=geo_info,
@@ -171,6 +181,27 @@ class MetNorwayPointData(PointData):
         resp = requests.get(url, params=params, headers=auth_header)
         resp.raise_for_status()
         return resp.json()["data"]
+
+    def _get_all_metadata(self):
+        result = self._get_sources(
+            ids=[self.id], token_json=self._token_path
+        )
+        if len(result) != 1:
+            raise RuntimeError("No metadata returned")
+
+        return result[0]
+
+    def _get_metadata(self):
+        """
+        See docstring for PointData._get_metadata
+        """
+        data = self._get_all_metadata()
+        location_data = data["geometry"]["coordinates"]
+
+        return gpd.points_from_xy(
+            [location_data[0]],
+            [location_data[1]],
+        )[0]
 
     @classmethod
     def points_from_geometry(
@@ -228,14 +259,12 @@ class MetNorwayPointData(PointData):
             geometry=gpd.points_from_xy(
                 [p['coordinates'][0] for p in points_df["geometry"].values],
                 [p['coordinates'][1] for p in points_df["geometry"].values],
-                # z=search_df[elev_key],
             ),
         )
         points = [
             cls(
                 row[0], row[1],
-                # For now, let's not pass in metadata
-                # metadata=row[2]
+                metadata=row[2]
             )
             for row in zip(
                 gdf["id"],
