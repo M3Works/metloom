@@ -62,6 +62,13 @@ class MetNorwayPointData(PointData):
         self, station_id, name, token_json="~/.frost_token.json",
         metadata=None,
     ):
+        """
+        Args:
+            station_id: id of station
+            name: name of station
+            token_json: path to file with authentication information
+            metadata: optional metadata for the station
+        """
         super(MetNorwayPointData, self).__init__(
             station_id, name, metadata=metadata
         )
@@ -120,6 +127,9 @@ class MetNorwayPointData(PointData):
 
     @property
     def auth_header(self):
+        """
+        Get the auth header and set the expiration time
+        """
         # get a new header if we need to
         if self._auth_header is None or not self._token_is_valid():
             token, expires = self._get_token(self._token_path)
@@ -184,6 +194,9 @@ class MetNorwayPointData(PointData):
         return resp.json()["data"]
 
     def _get_all_metadata(self):
+        """
+        Get all metadata from the API for one point
+        """
         result = self._get_sources(
             ids=[self.id], token_json=self._token_path
         )
@@ -260,6 +273,19 @@ class MetNorwayPointData(PointData):
         self, response_data, sensor, final_columns,
         resample_duration=None
     ):
+        """
+        Process the response from the API into a dataframe for 1 sensor
+
+        Args:
+            response_data: list of entries from the API
+            sensor: single variable object
+            final_columns: expected columns
+            resample_duration: if a resample is desired, a duration that can
+                be parsed by pandas
+
+        Returns
+            Geodataframe of data
+        """
         records = []
         for obs in response_data:
             ref_time = obs["referenceTime"]
@@ -370,6 +396,9 @@ class MetNorwayPointData(PointData):
         end_date: datetime,
         variables: List[SensorDescription],
     ):
+        """
+        See docstring for PointData.get_daily_data
+        """
         return self._get_data(
             start_date, end_date, variables, desired_duration="D"
         )
@@ -380,6 +409,9 @@ class MetNorwayPointData(PointData):
         end_date: datetime,
         variables: List[SensorDescription],
     ):
+        """
+        See docstring for PointData.get_hourly_data
+        """
         return self._get_data(
             start_date, end_date, variables, desired_duration="H"
         )
