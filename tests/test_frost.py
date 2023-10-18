@@ -83,6 +83,7 @@ class TestMetNorway:
             [13.44583333, 14.325, 13.86666667, 11.64166667]
         )
         assert all(result["AIR TEMP_units"] == ["degC"] * 4)
+        assert all(result["quality_code"] == "resampled")
 
     def test_hourly_data(self, obj):
         result = obj.get_hourly_data(

@@ -253,10 +253,14 @@ class PointData(object):
             assert ei in index_names
         # check for expected columns
         expected_columns = cls.EXPECTED_COLUMNS
-        if "measurementDate" in columns:
-            expected_columns = expected_columns + ["measurementDate"]
+        possible_extras = ["measurementDate", "quality_code"]
+        for pe in possible_extras:
+            if pe in columns:
+                expected_columns += [pe]
+
         for column in cls.EXPECTED_COLUMNS:
-            assert column in columns
+            if column not in columns:
+                raise ValueError(f"Expected {column} not found")
         remaining_columns = [c for c in columns if c not in expected_columns]
         # make sure all variables have a units column as well
         for rc in remaining_columns:

@@ -43,19 +43,10 @@ class MetNorwayPointData(PointData):
     of the functionality of the frost API. The frost documentation
     is extensive and worth looking through.
 
+    Read more about data quality codes here
+    https://frost.met.no/dataclarifications.html
 
-    # TODO: look into data quality flags
-    # TODO:
-        Important note: If you only specify these 3 things, your request will return all the data that matches this. This can result in many similar timeseries, for example if there are multiple sensors at a station that measure the same thing. It also means you might get data that is lower quality, because the request will return all available data.
-        If you want to try to limit the amount of timeseries the request returns it can be useful to use some defaults:
-        timeoffsets=default
-        levels=default
-
-    # TODO: read concepts
-    # TODO: implement scheme for getting observation times based
-        on documentation of time calculation
-
-    Concepts: https://frost.met.no/concepts2.html
+    Read more about general concepts: https://frost.met.no/concepts2.html
 
     """
     DATASOURCE = "MET Norway"
@@ -269,7 +260,6 @@ class MetNorwayPointData(PointData):
         self, response_data, sensor, final_columns,
         resample_duration=None
     ):
-        # TODO: filter on data quality?
         records = []
         for obs in response_data:
             ref_time = obs["referenceTime"]
@@ -294,13 +284,16 @@ class MetNorwayPointData(PointData):
                     "site": self.id,
                     sensor.name: o["value"],
                     f"{sensor.name}_units": o["unit"],
+                    "quality_code": o["qualityCode"]
                 })
         # return None for no data
         if not records:
             return None
 
         # keep the column names
-        final_columns += [sensor.name, f"{sensor.name}_units"]
+        final_columns += [
+            sensor.name, f"{sensor.name}_units", "quality_code"
+        ]
 
         # create df
         sensor_df = pd.DataFrame.from_records(records)
@@ -315,6 +308,8 @@ class MetNorwayPointData(PointData):
                 sensor_df, sensor,
                 interval=resample_duration
             )
+            # Overwrite quality code if we resampled it
+            sensor_df["quality_code"] = ["resampled"] * len(sensor_df)
             sensor_df = GeoDataFrame(sensor_df, geometry=sensor_df["geometry"])
 
         # double check utc conversion
