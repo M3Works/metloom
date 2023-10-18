@@ -242,7 +242,8 @@ class MetNorwayVariables(VariableBase):
         " the snow cover. (Code=-1 means 'no snow'"
         " and can be presented as '.')"
     )
-    # accumulated(liquid_water_content_of_surface_snow)
+    # SWE is only available as regional and interpolated datasets, so
+    # metloom will NOT return data
     SWE = SensorDescription(
         "liquid_water_content_of_surface_snow", "SWE",
         "Snow water equivalent is a measure of the amount of water obtained"
