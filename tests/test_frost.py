@@ -63,6 +63,25 @@ class TestMetNorway:
             raise NotImplementedError("No other method implemented")
         return obj
 
+    @pytest.fixture(scope='session')
+    def token_file(self):
+        """
+        Json token file fixture for mocking having a token
+        """
+        d = {
+            'client_id': '####',
+            'client_secret': '####'
+        }
+        json_file = Path(__file__).parent.joinpath('frost_token.json')
+
+        with open(json_file, 'w+') as fp:
+            json.dump(d, fp)
+
+        yield json_file
+        # Clean up
+        if json_file.is_file():
+            json_file.unlink()
+
     @pytest.fixture(scope="class")
     def mock_request(self):
         with patch("metloom.pointdata.norway.requests") as mr:
@@ -71,8 +90,10 @@ class TestMetNorway:
             yield mr
 
     @pytest.fixture(scope="class")
-    def obj(self, mock_request):
-        yield norway.MetNorwayPointData("SN46432", "BASURA")
+    def obj(self, mock_request, token_file):
+        yield norway.MetNorwayPointData(
+            "SN46432", "BASURA", token_json=token_file
+        )
 
     def test_daily_data(self, obj):
         result = obj.get_daily_data(
@@ -102,12 +123,12 @@ class TestMetNorway:
         )
         assert result is None
 
-    def test_points_from_geometry(self, mock_request):
+    def test_points_from_geometry(self, mock_request, token_file):
         shp = gpd.read_file(
             self.MOCKS_DIR.joinpath("box.shp")
         )
         result = norway.MetNorwayPointData.points_from_geometry(
-            shp, [MetNorwayVariables.TEMP]
+            shp, [MetNorwayVariables.TEMP], token_json=token_file
         )
         assert len(result.points) == 16
         assert result.points[0].id == "SN46432"
