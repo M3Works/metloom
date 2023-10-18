@@ -190,8 +190,16 @@ class MetNorwayPointData(PointData):
         )
         auth_header, _ = cls._get_token(token_json)
         resp = requests.get(url, params=params, headers=auth_header)
-        resp.raise_for_status()
-        return resp.json()["data"]
+        if resp.status_code == 404:
+            if ids:
+                raise RuntimeError(f"Could not find metadata for {ids}")
+            else:
+                # No point were found
+                result = None
+        else:
+            resp.raise_for_status()
+            result = resp.json()["data"]
+        return result
 
     def _get_all_metadata(self):
         """
@@ -473,30 +481,37 @@ class MetNorwayPointData(PointData):
                 token_json=token_json, geometry=projected_geom,
                 elements=[v.code]
             )
-            df = pd.DataFrame.from_records(source_info)
+            if source_info is not None:
+                df = pd.DataFrame.from_records(source_info)
+            else:
+                df = None
             # build our final list
             points_df = append_df(
                 points_df, df
             ).drop_duplicates(subset=['id'])
 
-        gdf = gpd.GeoDataFrame(
-            points_df,
-            # We don't get elevation back
-            geometry=gpd.points_from_xy(
-                [p['coordinates'][0] for p in points_df["geometry"].values],
-                [p['coordinates'][1] for p in points_df["geometry"].values],
-            ),
-        )
-        points = [
-            cls(
-                row[0], row[1],
-                metadata=row[2]
+        if len(points_df) > 0:
+            gdf = gpd.GeoDataFrame(
+                points_df,
+                # We don't get elevation back
+                geometry=gpd.points_from_xy(
+                    [p['coordinates'][0] for p in points_df["geometry"].values],
+                    [p['coordinates'][1] for p in points_df["geometry"].values],
+                ),
             )
-            for row in zip(
-                gdf["id"],
-                gdf["name"],
-                gdf["geometry"],
-            )
-        ]
+            points = [
+                cls(
+                    row[0], row[1],
+                    metadata=row[2]
+                )
+                for row in zip(
+                    gdf["id"],
+                    gdf["name"],
+                    gdf["geometry"],
+                )
+            ]
+        else:
+            points = []
+
         # return a points iterator
         return cls.ITERATOR_CLASS(points)

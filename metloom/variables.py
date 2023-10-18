@@ -236,6 +236,12 @@ class MetNorwayVariables(VariableBase):
         "Homogenised daily mean temperature."
         " The mean is an arithmetic mean of 24 hourly values (00-00 UTC),"
     )
+    SNOWDEPTH = SensorDescription(
+        "surface_snow_thickness", "SNOWDEPTH",
+        "The depth of the snow is measured in cm from the ground to the top of"
+        " the snow cover. (Code=-1 means 'no snow'"
+        " and can be presented as '.')"
+    )
     # accumulated(liquid_water_content_of_surface_snow)
     SWE = SensorDescription(
         "liquid_water_content_of_surface_snow", "SWE",
