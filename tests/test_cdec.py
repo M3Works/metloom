@@ -450,7 +450,9 @@ class TestCDECStation(BasePointDataTest):
 
         assert expected_points[0] == metadata
 
-    def test_get_daily_data(self, mock_get, mock_read_html, tny_station, tny_daily_expected):
+    def test_get_daily_data(
+        self, mock_get, mock_read_html, tny_station, tny_daily_expected
+    ):
         response = tny_station.get_daily_data(
             datetime(2021, 5, 15),
             datetime(2021, 5, 18),
