@@ -60,7 +60,7 @@ class CDECPointData(PointData):
         snow_sensors = [18, 3, 82]
         data = self._get_all_metadata()
         manual_check = []
-        for d, num in zip(data["SENSOR_NUMBER"], data["DURATION"]):
+        for num, d in zip(data["SENSOR_NUMBER"], data["DURATION"]):
             if int(num) in snow_sensors:
                 manual_check.append(d == "M")
         return manual_check
