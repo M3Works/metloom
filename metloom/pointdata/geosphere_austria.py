@@ -322,6 +322,17 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         resp.raise_for_status()
         return resp.json()
 
+    @staticmethod
+    def _back_3_months(dt):
+        start_month = dt.month - 3
+        if start_month <= 0:
+            data_valid_start = dt.replace(
+                month=start_month + 12, year=dt.year - 1
+            )
+        else:
+            data_valid_start = dt.replace(month=start_month)
+        return data_valid_start
+
     def _validate_dates(self, end_date):
         """
         Validate that the dates will work
@@ -329,12 +340,8 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         Args:
             end_date: datetime object for the end of the request
         """
-        today = date.today()
-        data_valid_start = (
-            pd.to_datetime(today.replace(month=today.month - 3))
-        )
-
-        if pd.to_datetime(end_date) < data_valid_start:
+        data_valid_start = self._back_3_months(date.today())
+        if pd.to_datetime(end_date) < pd.to_datetime(data_valid_start):
             raise ValueError(
                 f"This datasource does not have data older than 3 months. We "
                 f"cannot fetch data for dates before"
