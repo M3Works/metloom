@@ -78,6 +78,9 @@ class SnotelPointData(PointData):
             sensor_df = gpd.GeoDataFrame.from_dict(
                 transformed, geometry=[self.metadata] * len(transformed)
             )
+
+            sensor_df = sensor_df.drop_duplicates()
+
             # TODO: possibly an opportunity for DRY here (see CDEC)
             sensor_df["datetime"] = pd.to_datetime(sensor_df["datetime"])
             sensor_df["datetime"] = sensor_df["datetime"].apply(
