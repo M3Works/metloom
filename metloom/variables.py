@@ -182,6 +182,38 @@ class USGSVariables(VariableBase):
     SWE = SensorDescription(
         "72341", "SWE", "Water content of snow, millimeters"
     )
+    SOLARRADIATION = SensorDescription(
+        "72179", "SOLAR RADIATION",
+        "Shortwave solar radiation, watts per square meter"
+    )
+    UPSHORTWAVE = SensorDescription(
+        "72185", "UPWARD SHORTWAVE RADIATION",
+        "Shortwave radiation, upward intensity, watts per square meter"
+    )
+    DOWNSHORTWAVE = SensorDescription(
+        "72186", "DOWNWARD SHORTWAVE RADIATION",
+        "Shortwave radiation, downward intensity, watts per square meter"
+    )
+    NETSHORTWAVE = SensorDescription(
+        "72201", "NET SHORTWAVE RADIATION",
+        "Net incident shortwave radiation, watts per square meter",
+    )
+    NETLONGWAVE = SensorDescription(
+        "72202", "NET LONGWAVE RADIATION",
+        "Net emitted longwave radiation, watts per square meter"
+    )
+    DOWNLONGWAVE = SensorDescription(
+        "72175", "DOWNWARD LONGWAVE RADIATION",
+        "Longwave radiation, downward intensity, watts per square meter"
+    )
+    UPLONGWAVE = SensorDescription(
+        "72174", "UPWARD LONGWAVE RADIATION",
+        "Longwave radiation, upward intensity, watts per square meter"
+    )
+    SURFACETEMP = SensorDescription(
+        "72405", "SURFACE TEMPERATURE",
+        "Surface temperature, non-contact, degrees Celsius"
+    )
 
 
 class GeoSphereCurrentVariables(VariableBase):

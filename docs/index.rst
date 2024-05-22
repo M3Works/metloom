@@ -8,6 +8,7 @@ Welcome to metloom's documentation!
    readme
    installation
    usage
+   examples
    api
    contributing
    authors

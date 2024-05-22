@@ -1,0 +1,7 @@
+{
+"type": "FeatureCollection",
+"features": [
+{ "type": "Feature", "properties": { "name": "Mores Creek Summit", "id": "637:ID:SNTL", "datasource": "NRCS" }, "geometry": { "type": "Point", "coordinates": [ -115.66588, 43.932, 6100.0 ] } },
+{ "type": "Feature", "properties": { "name": "Bogus Basin", "id": "978:ID:SNTL", "datasource": "NRCS" }, "geometry": { "type": "Point", "coordinates": [ -116.09685, 43.76377, 6340.0 ] } }
+]
+}
