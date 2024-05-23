@@ -250,3 +250,31 @@ class GeoSphereHistVariables(VariableBase):
     PRECIPITATION = SensorDescription(
         "nied", "Precipitation Total", accumulated=True
     )
+
+
+class CuesLevel1Variables(VariableBase):
+    """
+    Variables for CUES level1 data
+    https://snow.ucsb.edu/index.php/query-db/
+    """
+    # TEMP = SensorDescription("t7", "Air temperature 2m on observation date")
+    # SNOWDEPTH = SensorDescription(
+    #     "schnee", "Snowdepth"
+    # )
+    # PRECIPITATION = SensorDescription(
+    #     "nied", "Precipitation Total", accumulated=True
+    # )
+    DOWNSHORTWAVE = SensorDescription(
+        "downward looking solar radiation", "DOWNWARD SHORTWAVE RADIATION",
+    )
+    UPSHORTWAVE = SensorDescription(
+        "upward looking solar radiation", "UPWARD SHORTWAVE RADIATION",
+    )
+    DOWNSHORTWAVEIR = SensorDescription(
+        "downward looking near-IR radiation",
+        "DOWNWARD NIR SHORTWAVE RADIATION",
+    )
+    UPSHORTWAVEIR = SensorDescription(
+        "upward looking near-IR radiation",
+        "UPWARD NIR SHORTWAVE RADIATION",
+    )
