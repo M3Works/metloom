@@ -257,6 +257,8 @@ class CuesLevel1Variables(VariableBase):
     Variables for CUES level1 data
     https://snow.ucsb.edu/index.php/query-db/
     """
+    # TODO: extend variable base and add an 'instrument' attribute
+    #   for when multiple instruments are returned
     # TEMP = SensorDescription("t7", "Air temperature 2m on observation date")
     # SNOWDEPTH = SensorDescription(
     #     "schnee", "Snowdepth"

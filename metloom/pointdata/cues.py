@@ -55,6 +55,7 @@ class CuesLevel1(PointData):
         return resp.content.decode()
 
     def _sensor_response_to_df(self, data, variable):
+        # Parse the 'csv' string returned
         df = pd.read_csv(
             StringIO(data), delimiter=",", skip_blank_lines=True,
             comment="#"
@@ -68,7 +69,9 @@ class CuesLevel1(PointData):
             columns[0]: "datetime",
             columns[1]: variable.name
         }
-        units = columns[1].split(";").replace("(", "").replace(")", "")
+        # Parse the units out of the returned column name
+        units = columns[1].split(";")[-1].replace("(", "").replace(")", "")
+        # Rename to desired columns and add a units column
         df.rename(columns=column_map, inplace=True)
         df[f"{variable.name}_units"] = [units] * len(df)
 
@@ -85,10 +88,16 @@ class CuesLevel1(PointData):
                 start_date, end_date, variable, period, method
             )
             df_var = self._sensor_response_to_df(data, variable)
-            df.loc[df_var.index, df_var.columns] = df_var
+            # TODO: crashing here
+            # for c in df_var.columns.values:
+            df[df_var.columns] = df_var
+        # Set the site info
         df["site"] = [self.id] * len(df)
+        df["datasource"] = [self.DATASOURCE] * len(df)
         # TODO: handle tzinfo
+        # Make this a geodataframe
         df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
+        df = df.reset_index().set_index(["datetime", "site"])
         self.validate_sensor_df(df)
         return df
 
