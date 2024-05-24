@@ -6,13 +6,15 @@ https://snow.ucsb.edu/index.php/description/
 from datetime import datetime
 from io import StringIO
 from typing import List
-
+import logging
 import geopandas as gpd
 import pandas as pd
 import requests
 
 from metloom.pointdata import PointData
 from metloom.variables import CuesLevel1Variables, SensorDescription
+
+LOG = logging.getLogger(__name__)
 
 
 class CuesLevel1(PointData):
@@ -61,27 +63,47 @@ class CuesLevel1(PointData):
             comment="#"
         )
         columns = list(df.columns.values)
-        if len(columns) > 2:
+        # check that we have the expected columns for the
+        # instrument since multiple may be returned
+        if variable.instrument:
+            var_column = None
+            for c in columns:
+                if variable.instrument in c:
+                    var_column = c
+                    break
+            if var_column is None:
+                LOG.error(f"Returned columns were {columns}")
+                raise RuntimeError(
+                    f"Could not find column for expected"
+                    f" instrument {variable.instrument}"
+                )
+        elif len(columns) > 2:
             raise RuntimeError(
                 f"Expected 2 columns, got {columns}"
             )
+        else:
+            # just use the second of two columns
+            var_column = columns[1]
         column_map = {
             columns[0]: "datetime",
-            columns[1]: variable.name
+            var_column: variable.name
         }
         # Parse the units out of the returned column name
         units = columns[1].split(";")[-1].replace("(", "").replace(")", "")
         # Rename to desired columns and add a units column
         df.rename(columns=column_map, inplace=True)
+        df.set_index("datetime")
+        df = df.loc[:, [variable.name]]
         df[f"{variable.name}_units"] = [units] * len(df)
 
-        return df.set_index("datetime")
+        return df
 
     def _get_data(
         self, start_date, end_date, variables: List[SensorDescription],
         period,
     ):
         df = pd.DataFrame()
+        df.index.name = "datetime"
         for variable in variables:
             method = "sum" if variable.accumulated else "average"
             data = self._get_one_vaiable(

@@ -252,6 +252,15 @@ class GeoSphereHistVariables(VariableBase):
     )
 
 
+@dataclass(eq=True, frozen=True)
+class InstrumentDescription(SensorDescription):
+    """
+    Extend the Sensor Description to include instrument
+    """
+    # description of the specific instrument for the variable
+    instrument: str = None
+
+
 class CuesLevel1Variables(VariableBase):
     """
     Variables for CUES level1 data
@@ -266,17 +275,19 @@ class CuesLevel1Variables(VariableBase):
     # PRECIPITATION = SensorDescription(
     #     "nied", "Precipitation Total", accumulated=True
     # )
-    DOWNSHORTWAVE = SensorDescription(
+    DOWNSHORTWAVE = InstrumentDescription(
         "downward looking solar radiation", "DOWNWARD SHORTWAVE RADIATION",
     )
-    UPSHORTWAVE = SensorDescription(
+    UPSHORTWAVE = InstrumentDescription(
         "upward looking solar radiation", "UPWARD SHORTWAVE RADIATION",
+        instrument="Eppley Lab precision spectral pyranometer"
+    #     'uplooking Sunshine pyranometer  direct and diffus'
     )
-    DOWNSHORTWAVEIR = SensorDescription(
+    DOWNSHORTWAVEIR = InstrumentDescription(
         "downward looking near-IR radiation",
         "DOWNWARD NIR SHORTWAVE RADIATION",
     )
-    UPSHORTWAVEIR = SensorDescription(
+    UPSHORTWAVEIR = InstrumentDescription(
         "upward looking near-IR radiation",
         "UPWARD NIR SHORTWAVE RADIATION",
     )
