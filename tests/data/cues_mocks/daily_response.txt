@@ -1,0 +1,4 @@
+MeasDateTime,downward looking solar radiation;  downlooking Eppley Lab precision spectral pyranometer; (Watts/meter^2)
+2020-03-15 00:00:00,95.64
+2020-03-16 00:00:00,86.87
+2020-03-17 00:00:00,182.23

@@ -3,7 +3,7 @@ A reader for the Mammoth CUES site
 https://snow.ucsb.edu/index.php/description/
 
 """
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from io import StringIO
 from typing import List
 import logging
@@ -38,7 +38,7 @@ class CuesLevel1(PointData):
             metadata=metadata
         )
         self._raw_metadata = None
-        self._tzinfo = None
+        self._tzinfo = timezone(timedelta(hours=-8.0))
 
     def _get_one_vaiable(
         self, start_date, end_date, variables: SensorDescription,
@@ -89,10 +89,17 @@ class CuesLevel1(PointData):
             var_column: variable.name
         }
         # Parse the units out of the returned column name
-        units = columns[1].split(";")[-1].replace("(", "").replace(")", "")
+        units = columns[1].split(";")[-1].replace(
+            "(", ""
+        ).replace(")", "").strip()
         # Rename to desired columns and add a units column
         df.rename(columns=column_map, inplace=True)
-        df.set_index("datetime")
+
+        # handle the timezone convert to UTC
+        df["datetime"] = pd.to_datetime(df["datetime"])
+        df["datetime"] = df["datetime"].apply(self._handle_df_tz)
+
+        df = df.set_index("datetime")
         df = df.loc[:, [variable.name]]
         df[f"{variable.name}_units"] = [units] * len(df)
 
@@ -110,13 +117,10 @@ class CuesLevel1(PointData):
                 start_date, end_date, variable, period, method
             )
             df_var = self._sensor_response_to_df(data, variable)
-            # TODO: crashing here
-            # for c in df_var.columns.values:
             df[df_var.columns] = df_var
         # Set the site info
         df["site"] = [self.id] * len(df)
         df["datasource"] = [self.DATASOURCE] * len(df)
-        # TODO: handle tzinfo
         # Make this a geodataframe
         df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
         df = df.reset_index().set_index(["datetime", "site"])
