@@ -70,8 +70,8 @@ class TestCuesStation(BasePointDataTest):
             with open(join(DATA_DIR, "daily_response.txt")) as fp:
                 data = fp.read()
         elif resp == 'hourly':
-            with open(join(DATA_DIR, "hourly_response.json")) as fp:
-                data = json.load(fp)
+            with open(join(DATA_DIR, "hourly_response.txt")) as fp:
+                data = fp.read()
         else:
             raise RuntimeError(f"{resp} is an unknown option")
 
@@ -83,8 +83,7 @@ class TestCuesStation(BasePointDataTest):
         assert expected_meta == station.metadata
 
     def test_get_daily_data(self, station, daily_expected):
-        with patch("metloom.pointdata.cues.requests") \
-                as mock_requests:
+        with patch("metloom.pointdata.cues.requests") as mock_requests:
             mock_requests.post.side_effect = [
                 self.get_url_response(),
             ]
@@ -98,27 +97,26 @@ class TestCuesStation(BasePointDataTest):
             daily_expected.sort_index(axis=1)
         )
 
-    # def test_get_hourly_data(self, station, crp_daily_expected):
-    #     """
-    #     Test that we resample from 15m to 1 hour correctly
-    #     """
-    #     with patch("metloom.pointdata.usgs.USGSPointData._get_url_response") \
-    #             as mock_requests:
-    #         mock_requests.side_effect = [
-    #             self.get_url_response(resp='hourly'),
-    #             self.get_url_response(resp='metadata')
-    #         ]
-    #         response = station.get_hourly_data(
-    #             datetime(2023, 1, 13),
-    #             datetime(2023, 1, 13),
-    #             [USGSVariables.DISCHARGE],
-    #         )
-    #     response = response.reset_index()
-    #     assert response["datetime"].values[0] == pd.to_datetime("2023-01-13 07")
-    #     assert response["datetime"].values[-1] == pd.to_datetime("2023-01-14 06")
-    #     assert response["DISCHARGE"].values[0] == 300.0
-    #     assert response["DISCHARGE"].values[-1] == 283.25
-    #     assert all(response["site"].values == "08245000")
+    def test_get_hourly_data(self, station):
+        """
+        Test that we get hourly data correctly.
+        This also uses the `UPSHORTWAVE` variable so we can test
+        that the instrument specific implementation of variables is working.
+        """
+        with patch("metloom.pointdata.cues.requests") as mock_requests:
+            mock_requests.post.side_effect = [
+                self.get_url_response(resp="hourly"),
+            ]
+            resp = station.get_hourly_data(
+                datetime(2020, 4, 1), datetime(2020, 4, 2),
+                [CuesLevel1Variables.UPSHORTWAVE],
+            )
+        resp = resp.reset_index()
+        assert resp["datetime"].values[0] == pd.to_datetime("2020-04-01 08")
+        assert resp["datetime"].values[-1] == pd.to_datetime("2020-04-02 07")
+        assert resp["UPWARD SHORTWAVE RADIATION"].values[0] == -9.78
+        assert resp["UPWARD SHORTWAVE RADIATION"].values[-1] == -8.44
+        assert all(resp["site"].values == "CUES")
 
     def test_points_from_geometry_failure(self, station):
         with pytest.raises(NotImplementedError):

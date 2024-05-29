@@ -22,6 +22,7 @@ class CuesLevel1(PointData):
     Implement PointData methods for CUES level 1 data
     https://snow.ucsb.edu/index.php/description/
     https://snow.ucsb.edu/index.php/query-db/
+    https://doi.org/10.21424/R4159Q
 
     """
     ALLOWED_VARIABLES = CuesLevel1Variables

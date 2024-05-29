@@ -265,9 +265,12 @@ class CuesLevel1Variables(VariableBase):
     """
     Variables for CUES level1 data
     https://snow.ucsb.edu/index.php/query-db/
+
+    Some variables report back with multiple instruments. See `UPSHORTWAVE`
+    and `UPSHORTWAVE2` for two instrument specific implementations
+    of the same variable.
+
     """
-    # TODO: extend variable base and add an 'instrument' attribute
-    #   for when multiple instruments are returned
     # TEMP = SensorDescription("t7", "Air temperature 2m on observation date")
     # SNOWDEPTH = SensorDescription(
     #     "schnee", "Snowdepth"
@@ -281,7 +284,10 @@ class CuesLevel1Variables(VariableBase):
     UPSHORTWAVE = InstrumentDescription(
         "upward looking solar radiation", "UPWARD SHORTWAVE RADIATION",
         instrument="Eppley Lab precision spectral pyranometer"
-    #     'uplooking Sunshine pyranometer  direct and diffus'
+    )
+    UPSHORTWAVE2 = InstrumentDescription(
+        "upward looking solar radiation", "UPWARD SHORTWAVE RADIATION 2",
+        instrument="uplooking Sunshine pyranometer  direct and diffus"
     )
     DOWNSHORTWAVEIR = InstrumentDescription(
         "downward looking near-IR radiation",
