@@ -2,7 +2,6 @@ from datetime import datetime
 from os.path import join
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-import json
 
 import geopandas as gpd
 import pandas as pd
