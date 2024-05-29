@@ -271,13 +271,18 @@ class CuesLevel1Variables(VariableBase):
     of the same variable.
 
     """
-    # TEMP = SensorDescription("t7", "Air temperature 2m on observation date")
-    # SNOWDEPTH = SensorDescription(
-    #     "schnee", "Snowdepth"
-    # )
-    # PRECIPITATION = SensorDescription(
+    TEMP = InstrumentDescription("air temperature", "AIR TEMP")
+    RH = InstrumentDescription("RH", "RELATIVE HUMIDITY")
+    LASERSNOWDEPTH = InstrumentDescription("laser snow depth", "LASER SNOWDEPTH")
+    SNOWDEPTH = InstrumentDescription("snow depth", "SNOWDEPTH")
+    NEWSNOWDEPTH = InstrumentDescription("new snow depth", "NEW SNOWDEPTH")
+    SWE = InstrumentDescription("Snow Pillow (DWR) SWE", "SWE")
+    # PRECIPITATION = InstrumentDescription(
     #     "nied", "Precipitation Total", accumulated=True
     # )
+    TEMPSURFSNOW = InstrumentDescription(
+        "snow surface temperature", "SNOW SURFACE TEMPERATURE"
+    )
     DOWNSHORTWAVE = InstrumentDescription(
         "downward looking solar radiation", "DOWNWARD SHORTWAVE RADIATION",
     )

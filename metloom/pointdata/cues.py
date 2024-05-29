@@ -58,6 +58,12 @@ class CuesLevel1(PointData):
         return resp.content.decode()
 
     def _sensor_response_to_df(self, data, variable):
+
+        # Check for no data
+        if not data.replace("\n", ""):
+            LOG.debug(f"No data returned for {variable}")
+            return None
+
         # Parse the 'csv' string returned
         df = pd.read_csv(
             StringIO(data), delimiter=",", skip_blank_lines=True,
@@ -118,7 +124,8 @@ class CuesLevel1(PointData):
                 start_date, end_date, variable, period, method
             )
             df_var = self._sensor_response_to_df(data, variable)
-            df[df_var.columns] = df_var
+            if df_var is not None:
+                df[df_var.columns] = df_var
         # Set the site info
         df["site"] = [self.id] * len(df)
         df["datasource"] = [self.DATASOURCE] * len(df)
