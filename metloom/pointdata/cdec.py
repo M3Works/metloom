@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from io import StringIO
 from typing import List
 
 import geopandas as gpd
@@ -24,7 +25,7 @@ class CDECPointData(PointData):
 
     ALLOWED_VARIABLES = CdecStationVariables
     CDEC_URL = "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet"
-    META_URL = "https://cdec.water.ca.gov/dynamicapp/staMeta"
+    META_URL = "https://cdec.water.ca.gov/dynamicapp/req/CSVMetaDataServlet"
     DATASOURCE = "CDEC"
 
     def __init__(self, station_id, name, metadata=None):
@@ -36,62 +37,6 @@ class CDECPointData(PointData):
         # CDEC has datetimes that aren't found in US/Pacific. Use this instead
         self._tzinfo = timezone(timedelta(hours=-8.0))
 
-    def _parse_sensor_table(self, df):
-        expected_cols = [
-            "Sensor Description", "Sensor Number", "Duration",
-            "Plot", "Data Collection", "Data Available"
-        ]
-
-        df_sensors = None
-
-        if len(df.columns) == len(expected_cols):
-            df_sensors = pd.DataFrame(
-                df.values, columns=[
-                    "Sensor Description", "Sensor Number", "Duration",
-                    "Plot", "Data Collection", "Data Available"
-                ]
-            )
-            df_sensors["Duration"] = df_sensors["Duration"].map(
-                lambda x: x.replace("(", "").replace(")", "").strip()
-            )
-            duration_values = df_sensors["Duration"].values
-            if not any(
-                [k in duration_values for k in
-                 ["monthly", "daily", "hourly", "event"]]
-            ):
-                df_sensors = None
-
-        # If we didn't find any valid durations, we have the wrong table
-        return df_sensors
-
-    def _parse_meta_page(self, df):
-        result = {}
-        # restructure the dataframes into a usable format
-        df_loc = df[0]
-        df1 = df_loc.iloc[:, :2].transpose()
-        df2 = df_loc.iloc[:, 2:].transpose()
-        result["location"] = pd.DataFrame(
-            df1.values[1:], columns=df1.iloc[0]
-        ).join(
-            pd.DataFrame(df2.values[1:], columns=df2.iloc[0])
-        )
-        # Make sure we read the expected table
-        if "Longitude" not in result["location"].columns.values:
-            LOG.error(result["location"])
-            raise RuntimeError(f"Failed parsing metadata for {self.id}")
-
-        # parse and cleanup the sensor info
-        df_sensors = self._parse_sensor_table(df[1])
-        if df_sensors is None:
-            df_sensors = self._parse_sensor_table(df[2])
-            if df_sensors is None:
-                LOG.error(f"Failed to find sensor info for {self.id}")
-                raise RuntimeError(f"Failed to find sensor info for {self.id}")
-
-        result["sensors"] = df_sensors
-
-        return result
-
     def _get_all_metadata(self):
         """
         Get all the raw metadata for a station. This is a list of sensor
@@ -100,9 +45,11 @@ class CDECPointData(PointData):
             A list of dictionaries describing the sensors at a station
         """
         if self._raw_metadata is None:
-            url = self.META_URL + f"?station_id={self.id}"
-            df = pd.read_html(url)
-            self._raw_metadata = self._parse_meta_page(df)
+            url = self.META_URL + f"?Stations={self.id}"
+            resp = requests.get(url)
+            resp.raise_for_status()
+            result = StringIO(resp.text)
+            self._raw_metadata = pd.read_csv(result)
         return self._raw_metadata
 
     def _check_snowcourse_sensors(self):
@@ -112,11 +59,10 @@ class CDECPointData(PointData):
         """
         snow_sensors = [18, 3, 82]
         data = self._get_all_metadata()
-        sensors = data["sensors"]
         manual_check = []
-        for d, num in zip(sensors["Duration"], sensors["Sensor Number"]):
+        for num, d in zip(data["SENSOR_NUMBER"], data["DURATION"]):
             if int(num) in snow_sensors:
-                manual_check.append(d == "monthly")
+                manual_check.append(d == "M")
         return manual_check
 
     def is_only_snow_course(self, variables: List[SensorDescription]):
@@ -160,34 +106,32 @@ class CDECPointData(PointData):
         determine if all sensors for a station are on a monthly interval
         """
         data = self._get_all_metadata()
-        duration = data["sensors"]["Duration"].values
-        manual_check = [d == "monthly" for d in duration]
+        duration = data["DURATION"].values
+        manual_check = [d == "M" for d in duration]
         if len(manual_check) > 0 and all(manual_check):
             return True
         return False
-
-    @staticmethod
-    def _parse_str_deg(value):
-        return float(value.replace("°", ""))
-
-    @staticmethod
-    def _parse_elevation(value):
-        num, unit = value.split(" ")
-        if unit.lower() not in ["ft", "feet"]:
-            raise RuntimeError("Unexpected unit for elevation")
-        return float(num)
 
     def _get_metadata(self):
         """
         See docstring for PointData._get_metadata
         """
         data = self._get_all_metadata()
-        location_data = data["location"].iloc[0]
+        chosen_sensor_data = data.iloc[0]
+        sensor_nums = data["SENSOR_NUMBER"].values
+
+        # go down a rank of choice sensor metadata
+        for choice in [3, 18, 2, 30]:
+            if choice in sensor_nums:
+                chosen_sensor_data = data.loc[
+                    data["SENSOR_NUMBER"] == choice
+                ].iloc[0]
+                break
 
         return gpd.points_from_xy(
-            [self._parse_str_deg(location_data["Longitude"])],
-            [self._parse_str_deg(location_data["Latitude"])],
-            z=[self._parse_elevation(location_data["Elevation"])],
+            [float(chosen_sensor_data["LONGITUDE"])],
+            [float(chosen_sensor_data["LATITUDE"])],
+            z=[float(chosen_sensor_data["ELEVATION"])],
         )[0]
 
     def _data_request(self, params):

@@ -84,6 +84,17 @@ class TestGeoSphereCurrentPointData(BasePointDataTest):
     def station(self):
         return GeoSphereCurrentPointData("11035", "Tester")
 
+    @pytest.mark.parametrize(
+        "dt, expected", [
+            (datetime(2024, 1, 24), datetime(2023, 10, 24)),
+            (datetime(2023, 6, 24), datetime(2023, 3, 24)),
+            (datetime(2023, 3, 1), datetime(2022, 12, 1)),
+        ]
+    )
+    def test_back_3_months(self, dt, expected, station):
+        result = station._back_3_months(dt)
+        assert expected == result
+
     @pytest.mark.parametrize('stid, long, lat, elev', [
         ("11035", 16.35638888888889, 48.24861111111111, 649.60632),
     ])

@@ -182,6 +182,38 @@ class USGSVariables(VariableBase):
     SWE = SensorDescription(
         "72341", "SWE", "Water content of snow, millimeters"
     )
+    SOLARRADIATION = SensorDescription(
+        "72179", "SOLAR RADIATION",
+        "Shortwave solar radiation, watts per square meter"
+    )
+    UPSHORTWAVE = SensorDescription(
+        "72185", "UPWARD SHORTWAVE RADIATION",
+        "Shortwave radiation, upward intensity, watts per square meter"
+    )
+    DOWNSHORTWAVE = SensorDescription(
+        "72186", "DOWNWARD SHORTWAVE RADIATION",
+        "Shortwave radiation, downward intensity, watts per square meter"
+    )
+    NETSHORTWAVE = SensorDescription(
+        "72201", "NET SHORTWAVE RADIATION",
+        "Net incident shortwave radiation, watts per square meter",
+    )
+    NETLONGWAVE = SensorDescription(
+        "72202", "NET LONGWAVE RADIATION",
+        "Net emitted longwave radiation, watts per square meter"
+    )
+    DOWNLONGWAVE = SensorDescription(
+        "72175", "DOWNWARD LONGWAVE RADIATION",
+        "Longwave radiation, downward intensity, watts per square meter"
+    )
+    UPLONGWAVE = SensorDescription(
+        "72174", "UPWARD LONGWAVE RADIATION",
+        "Longwave radiation, upward intensity, watts per square meter"
+    )
+    SURFACETEMP = SensorDescription(
+        "72405", "SURFACE TEMPERATURE",
+        "Surface temperature, non-contact, degrees Celsius"
+    )
 
 
 class GeoSphereCurrentVariables(VariableBase):
@@ -217,4 +249,48 @@ class GeoSphereHistVariables(VariableBase):
     )
     PRECIPITATION = SensorDescription(
         "nied", "Precipitation Total", accumulated=True
+    )
+
+
+class MetNorwayVariables(VariableBase):
+    """
+    See https://frost.met.no/concepts2.html#calculationmethod
+    for explanation of variable naming.
+    All available variables are
+    https://frost.met.no/elementtable
+    """
+    TEMP = SensorDescription(
+        "air_temperature", "AIR TEMP",
+        "Air temperature (default 2 m above ground), present value"
+    )
+    TEMPAVG = SensorDescription(
+        "best_estimate_mean(air_temperature P1D)", "AVG AIR TEMP",
+        "Homogenised daily mean temperature."
+        " The mean is an arithmetic mean of 24 hourly values (00-00 UTC),"
+    )
+    SNOWDEPTH = SensorDescription(
+        "surface_snow_thickness", "SNOWDEPTH",
+        "The depth of the snow is measured in cm from the ground to the top of"
+        " the snow cover. (Code=-1 means 'no snow'"
+        " and can be presented as '.')"
+    )
+    # SWE is only available as regional and interpolated datasets, so
+    # metloom will NOT return data
+    SWE = SensorDescription(
+        "liquid_water_content_of_surface_snow", "SWE",
+        "Snow water equivalent is a measure of the amount of water obtained"
+        " if the snow is melted (as height in mm of a water column)"
+    )
+    PRECIPITATIONACCUM = SensorDescription(
+        "accumulated(precipitation_amount)", "ACCUMULATED PRECIPITATION",
+        "Total precipitation amount in gauge"
+        " (accumulated since last emptying). Timing for emptying and"
+        " algoritm for calculating the precipitation"
+        " amount depends on sensortype"
+    )
+    PRECIPITATION = SensorDescription(
+        "precipitation_amount", "PRECIPITATION",
+        "Tipping bucket. The gauge tips for every 0.1 mm."
+        " Each tip is registered along with the time stamp for the tip."
+        " This is the basis for calcutation of precipitation sum per minute"
     )

@@ -133,12 +133,16 @@ class TestCDECStation(BasePointDataTest):
         ]
 
     @pytest.fixture(scope="function")
-    def tny_station(self):
-        return CDECPointData("TNY", "Tenaya Lake")
+    def tny_station(self, mock_get):
+        yield CDECPointData("TNY", "Tenaya Lake")
+
+    @pytest.fixture(scope="function")
+    def tny_station_force_hourly(self, mock_get_force_hourly):
+        yield CDECPointData("TNY", "Tenaya Lake")
 
     @pytest.fixture(scope="class")
     def expected_points(self):
-        return gpd.points_from_xy([-119.448], [37.838], z=[1000.0])
+        return gpd.points_from_xy([-119.449875], [37.837581], z=[8150.0])
 
     @pytest.fixture(scope="class")
     def tny_daily_expected(self, expected_points):
@@ -203,18 +207,13 @@ class TestCDECStation(BasePointDataTest):
 
     @classmethod
     def tny_meta_return(cls):
-        result = [
-            pd.read_csv(cls.CDEC_MOCKS_DIR.joinpath("raw_tny_locations.csv")),
-            pd.read_csv(cls.CDEC_MOCKS_DIR.joinpath("raw_tny_sensors.csv")),
-            pd.read_csv(cls.CDEC_MOCKS_DIR.joinpath("raw_tny_notes.csv"))
-        ]
-        return result
+        with open(cls.CDEC_MOCKS_DIR.joinpath("raw_tny_locations.csv"), "r") as fp:
+            lines = fp.readlines()
+        return "".join(lines)
 
     def read_html_side_effect(self, url, **kwargs):
         if "dynamicapp/staSearch" in url:
             return self.station_search_side_effect(url)
-        elif "dynamicapp/staMeta" in url:
-            return self.tny_meta_return()
         else:
             raise ValueError("Unknown html scenario in the test mocks")
 
@@ -225,30 +224,62 @@ class TestCDECStation(BasePointDataTest):
             yield mock_table_read
 
     @classmethod
-    def tny_side_effect(cls, url, **kwargs):
+    def get_side_effect(cls, url, **kwargs):
         mock = MagicMock()
-        params = kwargs["params"]
-        if params.get("dur_code") == "D" and params.get('SensorNums') == "2":
-            mock.json.return_value = cls.cdec_daily_precip_response()
-        elif params.get("dur_code") == "D" and params.get('SensorNums') == "30":
-            mock.json.return_value = cls.cdec_daily_temp_response()
-        elif params.get("dur_code") == "H":
-            raise NotImplementedError()
-        else:
-            raise ValueError("unknown scenario")
-        return mock
-
-    @classmethod
-    def tny_hourly_side_effect(cls, url, **kwargs):
-        mock = MagicMock()
-        params = kwargs["params"]
-        if params.get("dur_code") == 'H':
-            mock.json.return_value = cls.cdec_hourly_temp_response()
-        elif "getStationInfo" in url:
-            mock.json.return_value = cls.tny_meta_return()
+        params = kwargs.get("params")
+        if params:
+            if params.get("dur_code") == "D" and params.get('SensorNums') == "2":
+                mock.json.return_value = cls.cdec_daily_precip_response()
+            elif params.get("dur_code") == "D" and params.get('SensorNums') == "30":
+                mock.json.return_value = cls.cdec_daily_temp_response()
+            elif params.get("dur_code") == 'H':
+                mock.json.return_value = cls.cdec_hourly_temp_response()
+            else:
+                raise NotImplementedError("Not implemented")
+        # return the metadata
+        elif "CSVMetaDataServlet" in url:
+            mock.text = cls.tny_meta_return()
         else:
             mock.json.return_value = []
         return mock
+
+    @classmethod
+    def get_side_effect_just_hourly(cls, url, **kwargs):
+        """
+        Mock to force an hourly return for testing resample
+        """
+        mock = MagicMock()
+        params = kwargs.get("params")
+        if params:
+            if params.get("dur_code") == 'D':
+                mock.json.return_value = []
+            elif params.get("dur_code") == 'H':
+                mock.json.return_value = cls.cdec_hourly_temp_response()
+            else:
+                raise NotImplementedError("Not implemented")
+        # return the metadata
+        elif "CSVMetaDataServlet" in url:
+            mock.text = cls.tny_meta_return()
+        else:
+            mock.json.return_value = []
+        return mock
+
+    @pytest.fixture()
+    def mock_get(self):
+        with patch("metloom.pointdata.cdec.requests") as mock_requests:
+            obj = mock_requests.get
+            obj.side_effect = self.get_side_effect
+            yield obj
+
+    @pytest.fixture()
+    def mock_get_force_hourly(self):
+        """
+        Mock to force an hourly return for testing resample
+        """
+        with patch("metloom.pointdata.cdec.requests") as mock_requests:
+            obj = mock_requests.get
+            obj.side_effect = self.get_side_effect_just_hourly
+            yield obj
 
     @classmethod
     def station_search_side_effect(cls, *args, **kargs):
@@ -410,80 +441,74 @@ class TestCDECStation(BasePointDataTest):
     def test_class_variables(self):
         assert CDECPointData("no", "no").tzinfo == timezone(timedelta(hours=-8.0))
 
-    def test_get_metadata(self, mock_read_html, tny_station, expected_points):
+    def test_get_metadata(self, mock_get, tny_station, expected_points):
         metadata = tny_station.metadata
 
-        mock_read_html.assert_called_once_with(
-            "https://cdec.water.ca.gov/dynamicapp/staMeta?station_id=TNY"
+        mock_get.assert_called_once_with(
+            "https://cdec.water.ca.gov/dynamicapp/req/CSVMetaDataServlet?Stations=TNY"
         )
 
-        # elevation is 1000 just to make sure our mocks are working
         assert expected_points[0] == metadata
 
-    def test_get_daily_data(self, mock_read_html, tny_station, tny_daily_expected):
-        with patch("metloom.pointdata.cdec.requests") as mock_requests:
-            mock_get = mock_requests.get
-            mock_get.side_effect = self.tny_side_effect
-            response = tny_station.get_daily_data(
-                datetime(2021, 5, 15),
-                datetime(2021, 5, 18),
-                [CdecStationVariables.PRECIPITATIONACCUM,
-                 CdecStationVariables.TEMPAVG],
-            )
-            # mock_get = mock_requests.get
-            mock_get.assert_any_call(
-                "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet",
-                params={
-                    "Stations": "TNY",
-                    "dur_code": "D",
-                    "Start": "2021-05-15T00:00:00",
-                    "End": "2021-05-18T00:00:00",
-                    "SensorNums": "30",
-                },
-            )
-            assert mock_get.call_count == 2
-        mock_read_html.assert_called_once()
+    def test_get_daily_data(
+        self, mock_get, mock_read_html, tny_station, tny_daily_expected
+    ):
+        response = tny_station.get_daily_data(
+            datetime(2021, 5, 15),
+            datetime(2021, 5, 18),
+            [CdecStationVariables.PRECIPITATIONACCUM,
+             CdecStationVariables.TEMPAVG],
+        )
+        # mock_get = mock_requests.get
+        mock_get.assert_any_call(
+            "http://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet",
+            params={
+                "Stations": "TNY",
+                "dur_code": "D",
+                "Start": "2021-05-15T00:00:00",
+                "End": "2021-05-18T00:00:00",
+                "SensorNums": "30",
+            },
+        )
+        assert mock_get.call_count == 3
         pd.testing.assert_frame_equal(
             response.sort_index(axis=1),
             tny_daily_expected.sort_index(axis=1)
         )
 
     def test_get_daily_from_hourly_data(
-        self, mock_read_html, tny_station, expected_points
+        self, mock_read_html, mock_get_force_hourly, tny_station_force_hourly,
+        expected_points
     ):
         """
         Check that we fall back on resampled hourly data if we don't find
         daily data
         """
-        with patch("metloom.pointdata.cdec.requests") as mock_requests:
-            mock_get = mock_requests.get
-            mock_get.side_effect = self.tny_hourly_side_effect
-            response = tny_station.get_daily_data(
-                datetime(2021, 5, 15),
-                datetime(2021, 5, 16),
-                [CdecStationVariables.TEMPAVG],
-            )
-            assert mock_get.call_count == 2
-            mock_read_html.assert_called_once()
-            expected = gpd.GeoDataFrame.from_dict(
-                {
-                    'AVG AIR TEMP': {
-                        (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
-                            'TNY'): 2.233333},
-                    'AVG AIR TEMP_units': {
-                        (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
-                            'TNY'): 'DEG F'},
-                    'datasource': {
-                        (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
-                         'TNY'): 'CDEC'}
-                }, geometry=expected_points
-            )
-            expected.index.set_names(["datetime", "site"], inplace=True)
-            pd.testing.assert_frame_equal(
-                response, expected, check_exact=False, check_like=True
-            )
+        response = tny_station_force_hourly.get_daily_data(
+            datetime(2021, 5, 15),
+            datetime(2021, 5, 16),
+            [CdecStationVariables.TEMPAVG],
+        )
+        assert mock_get_force_hourly.call_count == 3
+        expected = gpd.GeoDataFrame.from_dict(
+            {
+                'AVG AIR TEMP': {
+                    (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
+                        'TNY'): 2.233333},
+                'AVG AIR TEMP_units': {
+                    (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
+                        'TNY'): 'DEG F'},
+                'datasource': {
+                    (Timestamp('2021-05-15 08:00:00+0000', tz='UTC'),
+                     'TNY'): 'CDEC'}
+            }, geometry=expected_points
+        )
+        expected.index.set_names(["datetime", "site"], inplace=True)
+        pd.testing.assert_frame_equal(
+            response, expected, check_exact=False, check_like=True
+        )
 
-    def test_points_from_geometry(self, mock_read_html, shape_obj):
+    def test_points_from_geometry(self, mock_read_html, mock_get, shape_obj):
         expected_url = (
             "https://cdec.water.ca.gov/dynamicapp/staSearch?"
             "sta=&sensor_chk=on&sensor=3"
@@ -562,11 +587,12 @@ class TestCDECStation(BasePointDataTest):
             )
             assert result.points == []
 
-    def test_point_collection_to_dataframe(self, mock_read_html, shape_obj):
+    def test_point_collection_to_dataframe(self, mock_get, mock_read_html, shape_obj):
         result = CDECPointData.points_from_geometry(
             shape_obj, [CdecStationVariables.SWE]
         )
-        assert mock_read_html.call_count == 7
+        assert mock_read_html.call_count == 1
+        assert mock_get.call_count == 6
         assert isinstance(result, PointDataCollection)
         points_df = result.to_dataframe()
         for idp, point in enumerate(result):
@@ -623,7 +649,7 @@ class TestCdecUptimeTRK:
 
     def test_metadata(self, stn):
         assert stn.metadata == shapely.geometry.Point(
-            -120.205475, 39.296295, 5858
+            -120.205474853516, 39.2962951660156, 5858
         )
 
     def test_is_snowcourse(self, stn):
