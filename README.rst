@@ -44,6 +44,7 @@ Features
     * `USGS <https://waterservices.usgs.gov/rest/>`_
     * `GEOSPHERE AUSTRIA <https://data.hub.geosphere.at/dataset/>`_
     * `UCSB CUES <https://snow.ucsb.edu/#>`_
+    * `MET NORWAY <https://frost.met.no/index.html>`_
 
 Requirements
 ------------

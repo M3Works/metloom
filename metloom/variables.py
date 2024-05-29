@@ -13,6 +13,15 @@ class SensorDescription:
     accumulated: bool = False  # whether or not the data is accumulated
 
 
+@dataclass(eq=True, frozen=True)
+class InstrumentDescription(SensorDescription):
+    """
+    Extend the Sensor Description to include instrument
+    """
+    # description of the specific instrument for the variable
+    instrument: str = None
+
+
 class VariableBase:
     """
     Base class to store all variables for a specific datasource. Each
@@ -252,15 +261,6 @@ class GeoSphereHistVariables(VariableBase):
     )
 
 
-@dataclass(eq=True, frozen=True)
-class InstrumentDescription(SensorDescription):
-    """
-    Extend the Sensor Description to include instrument
-    """
-    # description of the specific instrument for the variable
-    instrument: str = None
-
-
 class CuesLevel1Variables(VariableBase):
     """
     Variables for CUES level1 data
@@ -301,4 +301,48 @@ class CuesLevel1Variables(VariableBase):
     UPSHORTWAVEIR = InstrumentDescription(
         "upward looking near-IR radiation",
         "UPWARD NIR SHORTWAVE RADIATION",
+    )
+
+
+class MetNorwayVariables(VariableBase):
+    """
+    See https://frost.met.no/concepts2.html#calculationmethod
+    for explanation of variable naming.
+    All available variables are
+    https://frost.met.no/elementtable
+    """
+    TEMP = SensorDescription(
+        "air_temperature", "AIR TEMP",
+        "Air temperature (default 2 m above ground), present value"
+    )
+    TEMPAVG = SensorDescription(
+        "best_estimate_mean(air_temperature P1D)", "AVG AIR TEMP",
+        "Homogenised daily mean temperature."
+        " The mean is an arithmetic mean of 24 hourly values (00-00 UTC),"
+    )
+    SNOWDEPTH = SensorDescription(
+        "surface_snow_thickness", "SNOWDEPTH",
+        "The depth of the snow is measured in cm from the ground to the top of"
+        " the snow cover. (Code=-1 means 'no snow'"
+        " and can be presented as '.')"
+    )
+    # SWE is only available as regional and interpolated datasets, so
+    # metloom will NOT return data
+    SWE = SensorDescription(
+        "liquid_water_content_of_surface_snow", "SWE",
+        "Snow water equivalent is a measure of the amount of water obtained"
+        " if the snow is melted (as height in mm of a water column)"
+    )
+    PRECIPITATIONACCUM = SensorDescription(
+        "accumulated(precipitation_amount)", "ACCUMULATED PRECIPITATION",
+        "Total precipitation amount in gauge"
+        " (accumulated since last emptying). Timing for emptying and"
+        " algoritm for calculating the precipitation"
+        " amount depends on sensortype"
+    )
+    PRECIPITATION = SensorDescription(
+        "precipitation_amount", "PRECIPITATION",
+        "Tipping bucket. The gauge tips for every 0.1 mm."
+        " Each tip is registered along with the time stamp for the tip."
+        " This is the basis for calcutation of precipitation sum per minute"
     )

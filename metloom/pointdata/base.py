@@ -1,3 +1,4 @@
+import copy
 import logging
 from datetime import datetime
 from typing import List
@@ -259,16 +260,19 @@ class PointData(object):
                     f"{ei} was expected, but not found as an"
                     f" index of the final dataframe"
                 )
-        # check for expected columns
-        expected_columns = cls.EXPECTED_COLUMNS
-        if "measurementDate" in columns:
-            expected_columns = expected_columns + ["measurementDate"]
-        for column in cls.EXPECTED_COLUMNS:
+        # check for expected columns - avoid modifying at class level
+        expected_columns = copy.deepcopy(cls.EXPECTED_COLUMNS)
+        possible_extras = ["measurementDate", "quality_code"]
+        for pe in possible_extras:
+            if pe in columns:
+                expected_columns += [pe]
+        for column in expected_columns:
             if column not in columns:
                 raise DataValidationError(
                     f"{column} was expected, but not found as a"
                     f" column of the final dataframe"
                 )
+
         remaining_columns = [c for c in columns if c not in expected_columns]
         # make sure all variables have a units column as well
         for rc in remaining_columns:

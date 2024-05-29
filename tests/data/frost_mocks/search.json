@@ -1,0 +1,481 @@
+{
+  "@context": "https://frost.met.no/schema",
+  "@type": "SourceResponse",
+  "apiVersion": "v0",
+  "license": "https://creativecommons.org/licenses/by/3.0/no/",
+  "createdAt": "2023-10-17T14:35:33Z",
+  "queryTime": 1.755,
+  "currentItemCount": 16,
+  "itemsPerPage": 16,
+  "offset": 0,
+  "totalItemCount": 16,
+  "currentLink": "https://frost.met.no/sources/v0.jsonld?types=SensorSystem&elements=air_temperature&geometry=POLYGON+%28%286.05351992721217+59.31210825636946%2C+5.886948709542037+59.86744678920751%2C+7.172601616192646+59.85128903797494%2C+7.06289637017083+59.2497023459027%2C+6.05351992721217+59.31210825636946%29%29",
+  "data": [
+    {
+      "@type": "SensorSystem",
+      "id": "SN46432",
+      "name": "R\u00d8LDALSFJELLET - ELVERSHEI",
+      "shortName": "Elvershei",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.7108,
+          59.8357
+        ],
+        "nearest": false
+      },
+      "masl": 1370,
+      "validFrom": "2014-03-05T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ULLENSVANG",
+      "municipalityId": 4618,
+      "stationHolders": [
+        "MET.NO"
+      ],
+      "wigosId": "0-578-0-46432"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN47610",
+      "name": "BASURA",
+      "shortName": "Basura",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.0873,
+          59.6357
+        ],
+        "nearest": false
+      },
+      "masl": 568,
+      "validFrom": "1998-05-16T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ETNE",
+      "municipalityId": 4611,
+      "stationHolders": [
+        "SUNNHORDLAND KRAFTLAG A/S"
+      ],
+      "wigosId": "0-578-0-47610"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN40510",
+      "name": "BL\u00c5SJ\u00d8",
+      "shortName": "Bl\u00e5sj\u00f8",
+      "country": "Norge",
+      "countryCode": "NO",
+      "wmoId": 1440,
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.8817,
+          59.3335
+        ],
+        "nearest": false
+      },
+      "masl": 1105,
+      "validFrom": "2011-10-03T00:00:00.000Z",
+      "county": "AGDER",
+      "countyId": 42,
+      "municipality": "BYKLE",
+      "municipalityId": 4222,
+      "stationHolders": [
+        "MET.NO"
+      ],
+      "externalIds": [
+        "0-20000-0-01440",
+        "300125010101250"
+      ],
+      "wigosId": "0-20000-0-01440"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46820",
+      "name": "FV520 ILSTAD",
+      "shortName": "FV520 Ilstad",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.2692,
+          59.5612
+        ],
+        "nearest": false
+      },
+      "masl": 185,
+      "validFrom": "2023-04-03T00:00:00.000Z",
+      "county": "ROGALAND",
+      "countyId": 11,
+      "municipality": "SULDAL",
+      "municipalityId": 1134,
+      "stationHolders": [
+        "STATENS VEGVESEN"
+      ],
+      "externalIds": [
+        "11919",
+        "3507983"
+      ],
+      "wigosId": "0-578-0-46820"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN33990",
+      "name": "E134 HAUKELIFJELL",
+      "shortName": "E134 Haukelifjell",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          7.0873,
+          59.8498
+        ],
+        "nearest": false
+      },
+      "masl": 990,
+      "validFrom": "2013-07-24T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ULLENSVANG",
+      "municipalityId": 4618,
+      "stationHolders": [
+        "STATENS VEGVESEN"
+      ],
+      "externalIds": [
+        "1229026",
+        "269"
+      ],
+      "wigosId": "0-578-0-33990"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46425",
+      "name": "E134 R\u00d8LDALSTUNNELEN AUST",
+      "shortName": "E134 R\u00f8ldalstunnel",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.7383,
+          59.8228
+        ],
+        "nearest": false
+      },
+      "masl": 789,
+      "validFrom": "2015-11-03T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ULLENSVANG",
+      "municipalityId": 4618,
+      "stationHolders": [
+        "STATENS VEGVESEN"
+      ],
+      "externalIds": [
+        "1229012",
+        "1570"
+      ],
+      "wigosId": "0-578-0-46425"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN47890",
+      "name": "OPSTVEIT",
+      "shortName": "Opstveit",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.0169242,
+          59.8577805
+        ],
+        "nearest": false
+      },
+      "masl": 38,
+      "validFrom": "1968-01-01T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "KVINNHERAD",
+      "municipalityId": 4617,
+      "stationHolders": [
+        "SUNNHORDLAND KRAFTLAG A/S"
+      ],
+      "wigosId": "0-578-0-47890"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46410",
+      "name": "RV13 BOTNEN",
+      "shortName": "Botnen ",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.7898,
+          59.7528
+        ],
+        "nearest": false
+      },
+      "masl": 403,
+      "validFrom": "2018-11-28T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ULLENSVANG",
+      "municipalityId": 4618,
+      "stationHolders": [
+        "STATENS VEGVESEN"
+      ],
+      "externalIds": [
+        "1774",
+        "3000076"
+      ],
+      "wigosId": "0-578-0-46410"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46610",
+      "name": "SAUDA",
+      "shortName": "Sauda",
+      "country": "Norge",
+      "countryCode": "NO",
+      "wmoId": 1424,
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.3499,
+          59.6479
+        ],
+        "nearest": false
+      },
+      "masl": 5,
+      "validFrom": "1928-03-01T00:00:00.000Z",
+      "county": "ROGALAND",
+      "countyId": 11,
+      "municipality": "SAUDA",
+      "municipalityId": 1135,
+      "stationHolders": [
+        "MET.NO"
+      ],
+      "externalIds": [
+        "0-20000-0-01424",
+        "10.249.1.86"
+      ],
+      "wigosId": "0-20000-0-01424"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN47600",
+      "name": "LITLEDAL",
+      "shortName": "Litledal",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.0657,
+          59.6642
+        ],
+        "nearest": false
+      },
+      "masl": 83,
+      "validFrom": "1925-12-01T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ETNE",
+      "municipalityId": 4611,
+      "stationHolders": [
+        "SUNNHORDLAND KRAFTLAG A/S"
+      ],
+      "wigosId": "0-578-0-47600"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46430",
+      "name": "R\u00d8LDALSFJELLET",
+      "shortName": "R\u00f8ldalsfjellet",
+      "country": "Norge",
+      "countryCode": "NO",
+      "wmoId": 1429,
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.733,
+          59.8315
+        ],
+        "nearest": false
+      },
+      "masl": 1010,
+      "validFrom": "2013-11-01T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ULLENSVANG",
+      "municipalityId": 4618,
+      "stationHolders": [
+        "MET.NO"
+      ],
+      "externalIds": [
+        "0-20000-0-01429",
+        "10.249.0.243"
+      ],
+      "wigosId": "0-20000-0-01429"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN47498",
+      "name": "ETNE II",
+      "shortName": "Etne ",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          5.9538,
+          59.6625
+        ],
+        "nearest": false
+      },
+      "masl": 8,
+      "validFrom": "2005-01-01T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ETNE",
+      "municipalityId": 4611,
+      "stationHolders": [
+        "NIBIO",
+        "MET.NO"
+      ],
+      "externalIds": [
+        "80"
+      ],
+      "wigosId": "0-578-0-47498"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46460",
+      "name": "R\u00d8LDAL KRAFTVERK",
+      "shortName": "R\u00f8ldal kraftverk",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.818,
+          59.8222
+        ],
+        "nearest": false
+      },
+      "masl": 390,
+      "validFrom": "1967-01-01T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ULLENSVANG",
+      "municipalityId": 4618,
+      "stationHolders": [
+        "LYSE PRODUKSJON AS"
+      ],
+      "externalIds": [
+        "36.85.0"
+      ],
+      "wigosId": "0-578-0-46460"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46510",
+      "name": "E134 MIDTL\u00c6GER",
+      "shortName": "E134 Midtl\u00e6ger",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.9825,
+          59.8402
+        ],
+        "nearest": false
+      },
+      "masl": 1079,
+      "validFrom": "1967-02-01T00:00:00.000Z",
+      "county": "VESTLAND",
+      "countyId": 46,
+      "municipality": "ULLENSVANG",
+      "municipalityId": 4618,
+      "stationHolders": [
+        "STATENS VEGVESEN"
+      ],
+      "externalIds": [
+        "0-20000-0-01433",
+        "1229047",
+        "1701"
+      ],
+      "wigosId": "0-578-0-46510"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46800",
+      "name": "FV520 SVANDALSFOSSEN",
+      "shortName": "FV520 Svandalsfossen",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.292,
+          59.6248
+        ],
+        "nearest": false
+      },
+      "masl": 18,
+      "validFrom": "2020-12-09T00:00:00.000Z",
+      "county": "ROGALAND",
+      "countyId": 11,
+      "municipality": "SAUDA",
+      "municipalityId": 1135,
+      "stationHolders": [
+        "STATENS VEGVESEN"
+      ],
+      "externalIds": [
+        "1856",
+        "3000578"
+      ],
+      "wigosId": "0-578-0-46800"
+    },
+    {
+      "@type": "SensorSystem",
+      "id": "SN46220",
+      "name": "GULLINGEN SKISENTER",
+      "shortName": "Gullingen ",
+      "country": "Norge",
+      "countryCode": "NO",
+      "geometry": {
+        "@type": "Point",
+        "coordinates": [
+          6.4697,
+          59.4128
+        ],
+        "nearest": false
+      },
+      "masl": 639,
+      "validFrom": "2018-02-06T00:00:00.000Z",
+      "county": "ROGALAND",
+      "countyId": 11,
+      "municipality": "SULDAL",
+      "municipalityId": 1134,
+      "stationHolders": [
+        "MET.NO"
+      ],
+      "externalIds": [
+        "10.249.1.106"
+      ],
+      "wigosId": "0-578-0-46220"
+    }
+  ]
+}
