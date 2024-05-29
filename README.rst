@@ -43,6 +43,7 @@ Features
     * `MESOWEST <https://developers.synopticdata.com/mesonet/>`_
     * `USGS <https://waterservices.usgs.gov/rest/>`_
     * `GEOSPHERE AUSTRIA <https://data.hub.geosphere.at/dataset/>`_
+    * `MET NORWAY <https://frost.met.no/index.html>`_
 
 Requirements
 ------------
