@@ -12,6 +12,10 @@ from ..variables import SensorDescription, VariableBase
 LOG = logging.getLogger("metloom.pointdata.base")
 
 
+class DataValidationError(RuntimeError):
+    pass
+
+
 class PointDataCollection:
     """
     Iterator class for a collection of PointData objects.
@@ -251,17 +255,24 @@ class PointData(object):
         index_names = gdf.index.names
         # check for required indexes
         for ei in cls.EXPECTED_INDICES:
-            assert ei in index_names
+            if ei not in index_names:
+                raise DataValidationError(
+                    f"{ei} was expected, but not found as an"
+                    f" index of the final dataframe"
+                )
         # check for expected columns - avoid modifying at class level
         expected_columns = copy.deepcopy(cls.EXPECTED_COLUMNS)
         possible_extras = ["measurementDate", "quality_code"]
         for pe in possible_extras:
             if pe in columns:
                 expected_columns += [pe]
-
         for column in expected_columns:
             if column not in columns:
-                raise ValueError(f"Expected {column} not found")
+                raise DataValidationError(
+                    f"{column} was expected, but not found as a"
+                    f" column of the final dataframe"
+                )
+
         remaining_columns = [c for c in columns if c not in expected_columns]
         # make sure all variables have a units column as well
         for rc in remaining_columns:

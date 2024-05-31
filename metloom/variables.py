@@ -13,6 +13,15 @@ class SensorDescription:
     accumulated: bool = False  # whether or not the data is accumulated
 
 
+@dataclass(eq=True, frozen=True)
+class InstrumentDescription(SensorDescription):
+    """
+    Extend the Sensor Description to include instrument
+    """
+    # description of the specific instrument for the variable
+    instrument: str = None
+
+
 class VariableBase:
     """
     Base class to store all variables for a specific datasource. Each
@@ -249,6 +258,49 @@ class GeoSphereHistVariables(VariableBase):
     )
     PRECIPITATION = SensorDescription(
         "nied", "Precipitation Total", accumulated=True
+    )
+
+
+class CuesLevel1Variables(VariableBase):
+    """
+    Variables for CUES level1 data
+    https://snow.ucsb.edu/index.php/query-db/
+
+    Some variables report back with multiple instruments. See `UPSHORTWAVE`
+    and `UPSHORTWAVE2` for two instrument specific implementations
+    of the same variable.
+
+    """
+    TEMP = InstrumentDescription("air temperature", "AIR TEMP")
+    RH = InstrumentDescription("RH", "RELATIVE HUMIDITY")
+    LASERSNOWDEPTH = InstrumentDescription("laser snow depth", "LASER SNOWDEPTH")
+    SNOWDEPTH = InstrumentDescription("snow depth", "SNOWDEPTH")
+    NEWSNOWDEPTH = InstrumentDescription("new snow depth", "NEW SNOWDEPTH")
+    SWE = InstrumentDescription("Snow Pillow (DWR) SWE", "SWE")
+    # PRECIPITATION = InstrumentDescription(
+    #     "nied", "Precipitation Total", accumulated=True
+    # )
+    TEMPSURFSNOW = InstrumentDescription(
+        "snow surface temperature", "SNOW SURFACE TEMPERATURE"
+    )
+    DOWNSHORTWAVE = InstrumentDescription(
+        "downward looking solar radiation", "DOWNWARD SHORTWAVE RADIATION",
+    )
+    UPSHORTWAVE = InstrumentDescription(
+        "upward looking solar radiation", "UPWARD SHORTWAVE RADIATION",
+        instrument="Eppley Lab precision spectral pyranometer"
+    )
+    UPSHORTWAVE2 = InstrumentDescription(
+        "upward looking solar radiation", "UPWARD SHORTWAVE RADIATION 2",
+        instrument="uplooking Sunshine pyranometer  direct and diffus"
+    )
+    DOWNSHORTWAVEIR = InstrumentDescription(
+        "downward looking near-IR radiation",
+        "DOWNWARD NIR SHORTWAVE RADIATION",
+    )
+    UPSHORTWAVEIR = InstrumentDescription(
+        "upward looking near-IR radiation",
+        "UPWARD NIR SHORTWAVE RADIATION",
     )
 
 
