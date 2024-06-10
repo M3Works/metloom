@@ -110,7 +110,8 @@ class CSVPointData(PointData):
         self.datafile = self._cache.joinpath(self._station_info.path.name)
 
         if self._station_info is not None:
-            self.name = self._station_info.name if self.name is None else self.name
+            # Auto assign name
+            self.name = self._station_info.station_name if self.name is None else self.name
             return True
         else:
             LOG.error(f"Station ID {self.id} is not valid, allowed id's are {', '.join(self.ALLOWED_STATIONS.all_station_ids())}")
@@ -128,14 +129,8 @@ class CSVPointData(PointData):
         """Returns the url to the file containing the station data"""
         raise NotImplementedError('CSVPointData._file_url() must be implemented to download csv station data.')
 
-    def _download(self):
-        url = self._file_url()
-
-        # Make the cache dir
-        if not self._cache.is_dir():
-            os.mkdir(self._cache)
-
-        # Download
+    def _download(self, url):
+        """Download the file"""
         with requests.get(url, stream=True) as r:
             LOG.info('Downloading csv file...')
             with open(self.datafile, mode='w+') as fp:
@@ -171,6 +166,12 @@ class CSVPointData(PointData):
 
         if not self.datafile.exists():
             if self.valid:
+                url = self._file_url()
+
+                # Make the cache dir
+                if not self._cache.is_dir():
+                    os.mkdir(self._cache)
+
                 self._download()
 
         resp_df = pd.read_csv(self.datafile, parse_dates=[0])

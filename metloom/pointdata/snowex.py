@@ -31,8 +31,10 @@ class SnowExMet(CSVPointData):
     DATETIME_COLUMN = 'TIMESTAMP'
     # Data is in UTC
     UTC_OFFSET_HOURS = 0
+
     URL = "https://n5eil01u.ecs.nsidc.org/SNOWEX/SNEX_Met.001/"
     DATASOURCE = "NSIDC"
+    DOI = "https://doi.org/10.5067/497NQVJ0CBEX"
 
     def _file_url(self):
         return os.path.join(self.URL, self._station_info.path)
