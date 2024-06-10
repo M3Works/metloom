@@ -28,6 +28,7 @@ class SnowExMet(CSVPointData):
     """
     ALLOWED_VARIABLES = SnowExVariables
     ALLOWED_STATIONS = SnowExMetInfo
+    DATETIME_COLUMN = 'TIMESTAMP'
 
     URL = "https://n5eil01u.ecs.nsidc.org/SNOWEX/SNEX_Met.001/"
     DATASOURCE = "NSIDC"

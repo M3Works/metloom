@@ -71,7 +71,7 @@ class CSVPointData(PointData):
     ALLOWED_VARIABLES = VariableBase
     ALLOWED_STATIONS = StationInfo
     UTC_OFFSET_HOURS = 0 # Allows users to specificy the timezone of the datasets
-
+    DATETIME_COLUMN = 'datetime'
 
     def __init__(self, station_id, name, metadata=None, cache='./cache'):
         """
@@ -91,7 +91,7 @@ class CSVPointData(PointData):
 
         self.valid = False
 
-    def _verify(self):
+    def _verify_station(self):
         """ Verifies the station is valid using the associated enum"""
         self._station_info = self.ALLOWED_STATIONS.from_station_id(self.id)
         self.datafile = self._cache.joinpath(self._station_info.path.name)
@@ -103,48 +103,88 @@ class CSVPointData(PointData):
             LOG.error(f"Station ID {self.id} is not valid, allowed id's are {', '.join(self.ALLOWED_STATIONS.all_station_ids())}")
             return False
 
+    def _verify_sensor(self, resp_df, variable: SensorDescription):
+        """ Verifies the station is valid using the associated enum"""
+        if variable.code in resp_df.columns:
+            return True
+        else:
+            LOG.debug(f"{variable.name} not found in {self.id} data")
+            return False
+
     def _file_url(self):
         """Returns the url to the file containing the station data"""
         raise NotImplementedError('CSVPointData._file_url() must be implemented to download csv station data.')
 
     def _download(self):
-        if self.valid:
-            url = self._file_url()
+        url = self._file_url()
 
-            # Make the cache dir
-            if not self._cache.is_dir():
-                os.mkdir(self._cache)
+        # Make the cache dir
+        if not self._cache.is_dir():
+            os.mkdir(self._cache)
 
-            # Download
-            with requests.get(url, stream=True) as r:
-                LOG.info('Downloading csv file...')
-                with open(self.datafile, mode='w+') as fp:
-                    for line in r.iter_lines():
-                        fp.write(line.decode('utf-8'))
+        # Download
+        with requests.get(url, stream=True) as r:
+            LOG.info('Downloading csv file...')
+            with open(self.datafile, mode='w+') as fp:
+                for line in r.iter_lines():
+                    fp.write(line.decode('utf-8') + '\n')
+
+    def _get_one_variable(self, resp_df, start, end, period, variable:SensorDescription):
+        """
+        Retrieve a single variable and process it accordingly
+        """
+        method = "sum" if variable.accumulated else "average"
+        if self._verify_sensor(resp_df, variable):
+            isolated = resp_df[variable.code].loc[start:end]
+            if method == 'average':
+                data = isolated.resample(period).mean()
+            elif method == 'sum':
+                data = isolated.resample(period).sum()
+            else:
+                raise Exception('Invalid aggregation method')
+        else:
+            data = None
+
+        return data
+
     def _get_data(
         self, start_date, end_date, variables: List[SensorDescription],
         period):
         """
         Utilizes cached data or downloads the data
         """
-        self.valid = self._verify()
+        self.valid = self._verify_station()
 
         if not self.datafile.exists():
-            self._download()
+            if self.valid:
+                self._download()
 
-        df = pd.read_csv(self.datafile, parse_dates=True)
-        
+        resp_df = pd.read_csv(self.datafile, parse_dates=True, index_col=self.DATETIME_COLUMN)
+        df = pd.DataFrame()
+        df.index.name = "datetime"
+        for variable in variables:
+            df_var = self._get_one_variable(resp_df, start_date, end_date, period, variable)
+            if df_var is not None:
+                df[variable.code] = df_var
+
+        # Set the site info
+        df["site"] = [self.id] * len(df)
+        df["datasource"] = [self.DATASOURCE] * len(df)
+        # Make this a geodataframe
+        df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
+        df = df.reset_index().set_index(["datetime", "site"])
+        return df
 
     def get_daily_data(self, start_date: datetime, end_date: datetime,
                        variables: List[SensorDescription]):
         return self._get_data(
-            start_date, end_date, variables, "day"
+            start_date, end_date, variables, "D"
         )
 
     def get_hourly_data(self, start_date: datetime, end_date: datetime,
                         variables: List[SensorDescription]):
         return self._get_data(
-            start_date, end_date, variables, "hr"
+            start_date, end_date, variables, "H"
         )
 
     def get_snow_course_data(self, start_date: datetime, end_date: datetime,
@@ -166,5 +206,5 @@ class CSVPointData(PointData):
         Hardcode the metadata
         """
         return gpd.points_from_xy(
-            [-119.029128], [37.643093], [9661]
+            [self._station_info.longitude], [self._station_info.latitude], [None]
         )[0]
