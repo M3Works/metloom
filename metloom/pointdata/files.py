@@ -74,7 +74,7 @@ class CSVPointData(PointData):
     UTC_OFFSET_HOURS = 0 # Allows users to specificy the timezone of the datasets
     DATETIME_COLUMN = 'datetime'
 
-    def __init__(self, station_id, name, metadata=None, cache='./cache'):
+    def __init__(self, station_id, name=None, metadata=None, cache='./cache'):
         """
         See docstring for PointData.__init__
         """
@@ -98,7 +98,7 @@ class CSVPointData(PointData):
         self.datafile = self._cache.joinpath(self._station_info.path.name)
 
         if self._station_info is not None:
-            self.name = self._station_info.name
+            self.name = self._station_info.name if self.name is None else self.name
             return True
         else:
             LOG.error(f"Station ID {self.id} is not valid, allowed id's are {', '.join(self.ALLOWED_STATIONS.all_station_ids())}")
@@ -168,7 +168,7 @@ class CSVPointData(PointData):
         for variable in variables:
             df_var = self._get_one_variable(resp_df, start_date, end_date, period, variable)
             if df_var is not None:
-                df[variable.code] = df_var
+                df[variable.name] = df_var
 
         # Set the site info
         df["site"] = [self.id] * len(df)

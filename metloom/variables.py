@@ -356,11 +356,23 @@ class SnowExVariables(VariableBase):
     https://nsidc.org/sites/default/files/documents/user-guide/snex_met-v001-userguide.pdf
 
     """
+    TEMP_20FT = InstrumentDescription('AirTC_20ft',
+                                      description="Air temperature measured at 20 ft tower levelin deg C")
+    TEMP_10FT = InstrumentDescription('AirTC_10ft',
+                                      description="Air temperature measured at 10 ft tower levelin deg C")
     UPSHORTWAVE = InstrumentDescription(
         "SUp_Avg", "UPWARD SHORTWAVE RADIATION",
+        description="Shortwave radiation measured with upward-facing sensor",
         instrument="CNR4 Net Radiometer"
     )
     DOWNSHORTWAVE = InstrumentDescription(
         "SDn_Avg", "DOWNWARD SHORTWAVE RADIATION",
+        description="Shortwave radiation measured with downward-facing sensor",
         instrument="CNR4 Net Radiometer"
     )
+    SNOWDEPTH = InstrumentDescription("SnowDepthUnFiltered", description="Temperature corrected, derived snow surface height in meters")
+    SNOWDEPTH_FILTERED = InstrumentDescription("SnowDepthFiltered", description="Temperature corrected, derived snow surface height in meters w/ filtering")
+    TEMPGROUND5CM = InstrumentDescription("TC_5cm_Avg", "Soil temperature at a depth of 5cm")
+    TEMPGROUND20CM = InstrumentDescription("TC_20cm_Avg", "Soil temperature at a depth of 20cm")
+    TEMPGROUND50CM = InstrumentDescription("TC_50cm_Avg", "Soil temperature at a depth of 50cm")
+
