@@ -47,13 +47,20 @@ class StationInfo(Enum):
         return self.value[3]
 
     @property
+    def elevation(self):
+        return self.value[4]
+
+    @property
     def path(self):
-        return Path(self.value[4])
+        return Path(self.value[5])
 
     @classmethod
     def all_station_ids(cls):
         return  [e.station_id for e in cls]
 
+    @classmethod
+    def all_points(cls):
+        return  [e.point for e in cls]
     @classmethod
     def from_station_id(cls, station_id):
         result = None
@@ -63,6 +70,11 @@ class StationInfo(Enum):
                 break
         return result
 
+    @property
+    def point(self):
+        return gpd.points_from_xy([self.longitude],
+                                  [self.latitude],
+                                  [self.elevation])[0]
 
 class CSVPointData(PointData):
     """
@@ -198,17 +210,21 @@ class CSVPointData(PointData):
     def _get_metadata(self):
         pass
 
+    @classmethod
     def points_from_geometry(self, geometry: gpd.GeoDataFrame,
                              variables: List[SensorDescription],
                              snow_courses=False, within_geometry=True,
                              buffer=0.0):
-        raise NotImplementedError("Not implemented")
+        projected_geom = geometry.to_crs(4326)
+
+        bounds = projected_geom.buffer(buffer).bounds.iloc[0]
+        gdf = gpd.GeoDataFrame(geometry=self.ALLOWED_STATIONS.all_points(), data=[])
+
+        filtered_gdf = gdf[gdf.within(projected_geom)]
 
     @property
     def metadata(self):
         """
         Hardcode the metadata
         """
-        return gpd.points_from_xy(
-            [self._station_info.longitude], [self._station_info.latitude], [None]
-        )[0]
+        return self._station_info.point
