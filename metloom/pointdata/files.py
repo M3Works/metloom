@@ -1,6 +1,9 @@
 """
 Location to keep readers that pull in a flat file like a csv.
 """
+import os
+
+import pandas as pd
 
 from metloom.pointdata import PointData
 from metloom.variables import VariableBase, SensorDescription
@@ -25,7 +28,6 @@ class StationInfo(Enum):
 
     # Name, id, lat, long, http filename
     # GM_STUDY_PLOT = "Grand Mesa Study Plot", "GMSP",  39.05084, 108.06144,"2017.06.21/SNEX_Met_GMSP2_final_output.csv"
-
 
     @property
     def station_name(self):
@@ -82,13 +84,18 @@ class CSVPointData(PointData):
         self._raw_metadata = None
         self._tzinfo = timezone(timedelta(hours=self.UTC_OFFSET_HOURS))
         self._cache = Path(cache)
-        #
+
+
         self._station_info = None
+        self.datafile = None
+
         self.valid = False
 
     def _verify(self):
         """ Verifies the station is valid using the associated enum"""
         self._station_info = self.ALLOWED_STATIONS.from_station_id(self.id)
+        self.datafile = self._cache.joinpath(self._station_info.path.name)
+
         if self._station_info is not None:
             self.name = self._station_info.name
             return True
@@ -101,17 +108,32 @@ class CSVPointData(PointData):
         raise NotImplementedError('CSVPointData._file_url() must be implemented to download csv station data.')
 
     def _download(self):
-        self.valid = self._verify()
         if self.valid:
             url = self._file_url()
-            outfile = self._cache.joinpath(self._station_info.filename.name)
+
+            # Make the cache dir
+            if not self._cache.is_dir():
+                os.mkdir(self._cache)
+
             # Download
             with requests.get(url, stream=True) as r:
                 LOG.info('Downloading csv file...')
-                with open(outfile, mode='w+') as fp:
+                with open(self.datafile, mode='w+') as fp:
                     for line in r.iter_lines():
                         fp.write(line.decode('utf-8'))
+    def _get_data(
+        self, start_date, end_date, variables: List[SensorDescription],
+        period):
+        """
+        Utilizes cached data or downloads the data
+        """
+        self.valid = self._verify()
 
+        if not self.datafile.exists():
+            self._download()
+
+        df = pd.read_csv(self.datafile, parse_dates=True)
+        
 
     def get_daily_data(self, start_date: datetime, end_date: datetime,
                        variables: List[SensorDescription]):

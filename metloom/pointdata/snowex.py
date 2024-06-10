@@ -4,14 +4,16 @@ import logging
 import geopandas as gpd
 import pandas as pd
 from enum import Enum
-from metloom.pointdata import CSVPointData
-from metloom.variables import SnowExVariables, SensorDescription
+from metloom.pointdata import CSVPointData, StationInfo
+from metloom.variables import SnowExVariables
 from pathlib import Path
+import os
+
 
 LOG = logging.getLogger(__name__)
 
 
-class SnowExMetInfo(Enum):
+class SnowExMetInfo(StationInfo):
     # Name, id, lat, long, http filename
     GM_STUDY_PLOT = "Grand Mesa Study Plot", "GMSP",  39.05084, 108.06144,"2017.06.21/SNEX_Met_GMSP2_final_output.csv"
     LS_OBS_SITE = "Local Scale Observation Site", "LSOS", 39.05225, 108.09792, "2016.10.09/SNEX_Met_LSOS_final_output.csv"
@@ -25,10 +27,11 @@ class SnowExMet(CSVPointData):
     These data are stored in csv data formats
     """
     ALLOWED_VARIABLES = SnowExVariables
-    ALLOWED_STATIONS = SnowExVariables
+    ALLOWED_STATIONS = SnowExMetInfo
 
     URL = "https://n5eil01u.ecs.nsidc.org/SNOWEX/SNEX_Met.001/"
     DATASOURCE = "NSIDC"
 
-
+    def _file_url(self):
+        return os.path.join(self.URL, self._station_info.path)
 

@@ -6,7 +6,7 @@ from metloom.pointdata import SnowExMet
 from datetime import datetime
 
 def test_snowex():
-    pnt = SnowExMet('LSOS')
+    pnt = SnowExMet('LSOS', "Local Scale Obs Site")
     start = datetime(2020, 1, 1)
     end = datetime(2020, 1, 15)
-    df = pnt.get_daily_data(SnowExVariables)
+    df = pnt.get_daily_data(start, end, [SnowExVariables.UPSHORTWAVE])
