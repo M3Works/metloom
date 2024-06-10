@@ -346,3 +346,21 @@ class MetNorwayVariables(VariableBase):
         " Each tip is registered along with the time stamp for the tip."
         " This is the basis for calcutation of precipitation sum per minute"
     )
+
+
+class SnowExVariables(VariableBase):
+    """
+    Variables for SnowEx met stations data
+
+    Metadata:
+    https://nsidc.org/sites/default/files/documents/user-guide/snex_met-v001-userguide.pdf
+
+    """
+    UPSHORTWAVE = InstrumentDescription(
+        "SUp_Avg", "UPWARD SHORTWAVE RADIATION",
+        instrument="CNR4 Net Radiometer"
+    )
+    DOWNSHORTWAVE = InstrumentDescription(
+        "SDn_Avg", "DOWNWARD SHORTWAVE RADIATION",
+        instrument="CNR4 Net Radiometer"
+    )
