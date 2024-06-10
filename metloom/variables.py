@@ -350,16 +350,20 @@ class MetNorwayVariables(VariableBase):
 
 class SnowExVariables(VariableBase):
     """
-    Variables for SnowEx met stations data
+    Variables for SnowEx met stations data, refer to user guide for adding more variables
 
     Metadata:
     https://nsidc.org/sites/default/files/documents/user-guide/snex_met-v001-userguide.pdf
-
     """
-    TEMP_20FT = InstrumentDescription('AirTC_20ft',
-                                      description="Air temperature measured at 20 ft tower levelin deg C")
-    TEMP_10FT = InstrumentDescription('AirTC_10ft',
-                                      description="Air temperature measured at 10 ft tower levelin deg C")
+
+    TEMP_20FT = InstrumentDescription(
+        'AirTC_20ft', "AIR TEMP @20ft",
+        description="Air temperature measured at 20 ft tower levelin deg C")
+
+    TEMP_10FT = InstrumentDescription(
+        'AirTC_10ft', "AIR TEMP @10ft",
+        description="Air temperature measured at 10 ft tower levelin deg C")
+
     UPSHORTWAVE = InstrumentDescription(
         "SUp_Avg", "UPWARD SHORTWAVE RADIATION",
         description="Shortwave radiation measured with upward-facing sensor",
@@ -370,9 +374,11 @@ class SnowExVariables(VariableBase):
         description="Shortwave radiation measured with downward-facing sensor",
         instrument="CNR4 Net Radiometer"
     )
-    SNOWDEPTH = InstrumentDescription("SnowDepthUnFiltered", description="Temperature corrected, derived snow surface height in meters")
-    SNOWDEPTH_FILTERED = InstrumentDescription("SnowDepthFiltered", description="Temperature corrected, derived snow surface height in meters w/ filtering")
-    TEMPGROUND5CM = InstrumentDescription("TC_5cm_Avg", "Soil temperature at a depth of 5cm")
-    TEMPGROUND20CM = InstrumentDescription("TC_20cm_Avg", "Soil temperature at a depth of 20cm")
-    TEMPGROUND50CM = InstrumentDescription("TC_50cm_Avg", "Soil temperature at a depth of 50cm")
+    SNOWDEPTH = InstrumentDescription(
+        "SnowDepthFilter(m)", "SNOW DEPTH",
+        description="Snow surface height in meters w/ filtering")
+
+    TEMPGROUND5CM = InstrumentDescription("TC_5cm_Avg", "SOIL TEMP @ 5cm")
+    TEMPGROUND20CM = InstrumentDescription("TC_20cm_Avg", "SOIL TEMP @ 20cm")
+    TEMPGROUND50CM = InstrumentDescription("TC_50cm_Avg", "SOIL TEMP @ 50cm")
 
