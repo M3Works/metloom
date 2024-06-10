@@ -14,6 +14,7 @@ import logging
 import requests
 from typing import List
 import geopandas as gpd
+import numpy as np
 
 
 LOG = logging.getLogger(__name__)
@@ -136,6 +137,7 @@ class CSVPointData(PointData):
         method = "sum" if variable.accumulated else "average"
         if self._verify_sensor(resp_df, variable):
             isolated = resp_df[variable.code].loc[start:end]
+            isolated[isolated == -9999] = np.nan
             if method == 'average':
                 data = isolated.resample(period).mean()
             elif method == 'sum':
@@ -159,7 +161,8 @@ class CSVPointData(PointData):
             if self.valid:
                 self._download()
 
-        resp_df = pd.read_csv(self.datafile, parse_dates=True, index_col=self.DATETIME_COLUMN)
+        resp_df = pd.read_csv(self.datafile, parse_dates=[0])
+        resp_df = resp_df.rename(columns={self.DATETIME_COLUMN:'datetime'}).set_index('datetime')
         df = pd.DataFrame()
         df.index.name = "datetime"
         for variable in variables:
@@ -173,6 +176,7 @@ class CSVPointData(PointData):
         # Make this a geodataframe
         df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
         df = df.reset_index().set_index(["datetime", "site"])
+
         return df
 
     def get_daily_data(self, start_date: datetime, end_date: datetime,
