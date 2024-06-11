@@ -84,7 +84,6 @@ class CSVPointData(PointData):
     ALLOWED_VARIABLES = VariableBase
     ALLOWED_STATIONS = StationInfo
     UTC_OFFSET_HOURS = 0 # Allows users to specificy the timezone of the datasets
-    DATETIME_COLUMN = 'datetime'
 
     def __init__(self, station_id, name=None, metadata=None, cache='./cache'):
         """
@@ -128,6 +127,10 @@ class CSVPointData(PointData):
     def _file_url(self):
         """Returns the url to the file containing the station data"""
         raise NotImplementedError('CSVPointData._file_url() must be implemented to download csv station data.')
+
+    def _assign_datetime(self, resp_df):
+        raise NotImplementedError('CSVPointData._assign_datetime() must be implemented to download csv station data.')
+
 
     def _download(self, url):
         """Download the file"""
@@ -176,7 +179,8 @@ class CSVPointData(PointData):
                 self._download(url)
 
         resp_df = pd.read_csv(self.datafile, parse_dates=[0])
-        resp_df = resp_df.rename(columns={self.DATETIME_COLUMN:'datetime'}).set_index('datetime')
+        resp_df = self._assign_datetime(resp_df)
+
         df = pd.DataFrame()
         for i, variable in enumerate(variables):
             df_var = self._get_one_variable(resp_df, start_date, end_date, period, variable)

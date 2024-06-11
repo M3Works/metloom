@@ -28,7 +28,6 @@ class SnowExMet(CSVPointData):
     """
     ALLOWED_VARIABLES = SnowExVariables
     ALLOWED_STATIONS = SnowExMetInfo
-    DATETIME_COLUMN = 'TIMESTAMP'
     # Data is in UTC
     UTC_OFFSET_HOURS = 0
 
@@ -39,3 +38,6 @@ class SnowExMet(CSVPointData):
     def _file_url(self):
         return os.path.join(self.URL, self._station_info.path)
 
+    def _assign_datetime(self, resp_df):
+        resp_df = resp_df.rename(columns={'TIMESTAMP':'datetime'}).set_index('datetime')
+        return resp_df
