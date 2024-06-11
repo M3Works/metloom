@@ -221,12 +221,13 @@ class CSVPointData(PointData):
         variables: List[SensorDescription],
         within_geometry=True,
         buffer=0.0, **kwargs):
+        # Avoid multiple polys and use a buffer if requested.
+        projected_geom = geometry.to_crs(4326).dissolve().buffer(buffer)
 
-        projected_geom = geometry.to_crs(4326)
         gdf = gpd.GeoDataFrame(geometry=self.ALLOWED_STATIONS.all_points(), data=[], crs=4326)
         # Use the exact geometry to filter, otherwise use the bounds of the poly
         if within_geometry:
-            search_area = projected_geom.dissolve().iloc[0].geometry
+            search_area = projected_geom.iloc[0]
         else:
             search_area = projected_geom.envelope.iloc[0]
 

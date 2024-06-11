@@ -10,7 +10,7 @@ import pytest
 
 from metloom.variables import SnowExVariables
 from metloom.pointdata import SnowExMet
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import geopandas as gpd
 from unittest.mock import Mock
@@ -49,7 +49,7 @@ class TestSnowEx:
 
     @pytest.mark.parametrize('station_id, variable, expected_mean', [
         ('LSOS', SnowExVariables.TEMP_10FT, -6.88556),
-        ('MW', SnowExVariables.SNOWDEPTH, 1.04383)
+        ('MW', SnowExVariables.SNOWDEPTH, 1.04383),
     ])
     def test_get_daily_data(self, station, station_id, variable, expected_mean):
         """ Check auto assignment of the name"""
@@ -59,8 +59,10 @@ class TestSnowEx:
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
 
     @pytest.mark.parametrize('station_id, variable, expected_mean', [
+        # Test a couple stations with different variables
         ('LSOS', SnowExVariables.TEMP_10FT, -7.854865),
-        ('MW', SnowExVariables.SNOWDEPTH, 0.98691)
+        ('MW', SnowExVariables.SNOWDEPTH, 0.98691),
+
     ])
     def test_get_hourly_data(self, station, station_id, variable, expected_mean):
         """ Check auto assignment of the name"""
@@ -69,16 +71,31 @@ class TestSnowEx:
         # Assert it's hourly timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'H'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
-
-    @pytest.mark.parametrize('within_geom, expected_count', [
-        (True, 1),
-        (False, 3)
+    @pytest.mark.parametrize("station_id, variable, start", [
+        # GMSP doesnt have radiation
+        ('GMSP', SnowExVariables.UPSHORTWAVE, datetime(2018, 1, 1, 11))
     ])
-    def test_within_geometry(self, within_geom, expected_count):
+    def test_get_daily_none(self, station, station_id, variable, start):
+        """ Test when a station doesn't have something, its handled"""
+        end = start + timedelta(days=1)
+        df = station.get_daily_data(start, end, [variable])
+        assert df == None
+
+    @pytest.mark.parametrize('within_geom, buffer, expected_count', [
+        # Inside the geom is only one station
+        (True, 0.0, 1),
+        # inside the bounds of the geom is 3 stations
+        (False, 0.0, 3),
+        # Test Buffer use
+        (True, 0.1, 4)
+    ])
+    def test_within_geometry(self, within_geom, buffer, expected_count):
         """ Use the within geometry on downloaded stations """
         search_poly = gpd.read_file(Path(DATA_DIR).joinpath('gm_polygon.shp'))
-        df = SnowExMet.points_from_geometry(search_poly, [SnowExVariables.TEMP_20FT],
-                                            within_geometry=within_geom)
+        df = SnowExMet.points_from_geometry(search_poly,
+                                            [SnowExVariables.TEMP_20FT],
+                                            within_geometry=within_geom,
+                                            buffer=buffer)
         assert len(df.index) == expected_count
 
 def test_pull_real_data():
