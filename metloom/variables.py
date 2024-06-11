@@ -382,3 +382,5 @@ class SnowExVariables(VariableBase):
     TEMPGROUND20CM = InstrumentDescription("TC_20cm_Avg", "SOIL TEMP @ 20cm")
     TEMPGROUND50CM = InstrumentDescription("TC_50cm_Avg", "SOIL TEMP @ 50cm")
 
+class CSASVariables(VariableBase):
+    SNOWDEPTH = InstrumentDescription("Sno_Height_M", "Snow Depth")

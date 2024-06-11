@@ -8,10 +8,11 @@ from .norway import MetNorwayPointData
 from .cues import CuesLevel1
 from .files import CSVPointData, StationInfo
 from .snowex import SnowExMet
+from .csas import CSASMet
 
 __all__ = [
     "PointData", "PointDataCollection", "CDECPointData", "SnotelPointData",
     "MesowestPointData", "USGSPointData", "GeoSphereHistPointData",
     "GeoSphereCurrentPointData", "CuesLevel1", "MetNorwayPointData",
-    "CSVPointData", "SnowExMet", "StationInfo"
+    "CSVPointData", "StationInfo", "SnowExMet", "CSASMet"
 ]
