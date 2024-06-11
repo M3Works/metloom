@@ -36,12 +36,10 @@ class CSASMet(CSVPointData):
 
     def _file_urls(self, station_id, start, end):
         """
-        Navigate the system using dates
-        Data for SASP and SBSP is stored in two csvs. 2003-2009 and 2010-2023
-        Not sure what happens when the next year is made available.
-
-        This function will grab the necessary urls depending on the requested
-        data
+        Navigate the system using dates. Data for SASP and SBSP is stored in
+        two csvs. 2003-2009 and 2010-2023. Not sure what happens when the
+        next year is made available. This function will grab the necessary urls
+        depending on the requested data
         """
         urls = []
         if station_id in ['SASP', 'SBSP']:
@@ -69,6 +67,5 @@ class CSASMet(CSVPointData):
 
     def _assign_datetime(self, resp_df):
         resp_df['datetime'] = resp_df.apply(lambda row: self._parse_datetime(row), axis=1)
-        resp_df = resp_df.set_index('datetime')
-        return resp_df
+        return resp_df.set_index('datetime')
 

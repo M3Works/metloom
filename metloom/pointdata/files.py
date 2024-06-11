@@ -147,7 +147,9 @@ class CSVPointData(PointData):
         """
         method = "sum" if variable.accumulated else "average"
         if self._verify_sensor(resp_df, variable):
-            isolated = resp_df[variable.code].loc[start:end]
+            isolated = resp_df[variable.code]
+
+            # TODO: This may only be true for SNOWEX
             isolated[isolated == -9999] = np.nan
             if method == 'average':
                 data = isolated.resample(period).mean()
@@ -184,8 +186,11 @@ class CSVPointData(PointData):
         resp_df = self._assign_datetime(resp_df)
 
         df = pd.DataFrame()
+        # Use this instead .loc to avoid index on patchy data
+        ind = (resp_df.index >= start_date) & (resp_df.index < end_date)
+        isolated = resp_df[ind]
         for i, variable in enumerate(variables):
-            df_var = self._get_one_variable(resp_df, start_date, end_date, period, variable)
+            df_var = self._get_one_variable(isolated, start_date, end_date, period, variable)
             if df_var is not None:
                 if i==0:
                     df.index= df_var.index

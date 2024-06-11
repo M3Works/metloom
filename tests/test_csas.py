@@ -12,12 +12,26 @@ def test_sbb():
     start = datetime(2009, 1, 1)
     end = datetime(2009, 5, 1)
     var = CSASVariables.SNOWDEPTH
-    fig, ax = plt.subplots(1)
-    for station_id in CSASStationInfo.all_station_ids():
-        pnt = CSASMet(station_id)
-        df = pnt.get_daily_data(start, end, [var])
+    fig, (ax, ax2, ax3) = plt.subplots(3)
+    # for station_id in ['SASP', 'SBSP']:
+    #     pnt = CSASMet(station_id)
+    #     df = pnt.get_daily_data(start, end, [var])
+    #     if df is not None:
+    #         ax.plot(df.index.get_level_values('datetime'), df[var.name], label=station_id)
+    # ax.legend()
 
-        ax.plot(df.index.get_level_values('datetime'), df[var.name], label=station_id)
+    pnt = CSASMet('SBSG')
+    var = CSASVariables.STREAMFLOW_CFS
+    df = pnt.get_daily_data(start, end, [var])
+    ax2.plot(df.index.get_level_values('datetime'), df[var.name], label='Streamflow')
+    ax2.legend()
+
+    pnt = CSASMet('PTSP')
+    var = CSASVariables.RH
+    df = pnt.get_daily_data(start, end, [var])
+    ax3.plot(df.index.get_level_values('datetime'), df[var.name], label='Putney RH')
+    ax.legend()
+
     plt.show()
 
 
