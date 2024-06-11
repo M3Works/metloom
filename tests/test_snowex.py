@@ -15,16 +15,16 @@ from datetime import datetime
 from pathlib import Path
 import geopandas as gpd
 from unittest.mock import Mock
-
+from unittest.mock import patch
 
 DATA_DIR = str(Path(__file__).parent.joinpath("data/snowex_mocks"))
 
 class TestSnowEx:
-    def copy_file(self, arg):
+    def copy_file(self, url):
         print('HERE')
-        f = arg.split('/')[-1]
-        file = Path(DATA_DIR).joinpath(f)
-        shutil.copy(file, self.cache_dir() + file.name)
+        file = Path(DATA_DIR).joinpath(Path(url).name)
+        cache = Path(__file__).parent.joinpath('cache')
+        shutil.copy(file, cache.joinpath(file.name))
 
     @pytest.fixture(scope='function')
     def cache_dir(self):
@@ -32,11 +32,12 @@ class TestSnowEx:
         cache = Path(__file__).parent.joinpath('cache')
         yield cache
         if cache.is_dir():
-            os.remove(cache)
+            shutil.rmtree(cache)
+
     @pytest.fixture(scope='function')
-    def station(self, station_id):
-        pnt = SnowExMet(station_id)
-        pnt._download = Mock(side_effect=self.copy_file)
+    def station(self, cache_dir, station_id):
+        with patch.object(SnowExMet, '_download', new=self.copy_file):
+            pnt = SnowExMet(station_id)
         yield pnt
 
     @pytest.mark.parametrize('station_id, expected',[
@@ -52,10 +53,11 @@ class TestSnowEx:
     ])
     def test_station_name(self, station, station_id, variable):
         """ Check auto assignment of the name"""
-        df = station.get_daily_data(datetime(2017, 1, 1), datetime(2017, 1,15), [variable])
-        assert df.index.freq == 'D'
+        df = station.get_daily_data(datetime(2018, 1, 1), datetime(2018, 1,15), [variable])
+        # Assert it's a daily timeseries
+        assert df.index.get_level_values('datetime').inferred_freq == 'D'
+        assert df[variable.name].mean() == pytest.approx(-5.762102777777778, abs=1e-5)
 
-#
 # def test_snowex():
 #     pnt = SnowExMet('MM')
 #     start = datetime(2018, 1, 1)

@@ -172,16 +172,19 @@ class CSVPointData(PointData):
                 if not self._cache.is_dir():
                     os.mkdir(self._cache)
 
-                self._download()
+                self._download(url)
 
         resp_df = pd.read_csv(self.datafile, parse_dates=[0])
         resp_df = resp_df.rename(columns={self.DATETIME_COLUMN:'datetime'}).set_index('datetime')
         df = pd.DataFrame()
-        df.index.name = "datetime"
-        for variable in variables:
+        for i, variable in enumerate(variables):
             df_var = self._get_one_variable(resp_df, start_date, end_date, period, variable)
             if df_var is not None:
+                if i==0:
+                    df.index= df_var.index
+
                 df[variable.name] = df_var
+
 
         # Set the site info
         df["site"] = [self.id] * len(df)

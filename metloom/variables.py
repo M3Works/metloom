@@ -357,11 +357,11 @@ class SnowExVariables(VariableBase):
     """
 
     TEMP_20FT = InstrumentDescription(
-        'AirTC_20ft', "AIR TEMP @20ft",
+        'AirTC_20ft_Avg', "AIR TEMP @20ft",
         description="Air temperature measured at 20 ft tower levelin deg C")
 
     TEMP_10FT = InstrumentDescription(
-        'AirTC_10ft', "AIR TEMP @10ft",
+        'AirTC_10ft_Avg', "AIR TEMP @10ft",
         description="Air temperature measured at 10 ft tower levelin deg C")
 
     UPSHORTWAVE = InstrumentDescription(
