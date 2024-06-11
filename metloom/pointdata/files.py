@@ -153,6 +153,7 @@ class CSVPointData(PointData):
                 raise Exception('Invalid aggregation method')
         else:
             data = None
+            LOG.debug(f"No data returned for {variable}")
 
         return data
 
@@ -185,6 +186,8 @@ class CSVPointData(PointData):
 
                 df[variable.name] = df_var
 
+        if np.all(df.isnull()):
+            return None
 
         # Set the site info
         df["site"] = [self.id] * len(df)
@@ -222,7 +225,7 @@ class CSVPointData(PointData):
         within_geometry=True,
         buffer=0.0, **kwargs):
         # Avoid multiple polys and use a buffer if requested.
-        projected_geom = geometry.to_crs(4326).dissolve().buffer(buffer)
+        projected_geom = geometry.dissolve().buffer(buffer).to_crs(4326)
 
         gdf = gpd.GeoDataFrame(geometry=self.ALLOWED_STATIONS.all_points(), data=[], crs=4326)
         # Use the exact geometry to filter, otherwise use the bounds of the poly

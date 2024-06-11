@@ -73,7 +73,10 @@ class TestSnowEx:
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
     @pytest.mark.parametrize("station_id, variable, start", [
         # GMSP doesnt have radiation
-        ('GMSP', SnowExVariables.UPSHORTWAVE, datetime(2018, 1, 1, 11))
+        ('GMSP', SnowExVariables.UPSHORTWAVE, datetime(2018, 1, 1, 11)),
+        # GMSP has no data in Jan - 2017
+        ('GMSP', SnowExVariables.SNOWDEPTH, datetime(2017, 1, 1, 11))
+
     ])
     def test_get_daily_none(self, station, station_id, variable, start):
         """ Test when a station doesn't have something, its handled"""
@@ -98,12 +101,4 @@ class TestSnowEx:
                                             buffer=buffer)
         assert len(df.index) == expected_count
 
-def test_pull_real_data():
-    pnt = SnowExMet('GMSP')
-    var = SnowExVariables.SNOWDEPTH
-    df = pnt.get_daily_data(datetime(2018, 1, 1), datetime(2018, 1, 15), [var])
-    df = df.reset_index().set_index('datetime')
-    fig, ax = plt.subplots(1)
-    ax.plot(df.index, df[var.name])
-    plt.show()
-    print(df)
+
