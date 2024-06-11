@@ -215,17 +215,23 @@ class CSVPointData(PointData):
         pass
 
     @classmethod
-    def points_from_geometry(self, geometry: gpd.GeoDataFrame,
-                             variables: List[SensorDescription],
-                             snow_courses=False, within_geometry=True,
-                             buffer=0.0):
+    def points_from_geometry(
+        self,
+        geometry: gpd.GeoDataFrame,
+        variables: List[SensorDescription],
+        within_geometry=True,
+        buffer=0.0, **kwargs):
+
         projected_geom = geometry.to_crs(4326)
+        gdf = gpd.GeoDataFrame(geometry=self.ALLOWED_STATIONS.all_points(), data=[], crs=4326)
+        # Use the exact geometry to filter, otherwise use the bounds of the poly
+        if within_geometry:
+            search_area = projected_geom.dissolve().iloc[0].geometry
+        else:
+            search_area = projected_geom.envelope.iloc[0]
 
-        bounds = projected_geom.buffer(buffer).bounds.iloc[0]
-        gdf = gpd.GeoDataFrame(geometry=self.ALLOWED_STATIONS.all_points(), data=[])
-
-        filtered_gdf = gdf[gdf.within(projected_geom)]
-
+        filtered_gdf = gdf[gdf.within(search_area)]
+        return filtered_gdf
     @property
     def metadata(self):
         """
