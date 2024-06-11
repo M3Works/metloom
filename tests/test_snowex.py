@@ -38,7 +38,7 @@ class TestSnowEx:
     def station(self, cache_dir, station_id):
         with patch.object(SnowExMet, '_download', new=self.copy_file):
             pnt = SnowExMet(station_id)
-        yield pnt
+            yield pnt
 
     @pytest.mark.parametrize('station_id, expected',[
         ('GMSP', 'Grand Mesa Study Plot')
