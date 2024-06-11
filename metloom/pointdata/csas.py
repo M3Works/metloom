@@ -17,7 +17,7 @@ class CSASStationInfo(StationInfo):
     # Name, id, lat, long, elevation, http path
     SENATOR_BECK = "Senator Beck Study Plot", "SBSP",  37.90688, -107.72627, 12186, "2023/11/SBSP_1hr_2003-2009.csv"
     SWAMP_ANGLE = "Swamp Angel Study Plot", "SASP", 37.90691, -107.71132, 11060, "2023/11/SASP_1hr_2003-2009.csv"
-    PUTNEY = "Putney Study Plot", "PTSP", 37.89233, -107.69577, 12323, "2023/11/PTSP_1hr_2003-2009.csv"
+    PUTNEY = "Putney Study Plot", "PTSP", 37.89233, -107.69577, 12323, "2023/11/PTSP_1hr.csv"
     SENATOR_BECK_STREAM_GAUGE = "Senator Beck Stream Gauge", "SBSG", 37.90678, -107.70943, 11030, "2023/11/SBSG_1hr.csv"
 
 
@@ -49,13 +49,15 @@ class CSASMet(CSVPointData):
                 urls.append(os.path.join(self.URL, self._station_info.path))
 
             # Account for later file use or even straddling thge data
-            if start.year > 2009 or end.year > 2009:
+            if start.year > 2009 or end.year > 2009: # TODO: maybe worth adding these to the info enum
                 partial = str(self._station_info.path).replace("2003", "2010")
                 filename = partial.replace('2009', '2023') # TODO: what happens in 2024?
                 urls.append(os.path.join(self.URL, filename))
 
             if start.year < 2003 or end.year > 2023:
                 raise InvalidDateRange("CSAS data is only available from 2003-2023") # TODO
+        else:
+            urls.append(os.path.join(self.URL, self._station_info.path))
 
         return urls
 
