@@ -4,6 +4,7 @@ Data reader for the Center for Snow and Avalanche Studies
 from metloom.pointdata import CSVPointData, StationInfo
 from metloom.variables import CSASVariables
 import os
+from datetime import datetime, timedelta
 
 
 class CSASStationInfo(StationInfo):
@@ -33,5 +34,14 @@ class CSASMet(CSVPointData):
         """
         return os.path.join(self.URL, self._station_info.path)
 
+    @staticmethod
+    def _parse_datetime(row):
+        # Julian day is not zero based Jan 1 == DOY 1
+        dt = timedelta(days=row['DOY']-1, hours=int(row['Hour'] / 100))
+        return datetime(row['Year'], 1, 1) + dt
 
+    def _assign_datetime(self, resp_df):
+        resp_df['datetime'] = resp_df.apply(lambda row: self._parse_datetime(row), axis=1)
+        resp_df = resp_df.set_index('datetime')
+        return resp_df
 
