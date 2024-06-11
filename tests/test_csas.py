@@ -2,19 +2,22 @@ import matplotlib.pyplot as plt
 import pytest
 
 from metloom.pointdata import CSASMet
-from metloom.pointdata.csas import InvalidDateRange
+from metloom.pointdata.csas import InvalidDateRange, CSASStationInfo
 from metloom.variables import CSASVariables
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+import requests
 
 def test_sbb():
     start = datetime(2009, 1, 1)
     end = datetime(2009, 5, 1)
     var = CSASVariables.SNOWDEPTH
-    pnt = CSASMet('SBSP')
-    df = pnt.get_daily_data(start, end, [var])
     fig, ax = plt.subplots(1)
-    ax.plot(df.index.get_level_values('datetime'), df[var.name])
+    for station_id in CSASStationInfo.all_station_ids():
+        pnt = CSASMet(station_id)
+        df = pnt.get_daily_data(start, end, [var])
+
+        ax.plot(df.index.get_level_values('datetime'), df[var.name], label=station_id)
     plt.show()
 
 
@@ -67,4 +70,29 @@ class TestCSASMet:
         with pytest.raises(InvalidDateRange):
             urls = pnt._file_urls(station_id, start, end)
 
+    @pytest.mark.parametrize("station_id, year", [
+        # Test the two SBSP urls
+        ('SBSP', 2009),
+        ('SBSP', 2010),
+        # Test the two SASP urls
+        ('SASP', 2009),
+        ('SASP', 2010),
+        # Test the Stream gauges url
+        ('SBSG', 2005),
+        # Test the PTSP url
+        ('PTSP', 2003),
+    ])
+    def test_links_are_valid(self, station_id, year):
+        """
+        Seeking answers from CSAS on how and when these files are updated. Until then
+        this will serve as a nice way to check the files are workin still
+        """
+        start = datetime(year, 1, 1)
+        end = start + timedelta(days=1)
 
+        pnt = CSASMet(station_id)
+        pnt._verify_station()
+        urls = pnt._file_urls(station_id, start, end)
+
+        resp = requests.head(urls[0])
+        assert resp.ok

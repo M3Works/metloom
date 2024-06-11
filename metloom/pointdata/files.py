@@ -171,7 +171,8 @@ class CSVPointData(PointData):
 
         if not self.datafile.exists():
             if self.valid:
-                urls = self._file_url()
+                urls = self._file_urls(self._station_info.station_id,
+                                       start_date, end_date)
 
                 # Make the cache dir
                 if not self._cache.is_dir():
