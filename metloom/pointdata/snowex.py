@@ -35,8 +35,8 @@ class SnowExMet(CSVPointData):
     DATASOURCE = "NSIDC"
     DOI = "https://doi.org/10.5067/497NQVJ0CBEX"
 
-    def _file_url(self):
-        return os.path.join(self.URL, self._station_info.path)
+    def _file_urls(self, *args):
+        return [os.path.join(self.URL, self._station_info.path)]
 
     def _assign_datetime(self, resp_df):
         resp_df = resp_df.rename(columns={'TIMESTAMP':'datetime'}).set_index('datetime')

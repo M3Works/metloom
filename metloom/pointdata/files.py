@@ -124,21 +124,22 @@ class CSVPointData(PointData):
             LOG.debug(f"{variable.name} not found in {self.id} data")
             return False
 
-    def _file_url(self):
+    def _file_urls(self, *args):
         """Returns the url to the file containing the station data"""
-        raise NotImplementedError('CSVPointData._file_url() must be implemented to download csv station data.')
+        raise NotImplementedError('CSVPointData._file_urls() must be implemented to download csv station data.')
 
     def _assign_datetime(self, resp_df):
         raise NotImplementedError('CSVPointData._assign_datetime() must be implemented to download csv station data.')
 
 
-    def _download(self, url):
-        """Download the file"""
-        with requests.get(url, stream=True) as r:
-            LOG.info('Downloading csv file...')
-            with open(self.datafile, mode='w+') as fp:
-                for line in r.iter_lines():
-                    fp.write(line.decode('utf-8') + '\n')
+    def _download(self, urls):
+        """Download the file(s)"""
+        for url in urls:
+            with requests.get(url, stream=True) as r:
+                LOG.info(f'Downloading {Path(url).name}...')
+                with open(self.datafile, mode='w+') as fp:
+                    for line in r.iter_lines():
+                        fp.write(line.decode('utf-8') + '\n')
 
     def _get_one_variable(self, resp_df, start, end, period, variable:SensorDescription):
         """
@@ -170,13 +171,13 @@ class CSVPointData(PointData):
 
         if not self.datafile.exists():
             if self.valid:
-                url = self._file_url()
+                urls = self._file_url()
 
                 # Make the cache dir
                 if not self._cache.is_dir():
                     os.mkdir(self._cache)
 
-                self._download(url)
+                self._download(urls)
 
         resp_df = pd.read_csv(self.datafile, parse_dates=[0])
         resp_df = self._assign_datetime(resp_df)

@@ -7,6 +7,12 @@ import os
 from datetime import datetime, timedelta
 
 
+class InvalidDateRange(Exception):
+    """
+    Exception to indicate there is no know data for the available date range
+    """
+
+
 class CSASStationInfo(StationInfo):
     # Name, id, lat, long, elevation, http path
     SENATOR_BECK = "Senator Beck Study Plot", "SBSP",  37.90688, -107.72627, 12186, "2023/11/SBSP_1hr_2003-2009.csv"
@@ -28,11 +34,30 @@ class CSASMet(CSVPointData):
     DATASOURCE = "CSAS"
     DOI = ""
 
-    def _file_url(self):
+    def _file_urls(self, station_id, start, end):
         """
         Navigate the system using dates
+        Data for SASP and SBSP is stored in two csvs. 2003-2009 and 2010-2023
+        Not sure what happens when the next year is made available.
+
+        This function will grab the necessary urls depending on the requested
+        data
         """
-        return os.path.join(self.URL, self._station_info.path)
+        urls = []
+        if station_id in ['SASP', 'SBSP']:
+            if start.year <= 2009:
+                urls.append(os.path.join(self.URL, self._station_info.path))
+
+            # Account for later file use or even straddling thge data
+            if start.year > 2009 or end.year > 2009:
+                partial = str(self._station_info.path).replace("2003", "2010")
+                filename = partial.replace('2009', '2023') # TODO: what happens in 2024?
+                urls.append(os.path.join(self.URL, filename))
+
+            if start.year < 2003 or end.year > 2023:
+                raise InvalidDateRange("CSAS data is only available from 2003-2023") # TODO
+
+        return urls
 
     @staticmethod
     def _parse_datetime(row):
