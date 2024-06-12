@@ -13,7 +13,6 @@ from metloom.pointdata import SnowExMet
 from datetime import datetime, timedelta
 from pathlib import Path
 import geopandas as gpd
-from unittest.mock import Mock
 from unittest.mock import patch
 
 DATA_DIR = str(Path(__file__).parent.joinpath("data/snowex_mocks"))

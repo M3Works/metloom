@@ -99,14 +99,12 @@ class CSVPointData(PointData):
 
 
         self._station_info = None
-        self.datafile = None
 
         self.valid = False
 
     def _verify_station(self):
         """ Verifies the station is valid using the associated enum"""
         self._station_info = self.ALLOWED_STATIONS.from_station_id(self.id)
-        self.datafile = self._cache.joinpath(self._station_info.path.name)
 
         if self._station_info is not None:
             # Auto assign name
@@ -134,12 +132,19 @@ class CSVPointData(PointData):
 
     def _download(self, urls):
         """Download the file(s)"""
+        filenames = []
         for url in urls:
             with requests.get(url, stream=True) as r:
-                LOG.info(f'Downloading {Path(url).name}...')
-                with open(self.datafile, mode='w+') as fp:
-                    for line in r.iter_lines():
-                        fp.write(line.decode('utf-8') + '\n')
+                filename = self._cache.joinpath(Path(url).name)
+                filenames.append(filename)
+
+                if not filename.exists():
+                    LOG.info(f'Downloading {Path(url).name}...')
+                    with open(filename, mode='w+') as fp:
+                        for line in r.iter_lines():
+                            fp.write(line.decode('utf-8') + '\n')
+        return filenames
+
 
     def _get_one_variable(self, resp_df, period, variable:SensorDescription):
         """
@@ -171,18 +176,20 @@ class CSVPointData(PointData):
         """
         self.valid = self._verify_station()
 
-        if not self.datafile.exists():
-            if self.valid:
-                urls = self._file_urls(self._station_info.station_id,
-                                       start_date, end_date)
+        if not self.valid:
+            return None
 
-                # Make the cache dir
-                if not self._cache.is_dir():
-                    os.mkdir(self._cache)
+        urls = self._file_urls(self._station_info.station_id,
+                               start_date, end_date)
 
-                self._download(urls)
+        # Make the cache dir
+        if not self._cache.is_dir():
+            os.mkdir(self._cache)
 
-        resp_df = pd.read_csv(self.datafile, parse_dates=[0])
+        # Download data if it doesn't exist locally.
+        files = self._download(urls)
+
+        resp_df = pd.concat([pd.read_csv(f, parse_dates=[0]) for f in files])
         resp_df = self._assign_datetime(resp_df)
 
         # use a predifined index to show nans in the event of patch data
@@ -197,7 +204,7 @@ class CSVPointData(PointData):
             if df_var is not None:
                 if not np.all(df_var.isnull()):
                     df[variable.name].loc[df_var.index] = df_var
-
+        # All nan data suggests no matching data
         if np.all(df.isnull()):
             return None
 
