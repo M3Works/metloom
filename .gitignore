@@ -111,3 +111,4 @@ ENV/
 # scratch dir
 scratch/
 **/.ipynb_checkpoints/*
+**/cache/**

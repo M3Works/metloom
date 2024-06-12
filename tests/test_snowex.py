@@ -18,10 +18,14 @@ from unittest.mock import patch
 
 DATA_DIR = str(Path(__file__).parent.joinpath("data/snowex_mocks"))
 
+def plot(df, var):
+    fig, ax = plt.subplots(1)
+    ax.plot(df.index.get_level_values('datetime'), df[var.name])
+    plt.show()
+
 class TestSnowEx:
-    def copy_file(self, url):
-        print('HERE')
-        file = Path(DATA_DIR).joinpath(Path(url).name)
+    def copy_file(self, urls):
+        file = Path(DATA_DIR).joinpath(Path(urls[0]).name)
         cache = Path(__file__).parent.joinpath('cache')
         shutil.copy(file, cache.joinpath(file.name))
 
@@ -48,26 +52,28 @@ class TestSnowEx:
         assert station.name == expected
 
     @pytest.mark.parametrize('station_id, variable, expected_mean', [
-        ('LSOS', SnowExVariables.TEMP_10FT, -6.88556),
-        ('MW', SnowExVariables.SNOWDEPTH, 1.04383),
+        ('LSOS', SnowExVariables.TEMP_10FT, -7.07817),
+        ('MW', SnowExVariables.SNOWDEPTH, 1.03503),
     ])
     def test_get_daily_data(self, station, station_id, variable, expected_mean):
-        """ Check auto assignment of the name"""
+        """ Check data pulling """
         df = station.get_daily_data(datetime(2017, 1, 1), datetime(2017, 1,15), [variable])
+
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'D'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
 
     @pytest.mark.parametrize('station_id, variable, expected_mean', [
         # Test a couple stations with different variables
-        ('LSOS', SnowExVariables.TEMP_10FT, -7.854865),
-        ('MW', SnowExVariables.SNOWDEPTH, 0.98691),
+        ('LSOS', SnowExVariables.TEMP_10FT, -7.86599),
+        ('MW', SnowExVariables.SNOWDEPTH, 0.98625),
 
     ])
     def test_get_hourly_data(self, station, station_id, variable, expected_mean):
         """ Check auto assignment of the name"""
         df = station.get_hourly_data(datetime(2017, 1, 1, 11), datetime(2017, 1, 10, 23),
                                     [variable])
+
         # Assert it's hourly timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'H'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
@@ -82,7 +88,7 @@ class TestSnowEx:
         """ Test when a station doesn't have something, its handled"""
         end = start + timedelta(days=1)
         df = station.get_daily_data(start, end, [variable])
-        assert df == None
+        assert df is None
 
     @pytest.mark.parametrize('within_geom, buffer, expected_count', [
         # Inside the geom is only one station

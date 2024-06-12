@@ -141,13 +141,13 @@ class CSVPointData(PointData):
                     for line in r.iter_lines():
                         fp.write(line.decode('utf-8') + '\n')
 
-    def _get_one_variable(self, resp_df, start, end, period, variable:SensorDescription):
+    def _get_one_variable(self, resp_df, period, variable:SensorDescription):
         """
         Retrieve a single variable and process it accordingly
         """
         method = "sum" if variable.accumulated else "average"
         if self._verify_sensor(resp_df, variable):
-            isolated = resp_df[variable.code]
+            isolated = resp_df.loc[:, variable.code]
 
             # TODO: This may only be true for SNOWEX
             isolated[isolated == -9999] = np.nan
@@ -185,17 +185,18 @@ class CSVPointData(PointData):
         resp_df = pd.read_csv(self.datafile, parse_dates=[0])
         resp_df = self._assign_datetime(resp_df)
 
-        df = pd.DataFrame()
+        # use a predifined index to show nans in the event of patch data
+        df = pd.DataFrame(index=pd.date_range(start_date, end_date, freq=period, name='datetime'),
+                          columns=[v.name for v in variables])
+
         # Use this instead .loc to avoid index on patchy data
         ind = (resp_df.index >= start_date) & (resp_df.index < end_date)
-        isolated = resp_df[ind]
+        isolated = resp_df.iloc[ind]
         for i, variable in enumerate(variables):
-            df_var = self._get_one_variable(isolated, start_date, end_date, period, variable)
+            df_var = self._get_one_variable(isolated, period, variable)
             if df_var is not None:
-                if i==0:
-                    df.index= df_var.index
-
-                df[variable.name] = df_var
+                if not np.all(df_var.isnull()):
+                    df[variable.name].loc[df_var.index] = df_var
 
         if np.all(df.isnull()):
             return None
@@ -220,17 +221,12 @@ class CSVPointData(PointData):
         return self._get_data(
             start_date, end_date, variables, "H"
         )
-
-    def get_snow_course_data(self, start_date: datetime, end_date: datetime,
-                             variables: List[SensorDescription]):
-        raise NotImplementedError("Not implemented")
-
     def _get_metadata(self):
-        pass
+        return self._station_info.point
 
     @classmethod
     def points_from_geometry(
-        self,
+        cls,
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         within_geometry=True,
@@ -238,7 +234,7 @@ class CSVPointData(PointData):
         # Avoid multiple polys and use a buffer if requested.
         projected_geom = geometry.dissolve().buffer(buffer).to_crs(4326)
 
-        gdf = gpd.GeoDataFrame(geometry=self.ALLOWED_STATIONS.all_points(), data=[], crs=4326)
+        gdf = gpd.GeoDataFrame(geometry=cls.ALLOWED_STATIONS.all_points(), data=[], crs=4326)
         # Use the exact geometry to filter, otherwise use the bounds of the poly
         if within_geometry:
             search_area = projected_geom.iloc[0]
@@ -247,9 +243,3 @@ class CSVPointData(PointData):
 
         filtered_gdf = gdf[gdf.within(search_area)]
         return filtered_gdf
-    @property
-    def metadata(self):
-        """
-        Hardcode the metadata
-        """
-        return self._station_info.point
