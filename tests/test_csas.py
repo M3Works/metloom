@@ -63,10 +63,16 @@ def test_sbb():
 
 
 class TestCSASMet:
-    def copy_file(self, urls):
-        file = Path(DATA_DIR).joinpath(Path(urls[0]).name)
-        cache = Path(__file__).parent.joinpath('cache')
-        shutil.copy(file, cache.joinpath(file.name))
+
+    def copy_files(self, urls):
+        files = []
+        for url in urls:
+            file = Path(DATA_DIR).joinpath(Path(url).name)
+            cache = Path(__file__).parent.joinpath('cache')
+            shutil.copy(file, cache.joinpath(file.name))
+            files.append(file)
+        return files
+
     @pytest.fixture(scope='function')
     def cache_dir(self):
         """Cachae dir where data is being downloaded to"""
@@ -76,7 +82,7 @@ class TestCSASMet:
             shutil.rmtree(cache)
     @pytest.fixture(scope='function')
     def station(self, cache_dir, station_id):
-        with patch.object(CSASMet, '_download', new=self.copy_file):
+        with patch.object(CSASMet, '_download', new=self.copy_files):
             pnt = CSASMet(station_id)
             yield pnt
 
