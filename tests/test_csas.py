@@ -15,7 +15,7 @@ Mocked data has been cropped to:
 import pytest
 
 from metloom.pointdata import CSASMet
-from metloom.pointdata.csas import InvalidDateRange, CSASStationInfo
+from metloom.pointdata.csas import InvalidDateRange
 from metloom.variables import CSASVariables
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -27,12 +27,12 @@ from unittest.mock import patch
 DATA_DIR = str(Path(__file__).parent.joinpath("data/csas_mocks"))
 
 # Convenient Dates for testing
-DT_20090401 = datetime(2009,4,1)
-DT_20090415 = datetime(2009,4,15)
-DT_20230301 = datetime(2023,3,1)
-DT_20230315 = datetime(2023,3,15)
-DT_20230601 = datetime(2023,6,1)
-DT_20230615 = datetime(2023,6,15)
+DT_20090401 = datetime(2009, 4, 1)
+DT_20090415 = datetime(2009, 4, 15)
+DT_20230301 = datetime(2023, 3, 1)
+DT_20230315 = datetime(2023, 3, 15)
+DT_20230601 = datetime(2023, 6, 1)
+DT_20230615 = datetime(2023, 6, 15)
 
 
 class TestCSASMet:
@@ -53,6 +53,7 @@ class TestCSASMet:
         yield cache
         if cache.is_dir():
             shutil.rmtree(cache)
+
     @pytest.fixture(scope='function')
     def station(self, cache_dir, station_id):
         with patch.object(CSASMet, '_download', new=self.copy_files):
@@ -66,10 +67,10 @@ class TestCSASMet:
 
     ])
     def test_parse_datetime(self, year, doy, hour, expected):
-        dt = CSASMet._parse_datetime({'Year':year, 'DOY': doy, 'Hour':hour})
+        dt = CSASMet._parse_datetime({'Year': year, 'DOY': doy, 'Hour': hour})
         assert dt == expected
 
-    @pytest.mark.parametrize("station_id, start, end, expected",[
+    @pytest.mark.parametrize("station_id, start, end, expected", [
         # Two stations have different files depending on the years
         ('SBSP', datetime(2003, 1, 1),
          datetime(2003, 1, 1), ['SBSP_1hr_2003-2009.csv']),
@@ -89,7 +90,7 @@ class TestCSASMet:
         names = sorted([Path(url).name for url in urls])
         assert names == expected
 
-    @pytest.mark.parametrize("station_id, start, end",[
+    @pytest.mark.parametrize("station_id, start, end", [
         # Test pre 2003
         ('SBSP', datetime(2002, 1, 1),
          datetime(2003, 1, 1)),
@@ -105,7 +106,7 @@ class TestCSASMet:
         pnt = CSASMet(station_id)
         pnt._verify_station()
         with pytest.raises(InvalidDateRange):
-            urls = pnt._file_urls(station_id, start, end)
+            pnt._file_urls(station_id, start, end)
 
     @pytest.mark.parametrize("station_id, year", [
         # Test the two SBSP urls
@@ -135,9 +136,10 @@ class TestCSASMet:
         assert resp.ok
 
     @pytest.mark.parametrize('station_id, variable, start, end, expected_mean', [
-        ('SASP', CSASVariables.SURF_TEMP, DT_20230301, DT_20230315,  -11.59220),
+        ('SASP', CSASVariables.SURF_TEMP, DT_20230301, DT_20230315, -11.59220),
     ])
-    def test_get_daily_data(self, station, station_id, variable, start, end, expected_mean):
+    def test_get_daily_data(self, station, station_id, variable, start, end,
+                            expected_mean):
         """ Check pulling two weeks of data """
 
         df = station.get_daily_data(start, end, [variable])
@@ -147,9 +149,10 @@ class TestCSASMet:
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
 
     @pytest.mark.parametrize('station_id, variable, start, end, expected_mean', [
-        ('SASP', CSASVariables.SURF_TEMP, DT_20230301, DT_20230315,  -11.49969),
+        ('SASP', CSASVariables.SURF_TEMP, DT_20230301, DT_20230315, -11.49969),
     ])
-    def test_get_hourly_data(self, station, station_id, variable, start, end, expected_mean):
+    def test_get_hourly_data(self, station, station_id, variable, start, end,
+                             expected_mean):
         """ Check pulling two weeks of data """
 
         df = station.get_hourly_data(start, end, [variable])
@@ -157,4 +160,3 @@ class TestCSASMet:
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'H'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
-

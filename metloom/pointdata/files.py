@@ -22,13 +22,12 @@ LOG = logging.getLogger(__name__)
 
 class StationInfo(Enum):
     """
-    Since there is not enough info via an API, csv readers rely on a list of stations and info associated with
-    them to build the calls. This should allow for a common dataset with multiple stations to be verified and
-    isolated
+    Since there is not enough info via an API, csv readers rely on a list of stations
+    and info associated with them to build the calls. This should allow for a common
+    dataset with multiple stations to be verified and isolated
     """
 
-    # Name, id, lat, long, http filename
-    # GM_STUDY_PLOT = "Grand Mesa Study Plot", "GMSP",  39.05084, 108.06144,"2017.06.21/SNEX_Met_GMSP2_final_output.csv"
+    # Defined: Name, id, lat, long, http sub path to file
 
     @property
     def station_name(self):
@@ -56,11 +55,12 @@ class StationInfo(Enum):
 
     @classmethod
     def all_station_ids(cls):
-        return  [e.station_id for e in cls]
+        return [e.station_id for e in cls]
 
     @classmethod
     def all_points(cls):
-        return  [e.point for e in cls]
+        return [e.point for e in cls]
+
     @classmethod
     def from_station_id(cls, station_id):
         result = None
@@ -76,6 +76,7 @@ class StationInfo(Enum):
                                   [self.latitude],
                                   [self.elevation])[0]
 
+
 class CSVPointData(PointData):
     """
     Some met station data is stored off in flat csv files. This class enables the
@@ -83,7 +84,7 @@ class CSVPointData(PointData):
     """
     ALLOWED_VARIABLES = VariableBase
     ALLOWED_STATIONS = StationInfo
-    UTC_OFFSET_HOURS = 0 # Allows users to specificy the timezone of the datasets
+    UTC_OFFSET_HOURS = 0  # Allows users to specificy the timezone of the datasets
 
     def __init__(self, station_id, name=None, metadata=None, cache='./cache'):
         """
@@ -96,10 +97,7 @@ class CSVPointData(PointData):
         self._raw_metadata = None
         self._tzinfo = timezone(timedelta(hours=self.UTC_OFFSET_HOURS))
         self._cache = Path(cache)
-
-
         self._station_info = None
-
         self.valid = False
 
     def _verify_station(self):
@@ -108,10 +106,13 @@ class CSVPointData(PointData):
 
         if self._station_info is not None:
             # Auto assign name
-            self.name = self._station_info.station_name if self.name is None else self.name
+            if self.name is None:
+                self.name = self._station_info.station_name
+
             return True
         else:
-            LOG.error(f"Station ID {self.id} is not valid, allowed id's are {', '.join(self.ALLOWED_STATIONS.all_station_ids())}")
+            LOG.error(f"Station ID {self.id} is not valid, allowed id's are "
+                      f"{', '.join(self.ALLOWED_STATIONS.all_station_ids())}")
             return False
 
     def _verify_sensor(self, resp_df, variable: SensorDescription):
@@ -124,11 +125,12 @@ class CSVPointData(PointData):
 
     def _file_urls(self, *args):
         """Returns the url to the file containing the station data"""
-        raise NotImplementedError('CSVPointData._file_urls() must be implemented to download csv station data.')
+        raise NotImplementedError('CSVPointData._file_urls() must be implemented to '
+                                  'download csv station data.')
 
     def _assign_datetime(self, resp_df):
-        raise NotImplementedError('CSVPointData._assign_datetime() must be implemented to download csv station data.')
-
+        raise NotImplementedError('CSVPointData._assign_datetime() must be implemented '
+                                  'to download csv station data.')
 
     def _download(self, urls):
         """Download the file(s)"""
@@ -145,8 +147,7 @@ class CSVPointData(PointData):
                             fp.write(line.decode('utf-8') + '\n')
         return filenames
 
-
-    def _get_one_variable(self, resp_df, period, variable:SensorDescription):
+    def _get_one_variable(self, resp_df, period, variable: SensorDescription):
         """
         Retrieve a single variable and process it accordingly
         """
@@ -168,9 +169,8 @@ class CSVPointData(PointData):
 
         return data
 
-    def _get_data(
-        self, start_date, end_date, variables: List[SensorDescription],
-        period):
+    def _get_data(self, start_date, end_date, variables: List[SensorDescription],
+                  period):
         """
         Utilizes cached data or downloads the data
         """
@@ -193,7 +193,8 @@ class CSVPointData(PointData):
         resp_df = self._assign_datetime(resp_df)
 
         # use a predifined index to show nans in the event of patch data
-        df = pd.DataFrame(index=pd.date_range(start_date, end_date, freq=period, name='datetime'),
+        df = pd.DataFrame(index=pd.date_range(start_date, end_date, freq=period,
+                                              name='datetime'),
                           columns=[v.name for v in variables])
 
         # Use this instead .loc to avoid index on patchy data
@@ -228,20 +229,19 @@ class CSVPointData(PointData):
         return self._get_data(
             start_date, end_date, variables, "H"
         )
+
     def _get_metadata(self):
         return self._station_info.point
 
     @classmethod
-    def points_from_geometry(
-        cls,
-        geometry: gpd.GeoDataFrame,
-        variables: List[SensorDescription],
-        within_geometry=True,
-        buffer=0.0, **kwargs):
+    def points_from_geometry(cls, geometry: gpd.GeoDataFrame,
+                             variables: List[SensorDescription], within_geometry=True,
+                             buffer=0.0, **kwargs):
         # Avoid multiple polys and use a buffer if requested.
         projected_geom = geometry.dissolve().buffer(buffer).to_crs(4326)
 
-        gdf = gpd.GeoDataFrame(geometry=cls.ALLOWED_STATIONS.all_points(), data=[], crs=4326)
+        gdf = gpd.GeoDataFrame(geometry=cls.ALLOWED_STATIONS.all_points(), data=[],
+                               crs=4326)
         # Use the exact geometry to filter, otherwise use the bounds of the poly
         if within_geometry:
             search_area = projected_geom.iloc[0]

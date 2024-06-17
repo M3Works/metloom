@@ -4,23 +4,18 @@ All mock data is cut to the first 2 weeks of january in 2017. 2018 for GMSP
 
 """
 import shutil
-
-import matplotlib.pyplot as plt
 import pytest
-
-from metloom.variables import SnowExVariables
-from metloom.pointdata import SnowExMet
 from datetime import datetime, timedelta
 from pathlib import Path
 import geopandas as gpd
 from unittest.mock import patch
 
+from metloom.variables import SnowExVariables
+from metloom.pointdata import SnowExMet
+
+
 DATA_DIR = str(Path(__file__).parent.joinpath("data/snowex_mocks"))
 
-def plot(df, var):
-    fig, ax = plt.subplots(1)
-    ax.plot(df.index.get_level_values('datetime'), df[var.name])
-    plt.show()
 
 class TestSnowEx:
     def copy_file(self, urls):
@@ -46,7 +41,7 @@ class TestSnowEx:
             pnt = SnowExMet(station_id)
             yield pnt
 
-    @pytest.mark.parametrize('station_id, expected',[
+    @pytest.mark.parametrize('station_id, expected', [
         ('GMSP', 'Grand Mesa Study Plot')
     ])
     def test_station_name(self, station, station_id, expected):
@@ -60,7 +55,8 @@ class TestSnowEx:
     ])
     def test_get_daily_data(self, station, station_id, variable, expected_mean):
         """ Check data pulling """
-        df = station.get_daily_data(datetime(2017, 1, 1), datetime(2017, 1,15), [variable])
+        df = station.get_daily_data(datetime(2017, 1, 1),
+                                    datetime(2017, 1, 15), [variable])
 
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'D'
@@ -74,8 +70,9 @@ class TestSnowEx:
     ])
     def test_get_hourly_data(self, station, station_id, variable, expected_mean):
         """ Check auto assignment of the name"""
-        df = station.get_hourly_data(datetime(2017, 1, 1, 11), datetime(2017, 1, 10, 23),
-                                    [variable])
+        df = station.get_hourly_data(datetime(2017, 1, 1, 11),
+                                     datetime(2017, 1, 10, 23),
+                                     [variable])
 
         # Assert it's hourly timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'H'
@@ -109,5 +106,3 @@ class TestSnowEx:
                                             within_geometry=within_geom,
                                             buffer=buffer)
         assert len(df.index) == expected_count
-
-

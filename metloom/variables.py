@@ -350,7 +350,8 @@ class MetNorwayVariables(VariableBase):
 
 class SnowExVariables(VariableBase):
     """
-    Variables for SnowEx met stations data, refer to user guide for adding more variables
+    Variables for SnowEx met stations data, refer to user guide for adding more
+    variables
 
     Metadata:
     https://nsidc.org/sites/default/files/documents/user-guide/snex_met-v001-userguide.pdf
@@ -382,6 +383,7 @@ class SnowExVariables(VariableBase):
     TEMPGROUND20CM = InstrumentDescription("TC_20cm_Avg", "SOIL TEMP @ 20cm")
     TEMPGROUND50CM = InstrumentDescription("TC_50cm_Avg", "SOIL TEMP @ 50cm")
 
+
 class CSASVariables(VariableBase):
     """
     Variable meta for the stations:
@@ -391,26 +393,35 @@ class CSASVariables(VariableBase):
     SGSB - https://snowstudies.org/wp-content/uploads/2023/11/SBSG_Variable_Table.xlsx
     """
     SNOWDEPTH = InstrumentDescription("Sno_Height_M", "SNOW DEPTH")
-    RH = InstrumentDescription("RH","RELATIVE HUMIDITY")
+    RH = InstrumentDescription("RH", "RELATIVE HUMIDITY")
     STREAMFLOW_CFS = SensorDescription("Discharge_CFS", "STREAMFLOW")
-    SURF_TEMP = InstrumentDescription('Sno_IR_C', "SURFACE TEMP", "Snow surface temperature in deg C")
-    DOWN_BROADBAND = InstrumentDescription('PyDwn_Unfilt_W', "DOWNWARD BROADBAND RADIATION",
-                                           description="Reflected Broadband radiation")
-    DOWN_NIR_SWIR = InstrumentDescription('PyDwn_filt_W', "DOWNWARD NIR/SWIR RADIATION",
-                                          description="Reflected NIR/SWIR radiation")
-    UP_BROADBAND = InstrumentDescription('PyUp_Unfilt_W', "UPWARD BROADBAND RADIATION",
-                                         description="Incoming Broadband radiation")
-    UP_NIR_SWIR = InstrumentDescription('PyUp_filt_W', "UPWARD NIR/SWIR RADIATION",
-                                        description="Incoming NIR/SWIR radiation")
-    PRECIPITATION = InstrumentDescription('Day_H2O_mm', "DAILY PRECIP",
-                                          description="Daily accumulated precipitation in mm")
-    TEMPGROUND = InstrumentDescription("Soil_Surf_C", "GROUND TEMPERATURE",
-                          description='Temperature at soil interface in deg C')
-    TEMPGROUND10CM = InstrumentDescription("Soil_10cm_C", "GROUND TEMPERATURE -10CM",
-                          description='Soil temperature at a depth of 10cm in deg C')
-    TEMPGROUND20CM = InstrumentDescription("Soil_20cm_C", "GROUND TEMPERATURE -20CM",
-                          description='Soil temperature at a depth of 20cm in deg C')
-    TEMPGROUND40CM = InstrumentDescription("Soil_40cm_C", "GROUND TEMPERATURE -40CM",
-                          description='Soil temperature at a depth of 40cm in deg C')
+    SURF_TEMP = InstrumentDescription('Sno_IR_C', "SURFACE TEMP",
+                                      "Snow surface temperature in deg C")
+    DOWN_BROADBAND = InstrumentDescription(
+        'PyDwn_Unfilt_W', "DOWNWARD BROADBAND RADIATION",
+        description="Reflected Broadband radiation")
+    DOWN_NIR_SWIR = InstrumentDescription(
+        'PyDwn_filt_W', "DOWNWARD NIR/SWIR RADIATION",
+        description="Reflected NIR/SWIR radiation")
+    UP_BROADBAND = InstrumentDescription(
+        'PyUp_Unfilt_W', "UPWARD BROADBAND RADIATION",
+        description="Incoming Broadband radiation")
+    UP_NIR_SWIR = InstrumentDescription(
+        'PyUp_filt_W', "UPWARD NIR/SWIR RADIATION",
+        description="Incoming NIR/SWIR radiation")
+    PRECIPITATION = InstrumentDescription(
+        'Day_H2O_mm', "DAILY PRECIP", accumulated=True,
+        description="Daily accumulated precipitation in mm")
 
-
+    TEMPGROUND = InstrumentDescription(
+        "Soil_Surf_C", "GROUND TEMPERATURE",
+        description='Temperature at soil interface in deg C')
+    TEMPGROUND10CM = InstrumentDescription(
+        "Soil_10cm_C", "GROUND TEMPERATURE -10CM",
+        description='Soil temperature at a depth of 10cm in deg C')
+    TEMPGROUND20CM = InstrumentDescription(
+        "Soil_20cm_C", "GROUND TEMPERATURE -20CM",
+        description='Soil temperature at a depth of 20cm in deg C')
+    TEMPGROUND40CM = InstrumentDescription(
+        "Soil_40cm_C", "GROUND TEMPERATURE -40CM",
+        description='Soil temperature at a depth of 40cm in deg C')
