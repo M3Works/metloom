@@ -27,8 +27,8 @@ from unittest.mock import patch
 DATA_DIR = str(Path(__file__).parent.joinpath("data/csas_mocks"))
 
 # Convenient Dates for testing
-DT_20090401 = datetime(2009, 4, 1)
-DT_20090415 = datetime(2009, 4, 15)
+DT_20090301 = datetime(2009, 3, 1)
+DT_20090315 = datetime(2009, 3, 15)
 DT_20230301 = datetime(2023, 3, 1)
 DT_20230315 = datetime(2023, 3, 15)
 DT_20230601 = datetime(2023, 6, 1)
@@ -137,13 +137,18 @@ class TestCSASMet:
 
     @pytest.mark.parametrize('station_id, variable, start, end, expected_mean', [
         ('SASP', CSASVariables.SURF_TEMP, DT_20230301, DT_20230315, -11.59220),
+        # Span two files, Test data wont be complete but requires two files
+        ('SASP', CSASVariables.SURF_TEMP, DT_20090301, DT_20230315, -10.35284),
     ])
     def test_get_daily_data(self, station, station_id, variable, start, end,
                             expected_mean):
         """ Check pulling two weeks of data """
 
         df = station.get_daily_data(start, end, [variable])
-
+        import matplotlib.pyplot as plt
+        fig, ax  = plt.subplots(1)
+        ax.plot(df.index.get_level_values('datetime'), df[variable.name])
+        plt.show()
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'D'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
