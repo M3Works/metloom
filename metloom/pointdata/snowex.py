@@ -39,5 +39,6 @@ class SnowExMet(CSVPointData):
         return [os.path.join(self.URL, self._station_info.path)]
 
     def _assign_datetime(self, resp_df):
-        resp_df = resp_df.rename(columns={'TIMESTAMP':'datetime'}).set_index('datetime')
+        resp_df['datetime'] = pd.to_datetime(resp_df['TIMESTAMP'])
+        resp_df = resp_df.drop(columns=['TIMESTAMP']).set_index('datetime')
         return resp_df

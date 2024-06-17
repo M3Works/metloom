@@ -62,8 +62,8 @@ class CSASMet(CSVPointData):
     @staticmethod
     def _parse_datetime(row):
         # Julian day is not zero based Jan 1 == DOY 1
-        dt = timedelta(days=row['DOY']-1, hours=int(row['Hour'] / 100))
-        return datetime(row['Year'], 1, 1) + dt
+        dt = timedelta(days=int(row['DOY'])-1, hours=int(row['Hour'] / 100))
+        return datetime(int(row['Year']), 1, 1) + dt
 
     def _assign_datetime(self, resp_df):
         resp_df['datetime'] = resp_df.apply(lambda row: self._parse_datetime(row), axis=1)

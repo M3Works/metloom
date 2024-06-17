@@ -24,9 +24,13 @@ def plot(df, var):
 
 class TestSnowEx:
     def copy_file(self, urls):
-        file = Path(DATA_DIR).joinpath(Path(urls[0]).name)
-        cache = Path(__file__).parent.joinpath('cache')
-        shutil.copy(file, cache.joinpath(file.name))
+        files = []
+        for url in urls:
+            file = Path(DATA_DIR).joinpath(Path(url).name)
+            cache = Path(__file__).parent.joinpath('cache')
+            shutil.copy(file, cache.joinpath(file.name))
+            files.append(file)
+        return files
 
     @pytest.fixture(scope='function')
     def cache_dir(self):

@@ -12,7 +12,6 @@ Mocked data has been cropped to:
 * PTSP - 2023 DOY 60-80
 
 """
-import matplotlib.pyplot as plt
 import pytest
 
 from metloom.pointdata import CSASMet
@@ -30,36 +29,10 @@ DATA_DIR = str(Path(__file__).parent.joinpath("data/csas_mocks"))
 # Convenient Dates for testing
 DT_20090401 = datetime(2009,4,1)
 DT_20090415 = datetime(2009,4,15)
-DT_20230401 = datetime(2023,4,1)
-DT_20230415 = datetime(2023,4,15)
+DT_20230301 = datetime(2023,3,1)
+DT_20230315 = datetime(2023,3,15)
 DT_20230601 = datetime(2023,6,1)
 DT_20230615 = datetime(2023,6,15)
-
-def test_sbb():
-    start = datetime(2010, 1, 1)
-    end = datetime(2010, 5, 1)
-    var = CSASVariables.SNOWDEPTH
-    fig, (ax, ax2, ax3) = plt.subplots(3)
-    for station_id in ['SASP', 'SBSP']:
-        pnt = CSASMet(station_id)
-        df = pnt.get_daily_data(start, end, [var])
-        if df is not None:
-            ax.plot(df.index.get_level_values('datetime'), df[var.name], label=station_id)
-    ax.legend()
-    #
-    # pnt = CSASMet('SBSG')
-    # var = CSASVariables.STREAMFLOW_CFS
-    # df = pnt.get_daily_data(start, end, [var])
-    # ax2.plot(df.index.get_level_values('datetime'), df[var.name], label='Streamflow')
-    # ax2.legend()
-    #
-    # pnt = CSASMet('PTSP')
-    # var = CSASVariables.RH
-    # df = pnt.get_daily_data(start, end, [var])
-    # ax3.plot(df.index.get_level_values('datetime'), df[var.name], label='Putney RH')
-    # ax.legend()
-
-    plt.show()
 
 
 class TestCSASMet:
@@ -162,7 +135,7 @@ class TestCSASMet:
         assert resp.ok
 
     @pytest.mark.parametrize('station_id, variable, start, end, expected_mean', [
-        ('SASP', CSASVariables.PRECIPITATION, DT_20230401, DT_20090415,  -7.07817),
+        ('SASP', CSASVariables.SURF_TEMP, DT_20230301, DT_20230315,  -11.59220),
     ])
     def test_get_daily_data(self, station, station_id, variable, start, end, expected_mean):
         """ Check pulling two weeks of data """
@@ -171,5 +144,17 @@ class TestCSASMet:
 
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'D'
+        assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
+
+    @pytest.mark.parametrize('station_id, variable, start, end, expected_mean', [
+        ('SASP', CSASVariables.SURF_TEMP, DT_20230301, DT_20230315,  -11.49969),
+    ])
+    def test_get_hourly_data(self, station, station_id, variable, start, end, expected_mean):
+        """ Check pulling two weeks of data """
+
+        df = station.get_hourly_data(start, end, [variable])
+
+        # Assert it's a daily timeseries
+        assert df.index.get_level_values('datetime').inferred_freq == 'H'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
 

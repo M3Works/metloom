@@ -188,8 +188,8 @@ class CSVPointData(PointData):
 
         # Download data if it doesn't exist locally.
         files = self._download(urls)
-
-        resp_df = pd.concat([pd.read_csv(f, parse_dates=[0]) for f in files])
+        dfs = [pd.read_csv(files[0], index_col=False) for f in files]
+        resp_df = pd.concat(dfs)
         resp_df = self._assign_datetime(resp_df)
 
         # use a predifined index to show nans in the event of patch data
