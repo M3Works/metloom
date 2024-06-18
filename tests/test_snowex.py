@@ -75,7 +75,7 @@ class TestSnowEx:
                                      [variable])
 
         # Assert it's hourly timeseries
-        assert df.index.get_level_values('datetime').inferred_freq == 'h'
+        assert df.index.get_level_values('datetime').inferred_freq.lower() == 'h'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
 
     @pytest.mark.parametrize("station_id, variable, start", [

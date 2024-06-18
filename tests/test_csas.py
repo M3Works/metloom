@@ -159,5 +159,5 @@ class TestCSASMet:
         df = station.get_hourly_data(start, end, [variable])
 
         # Assert it's a daily timeseries
-        assert df.index.get_level_values('datetime').inferred_freq == 'h'
+        assert df.index.get_level_values('datetime').inferred_freq.lower() == 'h'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
