@@ -156,7 +156,7 @@ class CSVPointData(PointData):
             isolated = resp_df.loc[:, variable.code]
 
             # TODO: This may only be true for SNOWEX
-            isolated[isolated == -9999] = np.nan
+            isolated.loc[isolated == -9999] = np.nan
             if method == 'average':
                 data = isolated.resample(period).mean()
             elif method == 'sum':
@@ -188,7 +188,7 @@ class CSVPointData(PointData):
 
         # Download data if it doesn't exist locally.
         files = self._download(urls)
-        dfs = [pd.read_csv(f, index_col=False) for f in files]
+        dfs = [pd.read_csv(f, index_col=False, low_memory=False) for f in files]
         resp_df = pd.concat(dfs)
         resp_df = self._assign_datetime(resp_df)
 
@@ -199,12 +199,13 @@ class CSVPointData(PointData):
 
         # Use this instead .loc to avoid index on patchy data
         ind = (resp_df.index >= start_date) & (resp_df.index < end_date)
-        isolated = resp_df.loc[ind,resp_df.columns]
+        isolated = resp_df.loc[ind, resp_df.columns]
         for i, variable in enumerate(variables):
             df_var = self._get_one_variable(isolated, period, variable)
             if df_var is not None:
                 if not np.all(df_var.isnull()):
-                    df[variable.name].loc[df_var.index] = df_var
+                    df.loc[df_var.index, variable.name] = df_var
+
         # All nan data suggests no matching data
         if np.all(df.isnull()):
             return None
