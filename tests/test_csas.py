@@ -145,10 +145,6 @@ class TestCSASMet:
         """ Check pulling two weeks of data """
 
         df = station.get_daily_data(start, end, [variable])
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(1)
-        ax.plot(df.index.get_level_values('datetime'), df[variable.name])
-        plt.show()
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'D'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
@@ -163,5 +159,5 @@ class TestCSASMet:
         df = station.get_hourly_data(start, end, [variable])
 
         # Assert it's a daily timeseries
-        assert df.index.get_level_values('datetime').inferred_freq == 'H'
+        assert df.index.get_level_values('datetime').inferred_freq == 'h'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
