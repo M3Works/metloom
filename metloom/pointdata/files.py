@@ -228,7 +228,7 @@ class CSVPointData(PointData):
     def get_hourly_data(self, start_date: datetime, end_date: datetime,
                         variables: List[SensorDescription]):
         return self._get_data(
-            start_date, end_date, variables, "H"
+            start_date, end_date, variables, "h"
         )
 
     def _get_metadata(self):

@@ -17,7 +17,7 @@ class CSASStationInfo(StationInfo):
     # Name, id, lat, long, elevation, http path
     SENATOR_BECK = ("Senator Beck Study Plot", "SBSP", 37.90688, -107.72627, 12186,
                     "2023/11/SBSP_1hr_2003-2009.csv")
-    SWAMP_ANGLE = ("Swamp Angel Study Plot", "SASP", 37.90691, -107.71132, 11060,
+    SWAMP_ANGEL = ("Swamp Angel Study Plot", "SASP", 37.90691, -107.71132, 11060,
                    "2023/11/SASP_1hr_2003-2009.csv")
     PUTNEY = ("Putney Study Plot", "PTSP", 37.89233, -107.69577, 12323,
               "2023/11/PTSP_1hr.csv")
