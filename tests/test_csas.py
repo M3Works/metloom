@@ -146,7 +146,7 @@ class TestCSASMet:
 
         df = station.get_daily_data(start, end, [variable])
         import matplotlib.pyplot as plt
-        fig, ax  = plt.subplots(1)
+        fig, ax = plt.subplots(1)
         ax.plot(df.index.get_level_values('datetime'), df[variable.name])
         plt.show()
         # Assert it's a daily timeseries
