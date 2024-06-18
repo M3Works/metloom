@@ -38,7 +38,7 @@ class TestSnowEx:
     @pytest.fixture(scope='function')
     def station(self, cache_dir, station_id):
         with patch.object(SnowExMet, '_download', new=self.copy_file):
-            pnt = SnowExMet(station_id)
+            pnt = SnowExMet(station_id, cache=cache_dir)
             yield pnt
 
     @pytest.mark.parametrize('station_id, expected', [

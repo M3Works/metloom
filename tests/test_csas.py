@@ -57,7 +57,7 @@ class TestCSASMet:
     @pytest.fixture(scope='function')
     def station(self, cache_dir, station_id):
         with patch.object(CSASMet, '_download', new=self.copy_files):
-            pnt = CSASMet(station_id)
+            pnt = CSASMet(station_id, cache=cache_dir)
             yield pnt
 
     @pytest.mark.parametrize('year, doy, hour, expected', [
