@@ -346,3 +346,25 @@ class MetNorwayVariables(VariableBase):
         " Each tip is registered along with the time stamp for the tip."
         " This is the basis for calcutation of precipitation sum per minute"
     )
+
+
+class NWSForecastVariables(VariableBase):
+    """
+    See https://api.weather.gov/gridpoints/BOI/28,28
+    for examples of variables
+    """
+    # Precipitation is not returned hourly
+    PRECIPITATIONACCUM = SensorDescription(
+        "quantitativePrecipitation", "ACCUMULATED PRECIPITATION",
+        accumulated=True
+    )
+    PRECIPITATION = SensorDescription(
+        "quantitativePrecipitation", "PRECIPITATION",
+        accumulated=False
+    )
+    TEMP = SensorDescription(
+        "temperature", "AIR TEMP",
+    )
+    DEWPOINT = SensorDescription("dewpoint", "DEW POINT TEMPERATURE")
+    RH = SensorDescription("relativeHumidity", "RELATIVE HUMIDITY")
+
