@@ -168,29 +168,40 @@ class NWSForecastPointData(PointData):
             inplace=True,
         )
 
+        # parse midway through dates
+        # (example datetime is '2024-06-19T04:00:00+00:00/PT1H')
+        date_starts = pd.to_datetime(
+            df["datetime"].str.split("/").apply(lambda x: x[0])
+        )
+        date_durations = pd.to_timedelta(
+            df["datetime"].str.split("/").apply(lambda x: x[1])
+        )
+        date_mids = date_starts + date_durations / 2.0
+        df["datetime"] = date_mids
+        df = df.set_index("datetime")
+
+        # resample to the desired duration
+        # TODO: Issue
+        #   gridded data is not consistent with duration
+        #   hourly data does not have precip mass
+        if resample_duration is not None:
+            df = resample_whole_df(
+                df, sensor,
+                interval=resample_duration
+            )
+
         # add other expected columns
         df[f"{sensor.name}_units"] = [unit_str] * len(df)
         df[f"site"] = [self.id] * len(df)
-        df["datetime"] = pd.to_datetime(df["datetime"])
 
         # keep the column names
         final_columns += [
             sensor.name, f"{sensor.name}_units",
         ]
 
-        frequency = pd.infer_freq(pd.DatetimeIndex(df["datetime"]))
         df = GeoDataFrame(
             df, geometry=[self.metadata] * len(df)
-        ).set_index("datetime")
-
-        # resample to the desired duration
-        if frequency != resample_duration and resample_duration is not None:
-            df = resample_whole_df(
-                df, sensor,
-                interval=resample_duration
-            )
-
-        df = GeoDataFrame(df, geometry=df["geometry"])
+        )
 
         # double check utc conversion
         df = df.tz_convert(self.desired_tzinfo)
@@ -265,7 +276,20 @@ class NWSForecastPointData(PointData):
         Args:
             variables: list of variables to return
         """
-        # No desired duration necessary because the default is hourly data
+        return self._get_data(variables, desired_duration="H")
+
+    def get_forecast(
+        self,
+        variables: List[SensorDescription],
+    ):
+        """
+        Get a geopandas dataframe with hourly results for a 7 day forecast.
+        The geometry column will be the center of the forecast gridcell
+
+        Args:
+            variables: list of variables to return
+        """
+        # Do not resample
         return self._get_data(variables)
 
     @classmethod
