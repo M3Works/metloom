@@ -358,10 +358,10 @@ class NWSForecastVariables(VariableBase):
         "quantitativePrecipitation", "ACCUMULATED PRECIPITATION",
         accumulated=True
     )
-    PRECIPITATION = SensorDescription(
-        "quantitativePrecipitation", "PRECIPITATION",
-        accumulated=False
-    )
+    # PRECIPITATION = SensorDescription(
+    #     "quantitativePrecipitation", "PRECIPITATION",
+    #     accumulated=False
+    # )
     TEMP = SensorDescription(
         "temperature", "AIR TEMP",
     )

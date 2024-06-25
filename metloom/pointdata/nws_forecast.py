@@ -43,7 +43,7 @@ class NWSForecastPointData(PointData):
     """
     DATASOURCE = "NWS Forecast"
     ALLOWED_VARIABLES = NWSForecastVariables
-    URL = "https://api.weather.gov/"
+    URL = "https://api.weather.gov"
     POINTS_FROM_GEOM_DEFAULTS = {
         'within_geometry': True,
         'token_json': "~/.frost_token.json",
@@ -125,6 +125,7 @@ class NWSForecastPointData(PointData):
     def _get_observations(self):
         """
         Get the hourly data for a 7 day forecast
+        Example request: https://api.weather.gov/gridpoints/BOI/28,28
         """
         # ensure we have office, gridx, and gridy set
         if self._metadata is None:
@@ -181,9 +182,6 @@ class NWSForecastPointData(PointData):
         df = df.set_index("datetime")
 
         # resample to the desired duration
-        # TODO: Issue
-        #   gridded data is not consistent with duration
-        #   hourly data does not have precip mass
         if resample_duration is not None:
             df = resample_whole_df(
                 df, sensor,
