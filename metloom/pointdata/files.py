@@ -82,7 +82,6 @@ class CSVPointData(PointData):
     Some met station data is stored off in flat csv files. This class enables the
     management of downloading those files while still allowing a similar interface
     """
-    ALLOWED_VARIABLES = VariableBase
     ALLOWED_STATIONS = StationInfo
     UTC_OFFSET_HOURS = 0  # Allows users to specificy the timezone of the datasets
 
@@ -136,11 +135,10 @@ class CSVPointData(PointData):
         """Download the file(s)"""
         filenames = []
         for url in urls:
-            with requests.get(url, stream=True) as r:
-                filename = self._cache.joinpath(Path(url).name)
-                filenames.append(filename)
-
-                if not filename.exists():
+            filename = self._cache.joinpath(Path(url).name)
+            filenames.append(filename)
+            if not filename.exists():
+                with requests.get(url, stream=True) as r:
                     LOG.info(f'Downloading {Path(url).name}...')
                     with open(filename, mode='w+') as fp:
                         for line in r.iter_lines():
@@ -216,7 +214,7 @@ class CSVPointData(PointData):
         # Make this a geodataframe
         df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
         df = df.reset_index().set_index(["datetime", "site"])
-
+        self.validate_sensor_df(df)
         return df
 
     def get_daily_data(self, start_date: datetime, end_date: datetime,

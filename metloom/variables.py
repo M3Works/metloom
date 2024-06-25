@@ -376,7 +376,7 @@ class SnowExVariables(VariableBase):
         instrument="CNR4 Net Radiometer"
     )
     SNOWDEPTH = InstrumentDescription(
-        "SnowDepthFilter(m)", "SNOW DEPTH",
+        "SnowDepthFilter(m)", "SNOWDEPTH",
         description="Snow surface height in meters w/ filtering")
 
     TEMPGROUND5CM = InstrumentDescription("TC_5cm_Avg", "SOIL TEMP @ 5cm")
@@ -392,7 +392,7 @@ class CSASVariables(VariableBase):
     PTSP - https://snowstudies.org/wp-content/uploads/2023/11/PTSP_Variable_Table.xlsx
     SGSB - https://snowstudies.org/wp-content/uploads/2023/11/SBSG_Variable_Table.xlsx
     """
-    SNOWDEPTH = InstrumentDescription("Sno_Height_M", "SNOW DEPTH")
+    SNOWDEPTH = InstrumentDescription("Sno_Height_M", "SNOWDEPTH")
     RH = InstrumentDescription("RH", "RELATIVE HUMIDITY")
     STREAMFLOW_CFS = SensorDescription("Discharge_CFS", "STREAMFLOW")
     SURF_TEMP = InstrumentDescription('Sno_IR_C', "SURFACE TEMP",
