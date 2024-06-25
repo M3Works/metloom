@@ -6,9 +6,13 @@ from .usgs import USGSPointData
 from .geosphere_austria import GeoSphereHistPointData, GeoSphereCurrentPointData
 from .norway import MetNorwayPointData
 from .cues import CuesLevel1
+from .files import CSVPointData, StationInfo
+from .snowex import SnowExMet
+from .csas import CSASMet
 
 __all__ = [
     "PointData", "PointDataCollection", "CDECPointData", "SnotelPointData",
     "MesowestPointData", "USGSPointData", "GeoSphereHistPointData",
-    "GeoSphereCurrentPointData", "CuesLevel1", "MetNorwayPointData"
+    "GeoSphereCurrentPointData", "CuesLevel1", "MetNorwayPointData",
+    "CSVPointData", "StationInfo", "SnowExMet", "CSASMet"
 ]
