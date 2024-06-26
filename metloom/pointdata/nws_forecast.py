@@ -7,14 +7,14 @@ import requests
 from geopandas import GeoDataFrame
 
 from metloom.dataframe_utils import merge_df, resample_whole_df
-from metloom.pointdata.base import PointData
+from metloom.pointdata.base import GenericPoint
 from metloom.variables import SensorDescription, NWSForecastVariables
 
 
 LOG = logging.getLogger(__name__)
 
 
-class NWSForecastPointData(PointData):
+class NWSForecastPointData(GenericPoint):
     """
     Implementation for NWS forecast API
     https://www.weather.gov/documentation/services-web-api
@@ -104,7 +104,7 @@ class NWSForecastPointData(PointData):
 
         # use the grid points to find the center of the forecast cell
 
-        url = f"https://api.weather.gov/gridpoints/" \
+        url = f"{self.URL}/gridpoints/" \
               f"{self._office}/{self._gridx},{self._gridy}"
         resp = requests.get(url)
         resp.raise_for_status()
@@ -130,7 +130,7 @@ class NWSForecastPointData(PointData):
         # ensure we have office, gridx, and gridy set
         if self._metadata is None:
             self._get_metadata()
-        url = f"https://api.weather.gov/gridpoints/" \
+        url = f"{self.URL}/gridpoints/" \
               f"{self._office}/{self._gridx},{self._gridy}"
         resp = requests.get(url)
         resp.raise_for_status()
