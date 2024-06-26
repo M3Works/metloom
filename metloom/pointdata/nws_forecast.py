@@ -289,25 +289,3 @@ class NWSForecastPointData(GenericPoint):
         """
         # Do not resample
         return self._get_data(variables)
-
-    @classmethod
-    def points_from_geometry(
-        cls,
-        geometry: gpd.GeoDataFrame,
-        variables: List[SensorDescription],
-        **kwargs
-    ):
-        """
-        See docstring for PointData.points_from_geometry
-
-        Args:
-            geometry: GeoDataFrame for shapefile from gpd.read_file
-            variables: List of SensorDescription
-            within_geometry: filter the points to within the shapefile
-                instead of just the extents. Default True
-            buffer: buffer added to search box
-
-        Returns:
-            PointDataCollection
-        """
-        raise NotImplementedError("Not implemented for NWS")
