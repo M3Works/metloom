@@ -66,19 +66,18 @@ class PointDataCollection:
             yield item
 
 
-class PointData(object):
+class GenericPoint(object):
+    """
+    Class for storing metadata. and defining the expected data format
+    returned from `get_data` methods
+
+    """
     ALLOWED_VARIABLES = VariableBase
     ITERATOR_CLASS = PointDataCollection
     DATASOURCE = None
     EXPECTED_COLUMNS = ["geometry", "datasource"]
     EXPECTED_INDICES = ["datetime", "site"]
     NON_VARIABLE_COLUMNS = EXPECTED_INDICES + EXPECTED_COLUMNS
-
-    # Default kwargs for function points from geometry
-    POINTS_FROM_GEOM_DEFAULTS = {
-        'within_geometry': True, 'snow_courses': False,
-        'buffer': 0.0, "filter_to_active": False
-    }
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -93,6 +92,105 @@ class PointData(object):
         self.name = name
         self._metadata = metadata
         self.desired_tzinfo = "UTC"
+
+    def _get_metadata(self):
+        """
+        Method to get a shapely Point object to describe the station location
+
+        Returns:
+            shapely.point.Point object in Longitude, Latitude
+        """
+        raise NotImplementedError("_get_metadata is not implemented")
+
+    def _handle_df_tz(self, val):
+        """
+        Covert one entry from a df from cls.TZINFO to UTC
+        """
+        if pd.isna(val):
+            return val
+        else:
+            local = val.tz_localize(self.tzinfo)
+            return local.tz_convert(self.desired_tzinfo)
+
+    @property
+    def tzinfo(self):
+        """
+        tzinfo that pandas can use for tz_localize
+        """
+        return self._tzinfo
+
+    @property
+    def metadata(self):
+        """
+        metadata property
+        Returns:
+            shapely.point.Point object in Longitude, Latitude with z in ft
+        """
+        if self._metadata is None:
+            self._metadata = self._get_metadata()
+        return self._metadata
+
+    @classmethod
+    def validate_sensor_df(cls, gdf: gpd.GeoDataFrame):
+        """
+        Validate that the GeoDataFrame returned is formatted correctly.
+        The goal of this method is to ensure base classes are returning a
+        consistent format of dataframe
+        """
+        if gdf is None:
+            return
+        assert isinstance(gdf, gpd.GeoDataFrame)
+        columns = gdf.columns
+        index_names = gdf.index.names
+        # check for required indexes
+        for ei in cls.EXPECTED_INDICES:
+            if ei not in index_names:
+                raise DataValidationError(
+                    f"{ei} was expected, but not found as an"
+                    f" index of the final dataframe"
+                )
+        # check for expected columns - avoid modifying at class level
+        expected_columns = copy.deepcopy(cls.EXPECTED_COLUMNS)
+        possible_extras = ["measurementDate", "quality_code"]
+        for pe in possible_extras:
+            if pe in columns:
+                expected_columns += [pe]
+        for column in expected_columns:
+            if column not in columns:
+                raise DataValidationError(
+                    f"{column} was expected, but not found as a"
+                    f" column of the final dataframe"
+                )
+
+        remaining_columns = [c for c in columns if c not in expected_columns]
+        # make sure all variables have a units column as well
+        for rc in remaining_columns:
+            if "_units" not in rc:
+                assert f"{rc}_units" in remaining_columns
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.id!r}, {self.name!r})"
+
+    def __str__(self):
+        return f"{self.name} ({self.id})"
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.id == other.id and self.name == other.name
+
+
+class PointData(GenericPoint):
+    """
+    Extend GenericPoint and add functions for finding data from geometry
+    and for gettings daily, hourly, or snow course data
+    """
+
+    # Default kwargs for function points from geometry
+    POINTS_FROM_GEOM_DEFAULTS = {
+        'within_geometry': True, 'snow_courses': False,
+        'buffer': 0.0, "filter_to_active": False
+    }
 
     def get_daily_data(
         self,
@@ -169,43 +267,6 @@ class PointData(object):
         """
         raise NotImplementedError("get_snow_course_data is not implemented")
 
-    def _get_metadata(self):
-        """
-        Method to get a shapely Point object to describe the station location
-
-        Returns:
-            shapely.point.Point object in Longitude, Latitude
-        """
-        raise NotImplementedError("_get_metadata is not implemented")
-
-    def _handle_df_tz(self, val):
-        """
-        Covert one entry from a df from cls.TZINFO to UTC
-        """
-        if pd.isna(val):
-            return val
-        else:
-            local = val.tz_localize(self.tzinfo)
-            return local.tz_convert(self.desired_tzinfo)
-
-    @property
-    def tzinfo(self):
-        """
-        tzinfo that pandas can use for tz_localize
-        """
-        return self._tzinfo
-
-    @property
-    def metadata(self):
-        """
-        metadata property
-        Returns:
-            shapely.point.Point object in Longitude, Latitude with z in ft
-        """
-        if self._metadata is None:
-            self._metadata = self._get_metadata()
-        return self._metadata
-
     @classmethod
     def _add_default_kwargs(cls, kwargs):
         """
@@ -240,52 +301,3 @@ class PointData(object):
             PointDataCollection
         """
         raise NotImplementedError("points_from_geometry not implemented")
-
-    @classmethod
-    def validate_sensor_df(cls, gdf: gpd.GeoDataFrame):
-        """
-        Validate that the GeoDataFrame returned is formatted correctly.
-        The goal of this method is to ensure base classes are returning a
-        consistent format of dataframe
-        """
-        if gdf is None:
-            return
-        assert isinstance(gdf, gpd.GeoDataFrame)
-        columns = gdf.columns
-        index_names = gdf.index.names
-        # check for required indexes
-        for ei in cls.EXPECTED_INDICES:
-            if ei not in index_names:
-                raise DataValidationError(
-                    f"{ei} was expected, but not found as an"
-                    f" index of the final dataframe"
-                )
-        # check for expected columns - avoid modifying at class level
-        expected_columns = copy.deepcopy(cls.EXPECTED_COLUMNS)
-        possible_extras = ["measurementDate", "quality_code"]
-        for pe in possible_extras:
-            if pe in columns:
-                expected_columns += [pe]
-        for column in expected_columns:
-            if column not in columns:
-                raise DataValidationError(
-                    f"{column} was expected, but not found as a"
-                    f" column of the final dataframe"
-                )
-
-        remaining_columns = [c for c in columns if c not in expected_columns]
-        # make sure all variables have a units column as well
-        for rc in remaining_columns:
-            if "_units" not in rc:
-                assert f"{rc}_units" in remaining_columns
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.id!r}, {self.name!r})"
-
-    def __str__(self):
-        return f"{self.name} ({self.id})"
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        return self.id == other.id and self.name == other.name

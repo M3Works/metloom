@@ -58,6 +58,40 @@ use metloom to find 15-minute streamflow from USGS::
     print(df)
 
 
+National Weather Service (NWS) Forecast
+---------------------------------------
+
+The NWS forecast pulls the current forecast starting from today. When defining
+a point, give it your own name and id, and make sure to provide the latitude
+and longitude as a ``shapely point`` for the initial metadata.
+
+Then you can use ``get_daily_forecast`` or ``get_hourly_forecast``
+to retrive data.
+
+**Note: the data will be aggregated to hourly or daily using mean or sum depending**
+**on ``accumulated=True`` on the variable description**
+
+Also - the point metadata is the **center of the NWS pixel** containing
+your initial input point.
+
+Example of pulling the daily forecast::
+
+    from metloom.pointdata import NWSForecastPointData
+    from metloom.variables import NWSForecastVariables
+    from shapely.geometry import Point
+
+    inintial_point = Point(-119, 43)
+    pt = NWSForecastPointData(
+        "my_point_id", "my_point_name", initial_metadata=inintial_point
+    )
+
+    df = pt.get_daily_forecast([
+        NWSForecastVariables.TEMP,
+        NWSForecastVariables.PRECIPITATIONACCUM,
+    ]
+
+
+
 Mesowest
 --------
 You can also use the Mesowest network if you sign up for an API token which is
