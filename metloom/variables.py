@@ -367,4 +367,3 @@ class NWSForecastVariables(VariableBase):
     )
     DEWPOINT = SensorDescription("dewpoint", "DEW POINT TEMPERATURE")
     RH = SensorDescription("relativeHumidity", "RELATIVE HUMIDITY")
-

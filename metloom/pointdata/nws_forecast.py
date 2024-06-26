@@ -1,5 +1,5 @@
 import logging
-from datetime import  timedelta, timezone
+from datetime import timedelta, timezone
 from typing import List
 import pandas as pd
 import geopandas as gpd
@@ -83,8 +83,7 @@ class NWSForecastPointData(GenericPoint):
         """
         # use the initial metadata to find the grid points for the forecast
         resp = requests.get(
-            self.URL +
-            f"/points/{self._inital_metadata.y},{self._inital_metadata.x}"
+            f"{self.URL}/points/{self._inital_metadata.y},{self._inital_metadata.x}"
         )
         resp.raise_for_status()
         data = resp.json()
@@ -190,7 +189,7 @@ class NWSForecastPointData(GenericPoint):
 
         # add other expected columns
         df[f"{sensor.name}_units"] = [unit_str] * len(df)
-        df[f"site"] = [self.id] * len(df)
+        df["site"] = [self.id] * len(df)
 
         # keep the column names
         final_columns += [

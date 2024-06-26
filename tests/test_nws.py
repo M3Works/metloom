@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 from os.path import join
 from pathlib import Path
 from unittest.mock import patch, MagicMock
