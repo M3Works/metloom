@@ -61,7 +61,8 @@ class CSASMet(CSVPointData):
                 urls.append(os.path.join(self.URL, filename))
 
             if start.year < 2003 or end.year > current_available_year:
-                raise InvalidDateRange(f"CSAS data is only available from 2003-{current_available_year}")
+                raise InvalidDateRange(f"CSAS data is only available from 2003-"
+                                       f"{current_available_year}")
         else:
             urls.append(os.path.join(self.URL, self._station_info.path))
 

@@ -74,7 +74,6 @@ class TestCSASMet:
         if cache.is_dir():
             shutil.rmtree(cache)
 
-
     @pytest.fixture(scope='function')
     def station(self, mocked_requests, cache_dir, station_id):
         pnt = CSASMet(station_id, cache=cache_dir)

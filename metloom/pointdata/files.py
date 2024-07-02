@@ -6,7 +6,7 @@ import os
 import pandas as pd
 
 from metloom.pointdata import PointData
-from metloom.variables import VariableBase, SensorDescription
+from metloom.variables import SensorDescription
 from enum import Enum
 from pathlib import Path
 from datetime import datetime, timezone, timedelta

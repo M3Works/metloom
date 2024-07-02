@@ -10,8 +10,9 @@ class SensorDescription:
     code: str = "-1"  # code used within the applicable API
     name: str = "basename"  # desired name for the sensor
     description: str = None  # description of the sensor
-    accumulated: bool = False  # whether or not the data is accumulated
-    units : str = None # Optional units kwarg
+    accumulated: bool = False  # whether the data is accumulated
+    units: str = None  # Optional units kwarg
+
 
 @dataclass(eq=True, frozen=True)
 class InstrumentDescription(SensorDescription):
@@ -394,29 +395,34 @@ class CSASVariables(VariableBase):
     RH = SensorDescription("RH", "RELATIVE HUMIDITY", units='%')
     STREAMFLOW_CFS = SensorDescription("Discharge_CFS", "STREAMFLOW", units='CFS')
     SURF_TEMP = SensorDescription('Sno_IR_C', "SURFACE TEMP", units="deg C",
-                                    description="Snow surface temperature")
-    UPPER_WINDSPEED = SensorDescription("UpWind_Uavg_MS", "UPPER WIND SPEED", units="m/s",
+                                  description="Snow surface temperature")
+    UPPER_WINDSPEED = SensorDescription("UpWind_Uavg_MS", "UPPER WIND SPEED",
+                                        units="m/s",
                                         description="Wind speed at the upper location")
-    UPPER_WINDDIR = SensorDescription("UpWind_Dir_Uavg", "UPPER WIND DIRECTION", units="degrees",
-                                      description="Wind direction at the upper location")
-    LOWER_WINDSPEED = SensorDescription("LoWind_Uavg_MS", "LOWER WIND SPEED", units="m/s",
+    UPPER_WINDDIR = SensorDescription("UpWind_Dir_Uavg", "UPPER WIND DIRECTION",
+                                      units="degrees",
+                                      description="Wind direction at the upper "
+                                                  "location")
+    LOWER_WINDSPEED = SensorDescription("LoWind_Uavg_MS", "LOWER WIND SPEED",
+                                        units="m/s",
                                         description="Wind speed at the lower location")
-    LOWER_WINDDIR = SensorDescription("LoWind_Dir_Uavg", "LOWER WIND DIRECTION", units='degrees',
-                                      description="Wind direction at the lower location")
-
+    LOWER_WINDDIR = SensorDescription("LoWind_Dir_Uavg", "LOWER WIND DIRECTION",
+                                      units='degrees',
+                                      description="Wind direction at the lower "
+                                                  "location")
     DOWN_BROADBAND = SensorDescription(
         'PyDwn_Unfilt_W', "DOWNWARD BROADBAND RADIATION",
-        units='w/m^2',  description="Reflected Broadband radiation")
+        units='w/m^2', description="Reflected Broadband radiation")
     DOWN_NIR_SWIR = SensorDescription(
         'PyDwn_filt_W', "DOWNWARD NIR/SWIR RADIATION",
-        units='w/m^2',  description="Reflected NIR/SWIR radiation")
+        units='w/m^2', description="Reflected NIR/SWIR radiation")
     UP_BROADBAND = SensorDescription(
         'PyUp_Unfilt_W', "UPWARD BROADBAND RADIATION",
-        units='w/m^2',  description="Incoming Broadband radiation")
+        units='w/m^2', description="Incoming Broadband radiation")
 
     UP_NIR_SWIR = SensorDescription(
         'PyUp_filt_W', "UPWARD NIR/SWIR RADIATION",
-        units='w/m^2',  description="Incoming NIR/SWIR radiation")
+        units='w/m^2', description="Incoming NIR/SWIR radiation")
 
     PRECIPITATION = SensorDescription(
         'Day_H2O_mm', "DAILY PRECIP", accumulated=True,
