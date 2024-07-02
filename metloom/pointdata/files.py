@@ -140,8 +140,9 @@ class CSVPointData(PointData):
             if not filename.exists():
                 with requests.get(url, stream=True) as r:
                     LOG.info(f'Downloading {Path(url).name}...')
+                    lines = r.iter_lines()
                     with open(filename, mode='w+') as fp:
-                        for line in r.iter_lines():
+                        for line in lines:
                             fp.write(line.decode('utf-8') + '\n')
         return filenames
 

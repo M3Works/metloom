@@ -42,10 +42,13 @@ class TestCSASMet:
         url = Path(args[0])
         local_path = Path(__file__).parent.joinpath(DATA_DIR).joinpath(url.name)
 
+        obj = MagicMock()
         with open(local_path, 'rb') as f:
-            obj = MagicMock()
             lines = f.readlines()
-            obj.iter_lines.return_value = lines
+
+        obj.iter_lines.return_value = lines
+        obj.__enter__.return_value = obj  # Black magic?
+        obj.__exit__.return_value = None
         return obj
 
     @pytest.fixture(scope="class")
