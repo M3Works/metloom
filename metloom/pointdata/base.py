@@ -277,7 +277,8 @@ class PointData(object):
         # make sure all variables have a units column as well
         for rc in remaining_columns:
             if "_units" not in rc:
-                assert f"{rc}_units" in remaining_columns
+                if f"{rc}_units" not in remaining_columns:
+                    raise DataValidationError(f'Missing units column for {rc}')
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.id!r}, {self.name!r})"
