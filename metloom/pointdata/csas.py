@@ -46,19 +46,22 @@ class CSASMet(CSVPointData):
         depending on the requested data
         """
         urls = []
+
         if station_id in ['SASP', 'SBSP']:
+            current_available_year = datetime.today().year - 1
+
             if start.year <= 2009:
                 urls.append(os.path.join(self.URL, self._station_info.path))
 
             # Account for later file use or even straddling thge data
             if start.year > 2009 or end.year > 2009:  # TODO: add to the info enum?
                 partial = str(self._station_info.path).replace("2003", "2010")
-                # TODO: what happens in 2024?
-                filename = partial.replace('2009', '2023')
+
+                filename = partial.replace('2009', current_available_year)
                 urls.append(os.path.join(self.URL, filename))
 
-            if start.year < 2003 or end.year > 2023:
-                raise InvalidDateRange("CSAS data is only available from 2003-2023")
+            if start.year < 2003 or end.year > current_available_year:
+                raise InvalidDateRange(f"CSAS data is only available from 2003-{current_available_year}")
         else:
             urls.append(os.path.join(self.URL, self._station_info.path))
 
