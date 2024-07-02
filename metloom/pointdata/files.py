@@ -151,7 +151,7 @@ class CSVPointData(PointData):
         """
         method = "sum" if variable.accumulated else "average"
         if self._verify_sensor(resp_df, variable):
-            isolated = resp_df.loc[:, variable.code]
+            isolated = resp_df[variable.code].loc[:]
 
             # TODO: This may only be true for SNOWEX
             isolated.loc[isolated == -9999] = np.nan
@@ -163,7 +163,7 @@ class CSVPointData(PointData):
                 raise Exception('Invalid aggregation method')
         else:
             data = None
-            LOG.debug(f"No data returned for {variable}")
+            LOG.debug(f"No data returned for {variable.name}")
 
         return data
 
@@ -202,18 +202,22 @@ class CSVPointData(PointData):
             df_var = self._get_one_variable(isolated, period, variable)
             if df_var is not None:
                 if not np.all(df_var.isnull()):
-                    df.loc[df_var.index, variable.name] = df_var
+                    df[variable.name].loc[df_var.index] = df_var
+                    df[f"{variable.name}_units"] = variable.units
+            else:
+                df = df.drop(columns=[variable.name])
 
         # All nan data suggests no matching data
         if np.all(df.isnull()):
             return None
 
-        # Set the site info
+        # Make this a geodataframe
         df["site"] = [self.id] * len(df)
         df["datasource"] = [self.DATASOURCE] * len(df)
         # Make this a geodataframe
         df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
         df = df.reset_index().set_index(["datetime", "site"])
+
         self.validate_sensor_df(df)
         return df
 

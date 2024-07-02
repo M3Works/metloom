@@ -11,7 +11,7 @@ class SensorDescription:
     name: str = "basename"  # desired name for the sensor
     description: str = None  # description of the sensor
     accumulated: bool = False  # whether or not the data is accumulated
-
+    units : str = None # Optional units kwarg
 
 @dataclass(eq=True, frozen=True)
 class InstrumentDescription(SensorDescription):
@@ -357,31 +357,29 @@ class SnowExVariables(VariableBase):
     https://nsidc.org/sites/default/files/documents/user-guide/snex_met-v001-userguide.pdf
     """
 
-    TEMP_20FT = InstrumentDescription(
-        'AirTC_20ft_Avg', "AIR TEMP @20ft",
-        description="Air temperature measured at 20 ft tower levelin deg C")
+    TEMP_20FT = SensorDescription(
+        'AirTC_20ft_Avg', "AIR TEMP @20ft", units='deg C',
+        description="Air temperature measured at 20 ft")
 
-    TEMP_10FT = InstrumentDescription(
-        'AirTC_10ft_Avg', "AIR TEMP @10ft",
-        description="Air temperature measured at 10 ft tower levelin deg C")
+    TEMP_10FT = SensorDescription(
+        'AirTC_10ft_Avg', "AIR TEMP @10ft", units='deg C',
+        description="Air temperature measured at 10 ft")
 
-    UPSHORTWAVE = InstrumentDescription(
-        "SUp_Avg", "UPWARD SHORTWAVE RADIATION",
+    UPSHORTWAVE = SensorDescription(
+        "SUp_Avg", "UPWARD SHORTWAVE RADIATION", units='w/m^2',
         description="Shortwave radiation measured with upward-facing sensor",
-        instrument="CNR4 Net Radiometer"
     )
-    DOWNSHORTWAVE = InstrumentDescription(
+    DOWNSHORTWAVE = SensorDescription(
         "SDn_Avg", "DOWNWARD SHORTWAVE RADIATION",
         description="Shortwave radiation measured with downward-facing sensor",
-        instrument="CNR4 Net Radiometer"
     )
-    SNOWDEPTH = InstrumentDescription(
+    SNOWDEPTH = SensorDescription(
         "SnowDepthFilter(m)", "SNOWDEPTH",
         description="Snow surface height in meters w/ filtering")
 
-    TEMPGROUND5CM = InstrumentDescription("TC_5cm_Avg", "SOIL TEMP @ 5cm")
-    TEMPGROUND20CM = InstrumentDescription("TC_20cm_Avg", "SOIL TEMP @ 20cm")
-    TEMPGROUND50CM = InstrumentDescription("TC_50cm_Avg", "SOIL TEMP @ 50cm")
+    TEMPGROUND5CM = SensorDescription("TC_5cm_Avg", "SOIL TEMP @ 5cm")
+    TEMPGROUND20CM = SensorDescription("TC_20cm_Avg", "SOIL TEMP @ 20cm")
+    TEMPGROUND50CM = SensorDescription("TC_50cm_Avg", "SOIL TEMP @ 50cm")
 
 
 class CSASVariables(VariableBase):
@@ -392,36 +390,48 @@ class CSASVariables(VariableBase):
     PTSP - https://snowstudies.org/wp-content/uploads/2023/11/PTSP_Variable_Table.xlsx
     SGSB - https://snowstudies.org/wp-content/uploads/2023/11/SBSG_Variable_Table.xlsx
     """
-    SNOWDEPTH = InstrumentDescription("Sno_Height_M", "SNOWDEPTH")
-    RH = InstrumentDescription("RH", "RELATIVE HUMIDITY")
-    STREAMFLOW_CFS = SensorDescription("Discharge_CFS", "STREAMFLOW")
-    SURF_TEMP = InstrumentDescription('Sno_IR_C', "SURFACE TEMP",
-                                      "Snow surface temperature in deg C")
-    DOWN_BROADBAND = InstrumentDescription(
+    SNOWDEPTH = SensorDescription("Sno_Height_M", "SNOWDEPTH", units='meters')
+    RH = SensorDescription("RH", "RELATIVE HUMIDITY", units='%')
+    STREAMFLOW_CFS = SensorDescription("Discharge_CFS", "STREAMFLOW", units='CFS')
+    SURF_TEMP = SensorDescription('Sno_IR_C', "SURFACE TEMP", units="deg C",
+                                    description="Snow surface temperature")
+    UPPER_WINDSPEED = SensorDescription("UpWind_Uavg_MS", "UPPER WIND SPEED", units="m/s",
+                                        description="Wind speed at the upper location")
+    UPPER_WINDDIR = SensorDescription("UpWind_Dir_Uavg", "UPPER WIND DIRECTION", units="degrees",
+                                      description="Wind direction at the upper location")
+    LOWER_WINDSPEED = SensorDescription("LoWind_Uavg_MS", "LOWER WIND SPEED", units="m/s",
+                                        description="Wind speed at the lower location")
+    LOWER_WINDDIR = SensorDescription("LoWind_Dir_Uavg", "LOWER WIND DIRECTION", units='degrees',
+                                      description="Wind direction at the lower location")
+
+    DOWN_BROADBAND = SensorDescription(
         'PyDwn_Unfilt_W', "DOWNWARD BROADBAND RADIATION",
-        description="Reflected Broadband radiation")
-    DOWN_NIR_SWIR = InstrumentDescription(
+        units='w/m^2',  description="Reflected Broadband radiation")
+    DOWN_NIR_SWIR = SensorDescription(
         'PyDwn_filt_W', "DOWNWARD NIR/SWIR RADIATION",
-        description="Reflected NIR/SWIR radiation")
-    UP_BROADBAND = InstrumentDescription(
+        units='w/m^2',  description="Reflected NIR/SWIR radiation")
+    UP_BROADBAND = SensorDescription(
         'PyUp_Unfilt_W', "UPWARD BROADBAND RADIATION",
-        description="Incoming Broadband radiation")
-    UP_NIR_SWIR = InstrumentDescription(
+        units='w/m^2',  description="Incoming Broadband radiation")
+
+    UP_NIR_SWIR = SensorDescription(
         'PyUp_filt_W', "UPWARD NIR/SWIR RADIATION",
-        description="Incoming NIR/SWIR radiation")
-    PRECIPITATION = InstrumentDescription(
+        units='w/m^2',  description="Incoming NIR/SWIR radiation")
+
+    PRECIPITATION = SensorDescription(
         'Day_H2O_mm', "DAILY PRECIP", accumulated=True,
+        units='mm',
         description="Daily accumulated precipitation in mm")
 
-    TEMPGROUND = InstrumentDescription(
-        "Soil_Surf_C", "GROUND TEMPERATURE",
-        description='Temperature at soil interface in deg C')
-    TEMPGROUND10CM = InstrumentDescription(
-        "Soil_10cm_C", "GROUND TEMPERATURE -10CM",
-        description='Soil temperature at a depth of 10cm in deg C')
-    TEMPGROUND20CM = InstrumentDescription(
-        "Soil_20cm_C", "GROUND TEMPERATURE -20CM",
-        description='Soil temperature at a depth of 20cm in deg C')
-    TEMPGROUND40CM = InstrumentDescription(
-        "Soil_40cm_C", "GROUND TEMPERATURE -40CM",
-        description='Soil temperature at a depth of 40cm in deg C')
+    TEMPGROUND = SensorDescription(
+        "Soil_Surf_C", "GROUND TEMPERATURE", units='deg C',
+        description='Temperature at soil interface')
+    TEMPGROUND10CM = SensorDescription(
+        "Soil_10cm_C", "GROUND TEMPERATURE -10CM", units='deg C',
+        description='Soil temperature at a depth of 10cm')
+    TEMPGROUND20CM = SensorDescription(
+        "Soil_20cm_C", "GROUND TEMPERATURE -20CM", units='deg C',
+        description='Soil temperature at a depth of 20cm')
+    TEMPGROUND40CM = SensorDescription(
+        "Soil_40cm_C", "GROUND TEMPERATURE -40CM", units='deg C',
+        description='Soil temperature at a depth of 40cm')
