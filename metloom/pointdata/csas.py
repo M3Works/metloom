@@ -57,7 +57,7 @@ class CSASMet(CSVPointData):
             if start.year > 2009 or end.year > 2009:  # TODO: add to the info enum?
                 partial = str(self._station_info.path).replace("2003", "2010")
 
-                filename = partial.replace('2009', current_available_year)
+                filename = partial.replace('2009', str(current_available_year))
                 urls.append(os.path.join(self.URL, filename))
 
             if start.year < 2003 or end.year > current_available_year:

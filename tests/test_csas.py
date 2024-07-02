@@ -19,9 +19,9 @@ from metloom.pointdata.csas import InvalidDateRange
 from metloom.variables import CSASVariables
 from datetime import datetime, timedelta
 from pathlib import Path
-import requests
 import shutil
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+import requests
 
 
 DATA_DIR = str(Path(__file__).parent.joinpath("data/csas_mocks"))
@@ -36,6 +36,23 @@ DT_20230615 = datetime(2023, 6, 15)
 
 
 class TestCSASMet:
+
+    @classmethod
+    def get_side_effect(cls, *args, **kwargs):
+        url = Path(args[0])
+        local_path = Path(__file__).parent.joinpath(DATA_DIR).joinpath(url.name)
+
+        with open(local_path, 'rb') as f:
+            obj = MagicMock()
+            lines = f.readlines()
+            obj.iter_lines.return_value = lines
+        return obj
+
+    @pytest.fixture(scope="class")
+    def mocked_requests(self):
+        with patch("metloom.pointdata.files.requests.get") as mock_get:
+            mock_get.side_effect = self.get_side_effect
+            yield mock_get
 
     def copy_files(self, urls):
         files = []
@@ -54,11 +71,11 @@ class TestCSASMet:
         if cache.is_dir():
             shutil.rmtree(cache)
 
+
     @pytest.fixture(scope='function')
-    def station(self, cache_dir, station_id):
-        with patch.object(CSASMet, '_download', new=self.copy_files):
-            pnt = CSASMet(station_id, cache=cache_dir)
-            yield pnt
+    def station(self, mocked_requests, cache_dir, station_id):
+        pnt = CSASMet(station_id, cache=cache_dir)
+        yield pnt
 
     @pytest.mark.parametrize('year, doy, hour, expected', [
         (2024, 92, 1400, datetime(2024, 4, 1, 14)),
