@@ -302,8 +302,6 @@ class PointData(object):
         cls._validate_df_indicies(gdf)
         # Confirm the columns are correct
         cls._validate_df_columns(gdf, expected_columns)
-        # Confirm the dataframe has variables
-        cls._validate_df_columns(gdf, expected_columns)
         # Confirm that any columns from variables have associated units
         cls._validate_df_units(gdf, expected_columns)
 
