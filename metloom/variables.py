@@ -349,6 +349,27 @@ class MetNorwayVariables(VariableBase):
     )
 
 
+class NWSForecastVariables(VariableBase):
+    """
+    See https://api.weather.gov/gridpoints/BOI/28,28
+    for examples of variables
+    """
+    # Precipitation is not returned hourly
+    PRECIPITATIONACCUM = SensorDescription(
+        "quantitativePrecipitation", "ACCUMULATED PRECIPITATION",
+        accumulated=True
+    )
+    # PRECIPITATION = SensorDescription(
+    #     "quantitativePrecipitation", "PRECIPITATION",
+    #     accumulated=False
+    # )
+    TEMP = SensorDescription(
+        "temperature", "AIR TEMP",
+    )
+    DEWPOINT = SensorDescription("dewpoint", "DEW POINT TEMPERATURE")
+    RH = SensorDescription("relativeHumidity", "RELATIVE HUMIDITY")
+
+
 class SnowExVariables(VariableBase):
     """
     Variables for SnowEx met stations data, refer to user guide for adding more

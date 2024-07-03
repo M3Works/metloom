@@ -41,6 +41,7 @@ Features
     * `SNOTEL <https://www.nrcs.usda.gov/wps/portal/wcc/home/dataAccessHelp/webService/webServiceReference/>`_
     * `MESOWEST <https://developers.synopticdata.com/mesonet/>`_
     * `USGS <https://waterservices.usgs.gov/rest/>`_
+    * `NWS FORECAST <https://api.weather.gov>`_
     * `GEOSPHERE AUSTRIA <https://data.hub.geosphere.at/dataset/>`_
     * `UCSB CUES <https://snow.ucsb.edu/#>`_
     * `MET NORWAY <https://frost.met.no/index.html>`_
