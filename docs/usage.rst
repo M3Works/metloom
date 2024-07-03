@@ -114,7 +114,58 @@ To pull stations using Mesowest::
     )
     print(df)
 
+Center for Snow and Avalanche Studies (CSAS)
+--------------------------------------------
+There are 4 stations of interest maintained by the CSAS. Senator Beck Study plot,
+Swamp Angel Study Plot, Senator Beck Stream Gauge and Putney Study plot. These four stations
+contain a wealth of data useful for studying and validating snow processes. The files exist as a
+flat csv file so requests using this will simply download the file, interpret the datetime
+index and crop according to your request. Since it is a CSV the file will be stored in a local cache
+in the same directory you ran your code. This way the download times are reduced.
 
+Additionally, the CSAS data is not available in realtime (at least as of June 2024).
+Data is updated annually and stored on the website. Metloom will try to stay as up to date as
+possible when the files are updated. Please feel free to submit a PR if you know the data has been
+updated. Checkout the `facilities page <https://snowstudies.org/csas-facilities/>`_ on CSAS to see more about the stations.
+
+To pull stations using CSAS::
+
+    from metloom.pointdata import CSASMet
+    from metloom.variables import CSASVariables
+    from datetime import datetime
+
+    start = datetime(2023, 1, 1)
+    end = datetime(2023, 6, 1)
+    sbsp = CSASMet('SBSP')
+    df_sbsp = sbsp.get_daily_data(start, end, [CSASVariables.SNOWDEPTH])
+
+If you use these data, please use the `appropriate citations <https://snowstudies.org/data-use-policy/>`_ and give credit to the
+institution.
+
+SnowEx
+------
+During the `NASA SnowEx campaign <https://snow.nasa.gov/campaigns/snowex>`_
+there were a handful of met stations deployed which are now published on the
+`NSIDC <https://nsidc.org/data/snex_met/versions/1>`_. These stations have been
+mapped into metloom to increase the utility/convenience of these data. The SnowEx
+data is in a csv file format and thus any queries will download the appropriate
+files to a local cache to reduce download times. For this to work you need to have
+a `.netrc` and an account with the NSIDC. See the
+`access guide <https://nsidc.org/data/user-resources/help-center/programmatic-data-access-guide>`_
+for more help.
+
+To pull stations using SnowEx::
+
+    from metloom.pointdata import SnowExMet
+    from metloom.variables import SnowExVariables
+    from datetime import datetime
+
+    start = datetime(2020, 1, 1)
+    end = datetime(2020, 6, 1)
+
+    # Grand Mesa Study Plot
+    gmsp = SnowExMet('GMSP')
+    df_gmsp = gmsp.get_daily_data(start, end, [SnowExVariables.SNOWDEPTH])
 
 My variables aren't here
 ------------------------

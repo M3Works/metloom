@@ -10,7 +10,8 @@ class SensorDescription:
     code: str = "-1"  # code used within the applicable API
     name: str = "basename"  # desired name for the sensor
     description: str = None  # description of the sensor
-    accumulated: bool = False  # whether or not the data is accumulated
+    accumulated: bool = False  # whether the data is accumulated
+    units: str = None  # Optional units kwarg
 
 
 @dataclass(eq=True, frozen=True)
@@ -337,7 +338,7 @@ class MetNorwayVariables(VariableBase):
         "accumulated(precipitation_amount)", "ACCUMULATED PRECIPITATION",
         "Total precipitation amount in gauge"
         " (accumulated since last emptying). Timing for emptying and"
-        " algoritm for calculating the precipitation"
+        " algorithm for calculating the precipitation"
         " amount depends on sensortype"
     )
     PRECIPITATION = SensorDescription(
@@ -367,3 +368,97 @@ class NWSForecastVariables(VariableBase):
     )
     DEWPOINT = SensorDescription("dewpoint", "DEW POINT TEMPERATURE")
     RH = SensorDescription("relativeHumidity", "RELATIVE HUMIDITY")
+
+
+class SnowExVariables(VariableBase):
+    """
+    Variables for SnowEx met stations data, refer to user guide for adding more
+    variables
+
+    Metadata:
+    https://nsidc.org/sites/default/files/documents/user-guide/snex_met-v001-userguide.pdf
+    """
+
+    TEMP_20FT = SensorDescription(
+        'AirTC_20ft_Avg', "AIR TEMP @20ft", units='deg C',
+        description="Air temperature measured at 20 ft")
+
+    TEMP_10FT = SensorDescription(
+        'AirTC_10ft_Avg', "AIR TEMP @10ft", units='deg C',
+        description="Air temperature measured at 10 ft")
+
+    UPSHORTWAVE = SensorDescription(
+        "SUp_Avg", "UPWARD SHORTWAVE RADIATION", units='w/m^2',
+        description="Shortwave radiation measured with upward-facing sensor",
+    )
+    DOWNSHORTWAVE = SensorDescription(
+        "SDn_Avg", "DOWNWARD SHORTWAVE RADIATION",
+        description="Shortwave radiation measured with downward-facing sensor",
+    )
+    SNOWDEPTH = SensorDescription(
+        "SnowDepthFilter(m)", "SNOWDEPTH",
+        description="Snow surface height in meters w/ filtering")
+
+    TEMPGROUND5CM = SensorDescription("TC_5cm_Avg", "SOIL TEMP @ 5cm")
+    TEMPGROUND20CM = SensorDescription("TC_20cm_Avg", "SOIL TEMP @ 20cm")
+    TEMPGROUND50CM = SensorDescription("TC_50cm_Avg", "SOIL TEMP @ 50cm")
+
+
+class CSASVariables(VariableBase):
+    """
+    Variable meta for the stations:
+    SASP - https://snowstudies.org/wp-content/uploads/2023/11/SASP_Variable_Table.xlsx
+    SBSP - https://snowstudies.org/wp-content/uploads/2023/11/SBSP_Variable_Table.xlsx
+    PTSP - https://snowstudies.org/wp-content/uploads/2023/11/PTSP_Variable_Table.xlsx
+    SGSB - https://snowstudies.org/wp-content/uploads/2023/11/SBSG_Variable_Table.xlsx
+    """
+    SNOWDEPTH = SensorDescription("Sno_Height_M", "SNOWDEPTH", units='meters')
+    RH = SensorDescription("RH", "RELATIVE HUMIDITY", units='%')
+    STREAMFLOW_CFS = SensorDescription("Discharge_CFS", "STREAMFLOW", units='CFS')
+    SURF_TEMP = SensorDescription('Sno_IR_C', "SURFACE TEMP", units="deg C",
+                                  description="Snow surface temperature")
+    UPPER_WINDSPEED = SensorDescription("UpWind_Uavg_MS", "UPPER WIND SPEED",
+                                        units="m/s",
+                                        description="Wind speed at the upper location")
+    UPPER_WINDDIR = SensorDescription("UpWind_Dir_Uavg", "UPPER WIND DIRECTION",
+                                      units="degrees",
+                                      description="Wind direction at the upper "
+                                                  "location")
+    LOWER_WINDSPEED = SensorDescription("LoWind_Uavg_MS", "LOWER WIND SPEED",
+                                        units="m/s",
+                                        description="Wind speed at the lower location")
+    LOWER_WINDDIR = SensorDescription("LoWind_Dir_Uavg", "LOWER WIND DIRECTION",
+                                      units='degrees',
+                                      description="Wind direction at the lower "
+                                                  "location")
+    DOWN_BROADBAND = SensorDescription(
+        'PyDwn_Unfilt_W', "DOWNWARD BROADBAND RADIATION",
+        units='w/m^2', description="Reflected Broadband radiation")
+    DOWN_NIR_SWIR = SensorDescription(
+        'PyDwn_filt_W', "DOWNWARD NIR/SWIR RADIATION",
+        units='w/m^2', description="Reflected NIR/SWIR radiation")
+    UP_BROADBAND = SensorDescription(
+        'PyUp_Unfilt_W', "UPWARD BROADBAND RADIATION",
+        units='w/m^2', description="Incoming Broadband radiation")
+
+    UP_NIR_SWIR = SensorDescription(
+        'PyUp_filt_W', "UPWARD NIR/SWIR RADIATION",
+        units='w/m^2', description="Incoming NIR/SWIR radiation")
+
+    PRECIPITATION = SensorDescription(
+        'Day_H2O_mm', "DAILY PRECIP", accumulated=True,
+        units='mm',
+        description="Daily accumulated precipitation in mm")
+
+    TEMPGROUND = SensorDescription(
+        "Soil_Surf_C", "GROUND TEMPERATURE", units='deg C',
+        description='Temperature at soil interface')
+    TEMPGROUND10CM = SensorDescription(
+        "Soil_10cm_C", "GROUND TEMPERATURE -10CM", units='deg C',
+        description='Soil temperature at a depth of 10cm')
+    TEMPGROUND20CM = SensorDescription(
+        "Soil_20cm_C", "GROUND TEMPERATURE -20CM", units='deg C',
+        description='Soil temperature at a depth of 20cm')
+    TEMPGROUND40CM = SensorDescription(
+        "Soil_40cm_C", "GROUND TEMPERATURE -40CM", units='deg C',
+        description='Soil temperature at a depth of 40cm')

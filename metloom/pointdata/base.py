@@ -301,3 +301,78 @@ class PointData(GenericPoint):
             PointDataCollection
         """
         raise NotImplementedError("points_from_geometry not implemented")
+
+    @classmethod
+    def _validate_geodataframe(cls, gdf: gpd.GeoDataFrame):
+        if not isinstance(gdf, gpd.GeoDataFrame):
+            raise DataValidationError('Returned DataFrame must be a GeoDataframe')
+
+    @classmethod
+    def _validate_df_indicies(cls, gdf: gpd.GeoDataFrame):
+        """ Confirm the df is indexed properly"""
+        for ei in cls.EXPECTED_INDICES:
+            if ei not in gdf.index.names:
+                raise DataValidationError(
+                    f"{ei} was expected, but not found as an"
+                    f" index of the final dataframe"
+                )
+
+    @classmethod
+    def _validate_df_columns(cls, gdf: gpd.GeoDataFrame, expected_columns: List[str]):
+        # check for expected columns - avoid modifying at class level
+        possible_extras = ["measurementDate", "quality_code"]
+        columns = gdf.columns
+        for pe in possible_extras:
+            if pe in columns:
+                expected_columns += [pe]
+
+        for column in expected_columns:
+            if column not in columns:
+                raise DataValidationError(
+                    f"{column} was expected, but not found as a"
+                    f" column of the final dataframe"
+                )
+
+    @classmethod
+    def _validate_df_units(cls, gdf: gpd.GeoDataFrame, expected_columns: List[str]):
+        """
+        Check the variables requested have units associated
+        """
+        remaining_columns = [c for c in gdf.columns if c not in expected_columns]
+        # make sure all variables have a units column as well
+        for rc in remaining_columns:
+            if "_units" not in rc:
+                if f"{rc}_units" not in remaining_columns:
+                    raise DataValidationError(f'Missing units column for {rc}')
+
+    @classmethod
+    def validate_sensor_df(cls, gdf: gpd.GeoDataFrame):
+        """
+        Validate that the GeoDataFrame returned is formatted correctly.
+        The goal of this method is to ensure base classes are returning a
+        consistent format of dataframe
+        """
+        if gdf is None:
+            return
+
+        expected_columns = copy.deepcopy(cls.EXPECTED_COLUMNS)
+
+        # Confirm the dataframe is a geodataframe
+        cls._validate_geodataframe(gdf)
+        # Confirm the df is indexed properly
+        cls._validate_df_indicies(gdf)
+        # Confirm the columns are correct
+        cls._validate_df_columns(gdf, expected_columns)
+        # Confirm that any columns from variables have associated units
+        cls._validate_df_units(gdf, expected_columns)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.id!r}, {self.name!r})"
+
+    def __str__(self):
+        return f"{self.name} ({self.id})"
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.id == other.id and self.name == other.name

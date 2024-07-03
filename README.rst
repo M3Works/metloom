@@ -19,8 +19,7 @@ metloom
 Location Oriented Observed Meteorology
 
 metloom is a python library created with the goal of consistent, simple sampling of
-meteorology and snow related point measurments from a variety of datasources across the
-Western US. metloom is developed by `M3 Works <https://m3works.io>`_ as a tool for validating
+meteorology and snow related point measurments from a variety of datasources is developed by `M3 Works <https://m3works.io>`_ as a tool for validating
 computational hydrology model results. Contributions welcome!
 
 Warning - This software is provided as is (see the license), so use at your own risk.
@@ -46,6 +45,8 @@ Features
     * `GEOSPHERE AUSTRIA <https://data.hub.geosphere.at/dataset/>`_
     * `UCSB CUES <https://snow.ucsb.edu/#>`_
     * `MET NORWAY <https://frost.met.no/index.html>`_
+    * `SNOWEX MET STATIONS <https://nsidc.org/data/snex_met/versions/1>`_
+    * `CENTER FOR SNOW AND AVALANCHE STUDIES (CSAS) <https://snowstudies.org/csas-facilities/>`_
 
 Requirements
 ------------
