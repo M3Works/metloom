@@ -264,27 +264,19 @@ class PointData(object):
         for pe in possible_extras:
             if pe in columns:
                 expected_columns += [pe]
+
         for column in expected_columns:
             if column not in columns:
                 raise DataValidationError(
                     f"{column} was expected, but not found as a"
                     f" column of the final dataframe"
                 )
-            # check for expected columns - avoid modifying at class level
-            possible_extras = ["measurementDate", "quality_code"]
-            for pe in possible_extras:
-                if pe in columns:
-                    expected_columns += [pe]
-            for column in expected_columns:
-                if column not in columns:
-                    raise DataValidationError(
-                        f"{column} was expected, but not found as a"
-                        f" column of the final dataframe"
-                    )
 
     @classmethod
     def _validate_df_units(cls, gdf: gpd.GeoDataFrame, expected_columns: List[str]):
-        """Check the variables requested have units associated"""
+        """
+        Check the variables requested have units associated
+        """
         remaining_columns = [c for c in gdf.columns if c not in expected_columns]
         # make sure all variables have a units column as well
         for rc in remaining_columns:
@@ -310,8 +302,10 @@ class PointData(object):
         cls._validate_df_indicies(gdf)
         # Confirm the columns are correct
         cls._validate_df_columns(gdf, expected_columns)
-        # Confirm the dataframe has variables and units
+        # Confirm the dataframe has variables
         cls._validate_df_columns(gdf, expected_columns)
+        # Confirm that any columns from variables have associated units
+        cls._validate_df_units(gdf, expected_columns)
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.id!r}, {self.name!r})"
