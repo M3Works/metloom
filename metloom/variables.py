@@ -435,14 +435,14 @@ class CSASVariables(VariableBase):
         'PyDwn_Unfilt_W', "DOWNWARD BROADBAND RADIATION",
         units='w/m^2', description="Reflected Broadband radiation")
     DOWN_NIR_SWIR = SensorDescription(
-        'PyDwn_filt_W', "DOWNWARD NIR/SWIR RADIATION",
+        'PyDwn_Filt_W', "DOWNWARD NIR/SWIR RADIATION",
         units='w/m^2', description="Reflected NIR/SWIR radiation")
     UP_BROADBAND = SensorDescription(
         'PyUp_Unfilt_W', "UPWARD BROADBAND RADIATION",
         units='w/m^2', description="Incoming Broadband radiation")
 
     UP_NIR_SWIR = SensorDescription(
-        'PyUp_filt_W', "UPWARD NIR/SWIR RADIATION",
+        'PyUp_Filt_W', "UPWARD NIR/SWIR RADIATION",
         units='w/m^2', description="Incoming NIR/SWIR radiation")
 
     PRECIPITATION = SensorDescription(
