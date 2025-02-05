@@ -112,17 +112,10 @@ class SnotelPointData(PointData):
                                   variables: List[SensorDescription],
                                   duration: str,
                                   include_measurement_date=False,
-                                  extra_params=None
                                   ):
         result_map = {}
-        extra_params = extra_params or {}
         for variable in variables:
-            # need to add extra_params for ground temp call, this may not be the
-            # best logic
-            if 'GROUND' in variable.name or 'SOIL' in variable.name:
-                params = extra_params[variable.name]
-            else:
-                params = {}
+            params = variable.extra or {}
             data = client.get_data(element_cd=variable.code, **params)
             if len(data) > 0:
                 result_map[variable] = data
@@ -146,10 +139,8 @@ class SnotelPointData(PointData):
             begin_date=start_date,
             end_date=end_date,
         )
-        extra_params = self._add_fixed_params(variables)
         return self._fetch_data_for_variables(client, variables,
-                                              client.DURATION,
-                                              extra_params=extra_params)
+                                              client.DURATION)
 
     def get_hourly_data(
         self,
@@ -166,10 +157,7 @@ class SnotelPointData(PointData):
             begin_date=start_date,
             end_date=end_date,
         )
-        extra_params = self._add_fixed_params(variables)
-        return self._fetch_data_for_variables(
-            client, variables, "HOURLY", extra_params=extra_params
-        )
+        return self._fetch_data_for_variables(client, variables, "HOURLY")
 
     def get_snow_course_data(
         self,
@@ -243,47 +231,6 @@ class SnotelPointData(PointData):
         else:
             tz_hours = float(tz_hours)
         return timezone(timedelta(hours=tz_hours))
-
-    def _add_fixed_params(self, variables):
-        """
-        Get additional necessary fixed arguments for sensors that need heightDepth
-        params (soil moisture and soil temp)
-        """
-        # TODO: this could be refactored into properties of the variable
-        extra_params_map = {
-            self.ALLOWED_VARIABLES.TEMPGROUND2IN: {
-                'height_depth': {"value": -2, "unitCd": "in"}
-            },
-            self.ALLOWED_VARIABLES.TEMPGROUND4IN: {
-                'height_depth': {"value": -4, "unitCd": "in"}
-            },
-            self.ALLOWED_VARIABLES.TEMPGROUND8IN: {
-                'height_depth': {"value": -8, "unitCd": "in"}
-            },
-            self.ALLOWED_VARIABLES.TEMPGROUND20IN: {
-                'height_depth': {"value": -20, "unitCd": "in"}
-            },
-            self.ALLOWED_VARIABLES.SOILMOISTURE2IN: {
-                'height_depth': {"value": -2, "unitCd": "in"}
-            },
-            self.ALLOWED_VARIABLES.SOILMOISTURE4IN: {
-                'height_depth': {"value": -4, "unitCd": "in"}
-            },
-            self.ALLOWED_VARIABLES.SOILMOISTURE8IN: {
-                'height_depth': {"value": -8, "unitCd": "in"}
-            },
-            self.ALLOWED_VARIABLES.SOILMOISTURE20IN: {
-                'height_depth': {"value": -20, "unitCd": "in"}
-            },
-        }
-
-        extra_params = {}
-        for variable in variables:
-            result = extra_params_map.get(variable)
-            if result:
-                extra_params[variable.name] = result
-
-        return extra_params or None
 
     @property
     def tzinfo(self):

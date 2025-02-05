@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-
+from dataclasses import dataclass, field, make_dataclass
+import typing
 
 @dataclass(eq=True, frozen=True)
 class SensorDescription:
@@ -12,7 +12,7 @@ class SensorDescription:
     description: str = None  # description of the sensor
     accumulated: bool = False  # whether the data is accumulated
     units: str = None  # Optional units kwarg
-
+    extra: typing.Any = field(default=None, hash=False)# Optional extra data for sub-class specific information
 
 @dataclass(eq=True, frozen=True)
 class InstrumentDescription(SensorDescription):
@@ -101,57 +101,31 @@ class CdecStationVariables(VariableBase):
     WINDSPEED = SensorDescription("9", "WIND SPEED", "WIND SPEED")
     WINDDIR = SensorDescription("10", "WIND DIRECTION", "WIND DIRECTION")
 
-
-class SnotelVariables(VariableBase):
-    """
-    Available sensors from SNOTEL
-    """
-
-    SNOWDEPTH = SensorDescription("SNWD", "SNOWDEPTH")
-    SWE = SensorDescription("WTEQ", "SWE")
-    TEMP = SensorDescription("TOBS", "AIR TEMP")
-    TEMPAVG = SensorDescription("TAVG", "AVG AIR TEMP", "AIR TEMPERATURE AVERAGE")
-    TEMPMIN = SensorDescription("TMIN", "MIN AIR TEMP", "AIR TEMPERATURE MINIMUM")
-    TEMPMAX = SensorDescription("TMAX", "MAX AIR TEMP", "AIR TEMPERATURE MAXIMUM")
-    PRECIPITATION = SensorDescription(
-        "PRCPSA", "PRECIPITATION", "PRECIPITATION INCREMENT SNOW-ADJUSTED"
-    )
-    PRECIPITATIONACCUM = SensorDescription(
-        "PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION"
-    )
-    TEMPGROUND2IN = SensorDescription(
-        "STO", "GROUND TEMPERATURE -2IN", "GROUND TEMPERATURE OBS -2IN"
-    )
-    TEMPGROUND4IN = SensorDescription(
-        "STO", "GROUND TEMPERATURE -4IN", "GROUND TEMPERATURE OBS -4IN"
-    )
-    TEMPGROUND8IN = SensorDescription(
-        "STO", "GROUND TEMPERATURE -8IN", "GROUND TEMPERATURE OBS -8IN"
-    )
-    TEMPGROUND20IN = SensorDescription(
-        "STO", "GROUND TEMPERATURE -20IN", "GROUND TEMPERATURE OBS -20IN"
-    )
-    SOILMOISTURE2IN = SensorDescription(
-        "SMS", "SOIL MOISTURE -2IN", "SOIL MOISTURE PERCENT -2IN"
-    )
-    SOILMOISTURE4IN = SensorDescription(
-        "SMS", "SOIL MOISTURE -4IN", "SOIL MOISTURE PERCENT -4IN"
-    )
-    SOILMOISTURE8IN = SensorDescription(
-        "SMS", "SOIL MOISTURE -8IN", "SOIL MOISTURE PERCENT -8IN"
-    )
-    SOILMOISTURE20IN = SensorDescription(
-        "SMS", "SOIL MOISTURE -20IN", "SOIL MOISTURE PERCENT -20IN"
-    )
-    # TODO for the SCAN network this appears to be "RHUM", we may need a new class
-    RH = SensorDescription("RHUMV", "RELATIVE HUMIDITY", "RELATIVE HUMIDITY")
-    STREAMVOLUMEOBS = SensorDescription(
-        "SRVO", "STREAM VOLUME OBS", "STREAM VOLUME OBS"
-    )
-    STREAMVOLUMEADJ = SensorDescription(
-        "SRVOX", "STREAM VOLUME ADJ", "STREAM VOLUME ADJ"
-    )
-
+# Available sensors from Snotel
+SnotelVariables = make_dataclass('SnowtelVariables', [
+    ('SNOWDEPTH', SensorDescription, field(default=SensorDescription("SNWD", "SNOWDEPTH"))),
+    ('SWE', SensorDescription, field(default=SensorDescription("WTEQ", "SWE"))),
+    ('TEMP', SensorDescription, field(default=SensorDescription("TOBS", "AIR TEMP"))),
+    ('TEMPAVG', SensorDescription, field(default=SensorDescription("TAVG", "AVG AIR TEMP", "AIR TEMPERATURE AVERAGE"))),
+    ('TEMPMIN', SensorDescription, field(default=SensorDescription("TMIN", "MIN AIR TEMP", "AIR TEMPERATURE MINIMUM"))),
+    ('TEMPMAX', SensorDescription, field(default=SensorDescription("TMAX", "MAX AIR TEMP", "AIR TEMPERATURE MAXIMUM"))),
+    ('PRECIPITATION', SensorDescription, field(default=SensorDescription("PRCPSA", "PRECIPITATION", "PRECIPITATION INCREMENT SNOW-ADJUSTED"))),
+    ('PRECIPITATIONACCUM', SensorDescription, field(default=SensorDescription("PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION"))),
+     # TODO for the SCAN network this appears to be "RHUM", we may need a new class
+    ('RH', SensorDescription, field(default=SensorDescription("RHUMV", "Relative Humidity", "RELATIVE HUMIDITY"))),
+    ('STREAMVOLUMEOBS', SensorDescription, field(default=SensorDescription("SRVO", "STREAM VOLUME OBS", "STREAM VOLUME OBS"))),
+    ('STREAMVOLUMEADJ', SensorDescription, field(default=SensorDescription("SRVOX", "STREAM VOLUME ADJ", "STREAM VOLUME ADJ")))    # SensorDescription("WTEQ", "SWE"),
+] + [(f"TEMPGROUND{d}IN", SensorDescription, 
+      field(default=SensorDescription("STO", f"GROUND TEMPERATURE -{d}IN", f"GROUND TEMPERATURE OBS -{d}IN", 
+                                      extra={'height_depth': {"value": -d, "unitCd": "in"}}, ))) for d in [2,4,8,20]
+] + [(f"SOILMOISTURE{d}IN", SensorDescription, 
+      field(default=SensorDescription("SMS", f"SOIL MOISTURE -{d}IN", f"SOIL MOISTURE PERCENT -{d}IN", 
+                                      extra={'height_depth': {"value": -d, "unitCd": "in"}}, ))) for d in [2,4,8,20]
+] + [(f"TEMPPROFILE{d}IN", SensorDescription, 
+      field(default=SensorDescription("PTEMP", f"PROFILE TEMPERATURE {d}IN", f"PROFILE TEMPERATURE OBS{d}IN", 
+                                      extra={'height_depth': {"value": d, "unitCd": "in"}}, ))) for d in [-8,0,8,16,24,31,39,47,55,63,71,79,87,94,102,110,118,126]
+], 
+bases=(VariableBase,))
 
 class MesowestVariables(VariableBase):
     """

@@ -167,7 +167,6 @@ class SeriesSnotelClient(BaseSnotelClient):
         Parse the return data to return a consistent format for timeseries
         data
         """
-        data = raw_data[0]
         mapped_data = []
         collection_dates = getattr(data, "collectionDates", None)
         if len(data["values"]) == 0:
