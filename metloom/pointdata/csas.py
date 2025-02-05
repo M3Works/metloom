@@ -28,6 +28,7 @@ class CSASStationInfo(StationInfo):
 class CSASMet(CSVPointData):
     """
     """
+    CURRENT_AVAILABLE_YEAR = 2023
     ALLOWED_VARIABLES = CSASVariables
     ALLOWED_STATIONS = CSASStationInfo
 
@@ -48,7 +49,7 @@ class CSASMet(CSVPointData):
         urls = []
 
         if station_id in ['SASP', 'SBSP']:
-            current_available_year = datetime.today().year - 1
+            current_available_year = self.CURRENT_AVAILABLE_YEAR
 
             if start.year <= 2009:
                 urls.append(os.path.join(self.URL, self._station_info.path))
