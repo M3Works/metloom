@@ -109,7 +109,7 @@ class CdecStationVariables(VariableBase):
 
 # Available sensors from Snotel
 SnotelVariables = make_dataclass(
-    "SnowtelVariables",
+    "SnotelVariables",
     [
         (
             "SNOWDEPTH",
@@ -194,7 +194,7 @@ SnotelVariables = make_dataclass(
                     "SRVOX", "STREAM VOLUME ADJ", "STREAM VOLUME ADJ"
                 )
             ),
-        ),  # SensorDescription("WTEQ", "SWE"),
+        ),
     ] + [
         (
             f"TEMPGROUND{d}IN",
@@ -236,26 +236,7 @@ SnotelVariables = make_dataclass(
                 )
             ),
         )
-        for d in [
-            -8,
-            0,
-            8,
-            16,
-            24,
-            31,
-            39,
-            47,
-            55,
-            63,
-            71,
-            79,
-            87,
-            94,
-            102,
-            110,
-            118,
-            126,
-        ]
+        for d in [-8, 0, 8, 16, 24, 31, 39, 47, 55, 63, 71, 79, 87, 94, 102, 110, 118, 126]  # noqa: E501
     ],
     bases=(VariableBase,),
 )
