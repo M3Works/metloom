@@ -4,6 +4,7 @@ import logging
 import geopandas as gpd
 import pandas as pd
 from functools import reduce
+import requests
 
 from .base import PointData
 from ..variables import SnotelVariables, SensorDescription
@@ -30,6 +31,7 @@ class SnotelPointData(PointData):
 
     ALLOWED_VARIABLES = SnotelVariables
     DATASOURCE = "NRCS"
+    API_URL = "https://wcc.sc.egov.usda.gov/awdbRestApi/"
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -115,7 +117,19 @@ class SnotelPointData(PointData):
                                   ):
         result_map = {}
         for variable in variables:
+<<<<<<< Updated upstream
             params = variable.extra or {}
+=======
+            # need to add extra_params for ground temp call, this may not be the
+            # best logic
+            if 'GROUND' in variable.name or 'SOIL' in variable.name:
+                params = extra_params[variable.name]
+            else:
+                params = {}
+            requests.get(
+                self.API_URL + ""
+            )
+>>>>>>> Stashed changes
             data = client.get_data(element_cd=variable.code, **params)
             if len(data) > 0:
                 result_map[variable] = data
