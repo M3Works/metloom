@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'geopandas>=0.9.0,<1.0.0',
     'pandas>1.0.0',
-    'lxml==4.9.3',
+    'lxml>=4.9.3',
     'requests>2.0.0,<3.0.0',
     'beautifulsoup4>4,<5',
     'zeep>4.0.0'
@@ -31,10 +31,11 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
     ],
     description="Location Oriented Observed Meteorology (LOOM)",
     entry_points={
