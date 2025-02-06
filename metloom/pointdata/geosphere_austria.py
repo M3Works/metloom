@@ -181,7 +181,7 @@ class GeoSpherePointDataBase(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
-            desired_duration: duration code ['D', 'H', 'E']
+            desired_duration: duration code ['D', 'h']
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -373,7 +373,7 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         See docstring for PointData.get_hourly_data
         """
         self._validate_dates(end_date)
-        return self._get_data(start_date, end_date, variables, "H")
+        return self._get_data(start_date, end_date, variables, "h")
 
 
 class GeoSphereHistPointData(GeoSpherePointDataBase):

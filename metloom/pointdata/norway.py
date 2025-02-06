@@ -421,7 +421,7 @@ class MetNorwayPointData(PointData):
         See docstring for PointData.get_hourly_data
         """
         return self._get_data(
-            start_date, end_date, variables, desired_duration="H"
+            start_date, end_date, variables, desired_duration="h"
         )
 
     def get_event_data(
