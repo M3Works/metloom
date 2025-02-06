@@ -197,7 +197,7 @@ SnotelVariables = make_dataclass(
         ),
     ] + [
         (
-            f"TEMPGROUND{d}IN",
+            f"TEMPGROUND{abs(d)}IN",
             SensorDescription,
             field(
                 default=SensorDescription(
@@ -211,7 +211,7 @@ SnotelVariables = make_dataclass(
         for d in [2, 4, 8, 20]
     ] + [
         (
-            f"SOILMOISTURE{d}IN",
+            f"SOILMOISTURE{abs(d)}IN",
             SensorDescription,
             field(
                 default=SensorDescription(
@@ -225,7 +225,7 @@ SnotelVariables = make_dataclass(
         for d in [2, 4, 8, 20]
     ] + [
         (
-            f"TEMPPROFILE{d}IN",
+            f"TEMPPROFILENEG{abs(d)}IN" if d < 0 else f"TEMPPROFILE{d}IN",
             SensorDescription,
             field(
                 default=SensorDescription(
