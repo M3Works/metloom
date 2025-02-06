@@ -22,7 +22,7 @@ def main():
     )
     parser.add_argument(
         "--datasource", "-ds", dest="datasource",
-        choices=list(datasouce_map.values()), type=datasouce_map.get,
+        choices=list(datasouce_map.keys()),
         required=True, help="datasource used to find measurement ids"
     )
     parser.add_argument(
@@ -44,7 +44,7 @@ def main():
     )
 
     args = parser.parse_args()
-    datasource = args.datasource
+    datasource = datasouce_map.get(args.datasource)
     if datasource is None:
         raise ValueError("Not a valid datasource")
     geometry = gpd.read_file(args.shapefile)

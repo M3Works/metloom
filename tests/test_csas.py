@@ -115,7 +115,7 @@ class TestCSASMet:
          datetime(2003, 1, 1)),
         # Test post 2023 exception
         ('SBSP', datetime(2010, 1, 1),
-         datetime(2024, 1, 1))
+         datetime(2030, 1, 1))
     ])
     def test_file_urls_exception(self, station_id, start, end):
         """
