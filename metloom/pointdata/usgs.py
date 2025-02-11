@@ -352,7 +352,7 @@ class USGSPointData(PointData):
         variables: List[SensorDescription],
     ):
         return self._get_data(
-            start_date, end_date, variables, ["iv"], resample_duration="H"
+            start_date, end_date, variables, ["iv"], resample_duration="h"
         )
 
     def get_instantaneous_data(

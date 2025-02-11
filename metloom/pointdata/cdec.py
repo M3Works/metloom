@@ -264,6 +264,8 @@ class CDECPointData(PointData):
                     resample_duration = None
                 else:
                     resample_duration = desired_duration
+                    if resample_duration == "H":
+                        resample_duration = "h"  # pandas compatibility
                 sensor_df = self._sensor_response_to_df(
                     response_data, sensor, final_columns,
                     resample_duration=resample_duration

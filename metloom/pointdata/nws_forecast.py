@@ -217,7 +217,7 @@ class NWSForecastPointData(GenericPoint):
         Args:
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
-            desired_duration: desired resample duration ("D", "H"). Data is
+            desired_duration: desired resample duration ("D", "h"). Data is
                 hourly be default
         Returns:
             GeoDataFrame of data, indexed on datetime, site
@@ -273,7 +273,7 @@ class NWSForecastPointData(GenericPoint):
         Args:
             variables: list of variables to return
         """
-        return self._get_data(variables, desired_duration="H")
+        return self._get_data(variables, desired_duration="h")
 
     def get_forecast(
         self,
