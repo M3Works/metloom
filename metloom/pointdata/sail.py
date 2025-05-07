@@ -1,15 +1,10 @@
 import os
-from datetime import date
-from io import StringIO
+from datetime import date, datetime
 from typing import List
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
-import requests
 import logging
-
-from geopandas import GeoDataFrame
 
 from .base import PointData
 from .. import arm_utils
@@ -49,6 +44,7 @@ class SAILPointData(PointData):
         end_date: date,
         variables: List[SensorDescription],
     ):
+        self._check_start_end_dates(start_date, end_date)
         return self._download_sail_raw_data(start_date, end_date, variables, interval="D")
 
     def get_hourly_data(
@@ -57,6 +53,7 @@ class SAILPointData(PointData):
         end_date: date,
         variables: List[SensorDescription],
     ):
+        self._check_start_end_dates(start_date, end_date)
         return self._download_sail_raw_data(start_date, end_date, variables, interval="h")
 
     def _download_sail_raw_data(
@@ -129,3 +126,21 @@ class SAILPointData(PointData):
         variables: List[SensorDescription],
     ):
         raise NotImplementedError("SAILPointData.get_snow_course_data not implemented")
+
+    def _check_start_end_dates(self, start_date: date, end_date: date):
+        """
+        Check that the start and end dates are valid
+        """
+        # get the start and end dates to be date objects for comparison
+        start = date.fromisoformat(start_date) if isinstance(start_date, str) else start_date
+        end = date.fromisoformat(end_date) if isinstance(end_date, str) else end_date
+        start = start.date() if hasattr(start, "date") else start
+        end = end.date() if hasattr(end, "date") else end
+
+        # check that the start and end dates are valid
+        if start > end:
+            raise ValueError("Start date must be before end date")
+        if start < date(2021, 9, 1):
+            raise ValueError(f"Start date, {start}, must be after 2021-09-01, the first date of data available")
+        if end > date(2023, 6, 16):
+            raise ValueError(f"End date, {end}, must be before 2023-06-16, the last date of data available")
