@@ -197,7 +197,9 @@ class CSVPointData(PointData):
                           columns=[v.name for v in variables])
 
         # Use this instead .loc to avoid index on patchy data
-        ind = (resp_df.index >= pd.Timestamp(start_date)) & (resp_df.index < pd.Timestamp(end_date))
+        ind = (resp_df.index >= pd.Timestamp(start_date)) & (
+            resp_df.index < pd.Timestamp(end_date)
+        )
         isolated = resp_df.loc[ind, resp_df.columns]
         for i, variable in enumerate(variables):
             df_var = self._get_one_variable(isolated, period, variable)
