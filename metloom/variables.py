@@ -610,3 +610,23 @@ class CSASVariables(VariableBase):
         units="deg C",
         description="Soil temperature at a depth of 40cm",
     )
+
+
+class SAILStationVariables(VariableBase):
+    """
+    https://adc.arm.gov/discovery/#/results/site_code::guc
+    """
+
+    PRECIPITATION = SensorDescription(
+        "accum_rtnrt",
+        "PRECIPITATION",
+        description="Accumulated amounts of precipitation over the sampling interval exceeding a threshold of 005mm or the accumulated amount of fine precipitation observed over the last hour",
+        accumulated=True,
+        extra=dict(
+            site="GUC",
+            measurement="wbpluvio2",
+            facility_code="M1",
+            data_level="a1",
+            units='mm',
+        ),
+    )
