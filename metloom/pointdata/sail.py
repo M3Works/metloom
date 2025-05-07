@@ -1,5 +1,5 @@
 import os
-from datetime import date, datetime
+from datetime import date
 from typing import List
 
 import geopandas as gpd

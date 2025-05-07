@@ -15,7 +15,7 @@ import requests
 import pandas
 import xarray
 import typing
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 LOG = logging.getLogger(__name__)
 
