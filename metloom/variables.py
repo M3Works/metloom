@@ -581,7 +581,7 @@ class CSASVariables(VariableBase):
     PRECIPITATION = SensorDescription(
         "Day_H2O_mm",
         "DAILY PRECIP",
-        accumulated=True,
+        accumulated=False,
         units="mm",
         description="Daily accumulated precipitation in mm",
     )

@@ -191,7 +191,7 @@ class CSVPointData(PointData):
         resp_df = pd.concat(dfs)
         resp_df = self._assign_datetime(resp_df)
 
-        # use a predifined index to show nans in the event of patch data
+        # use a predefined index to show nans in the event of patch data
         df = pd.DataFrame(index=pd.date_range(start_date, end_date, freq=period,
                                               name='datetime'),
                           columns=[v.name for v in variables])
