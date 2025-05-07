@@ -17,7 +17,7 @@ requirements = [
     'requests>2.0.0,<3.0.0',
     'beautifulsoup4>4,<5',
     'zeep>4.0.0',
-    'xarray>=2025.4.0'
+    'xarray>=2024.1'
 ]
 
 test_requirements = ['pytest>=3', ]
