@@ -82,7 +82,7 @@ class SAILPointData(PointData):
             sites = {s.upper() for s in self._sites}
             if variable.extra["site"].upper() not in sites:
                 raise ValueError(
-                    f"Variable {variable} is not from a SAIL site ({variable.extra.site}). "
+                    f"Variable {variable} is not from a SAIL site ({variable.extra['site']}). "
                     f"Allowed site(s) are: {', '.join(sites)}"
                 )
 
