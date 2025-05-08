@@ -52,7 +52,7 @@ def test_get_hourly_data(mock_requests_get, setup_env):
 
 
 def test_get_daily_data(mock_requests_get, mock_open, mock_path_exists, setup_env):
-    # this mocks the necessary function to test the donwload code
+    # this mocks the necessary function to test the download code
     obj = SAILPointData()
     df = obj.get_daily_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATION])
     assert df is not None
