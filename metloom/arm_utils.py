@@ -26,12 +26,12 @@ def get_station_data(
     measurement: str,
     facility_code: str,
     data_level: str,
-    start: typing.Union[date | datetime] = None,
-    end: typing.Union[date | datetime] = None,
-    access_token=os.getenv("M3W_ARM_ACCESS_TOKEN", None),
-    user_id=os.getenv("M3W_ARM_USER_ID", None),
+    start: typing.Union[date, datetime] = None,
+    end: typing.Union[date, datetime] = None,
+    access_token=None,
+    user_id=None,
     url: str = "https://adc.arm.gov/armlive/data",
-    destination: os.PathLike = '.armdata',
+    destination: os.PathLike = ".armdata",
 ) -> pandas.DataFrame:
     """
     Get data from the ARM Live Data Webservice as a pandas DataFrame.
@@ -57,6 +57,10 @@ def get_station_data(
         AssertionError: If user_id or access_token is not provided.
         HTTPError: If the API request fails.
     """
+    # set the default values for access_token and user_id
+    access_token = access_token or os.getenv("M3W_ARM_ACCESS_TOKEN", None)
+    user_id = user_id or os.getenv("M3W_ARM_USER_ID", None)
+
     # check if user_id and access_token are provided
     assert user_id is not None, "user_id must be provided, set M3W_ARM_USER_ID environment variable"
     assert access_token is not None, "access_token must be provided, set M3W_ARM_ACCESS_TOKEN environment variable"
@@ -151,12 +155,7 @@ def _download_arm_file(
         return output
 
 
-def _read_arm_file(
-    file: os.PathLike,
-    # *,
-    # resample=timedelta(hours=1),
-    # statistic: str = "mean",
-) -> pandas.DataFrame:
+def _read_arm_file(file: os.PathLike) -> pandas.DataFrame:
     """
     Read NetCDF file as a pandas DataFrame
     """
@@ -167,7 +166,5 @@ def _read_arm_file(
         return None
 
     df = data.to_dataframe()
-    # if resample is not None:
-    #     df = df.resample(rule=resample).aggregate(statistic)
-
+    print(df)
     return df[~df.index.duplicated(keep="first")]

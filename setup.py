@@ -17,6 +17,7 @@ requirements = [
     'requests>2.0.0,<3.0.0',
     'beautifulsoup4>4,<5',
     'zeep>4.0.0',
+    'netcdf4>=1.6.0',
     'xarray>=2024.1'
 ]
 
