@@ -40,18 +40,20 @@ class SAILPointData(PointData):
 
     def get_daily_data(
         self,
-        start_date: date,
-        end_date: date,
         variables: List[SensorDescription],
+        *,
+        start_date: date = date(2021, 9, 1),
+        end_date: date = date(2023, 6, 16),
     ):
         self._check_start_end_dates(start_date, end_date)
         return self._download_sail_raw_data(start_date, end_date, variables, interval="D")
 
     def get_hourly_data(
         self,
-        start_date: date,
-        end_date: date,
         variables: List[SensorDescription],
+        *,
+        start_date: date = date(2021, 9, 1),
+        end_date: date = date(2023, 6, 16),
     ):
         self._check_start_end_dates(start_date, end_date)
         return self._download_sail_raw_data(start_date, end_date, variables, interval="h")
