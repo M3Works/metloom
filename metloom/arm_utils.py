@@ -166,5 +166,4 @@ def _read_arm_file(file: os.PathLike) -> pandas.DataFrame:
         return None
 
     df = data.to_dataframe()
-    print(df)
     return df[~df.index.duplicated(keep="first")]
