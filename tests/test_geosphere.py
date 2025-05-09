@@ -23,7 +23,7 @@ TODAY = date.today()
 class TestGeoSphereCurrentPointData(BasePointDataTest):
     DATA_DIR = Path(__file__).parent.joinpath("data")
     EXPECTED_DATETIMES = pd.date_range(
-        TODAY.isoformat(), periods=3, freq='H', tz='UTC'
+        TODAY.isoformat(), periods=3, freq='h', tz='UTC'
     )
 
     @pytest.fixture(scope="class")
