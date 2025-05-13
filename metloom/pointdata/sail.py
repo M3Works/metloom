@@ -1,13 +1,16 @@
 import os
-from datetime import date
-from typing import List
+from typing import Union
+from datetime import date, datetime
+from pathlib import Path
 
 import geopandas as gpd
+from shapely.geometry import Point
 import pandas as pd
 import logging
 
-from .base import PointData
+from .base import PointData, PointDataCollection
 from .. import arm_utils
+from ..dataframe_utils import shp_to_box
 from ..variables import SAILStationVariables, SensorDescription
 from ..dataframe_utils import resample_series
 
@@ -24,11 +27,20 @@ class SAILPointData(PointData):
 
     def __init__(
         self,
+        station_id: str = "GUC",
+        metadata: dict = None,
+        cache: Union[str, Path] = Path(".cache"),
+        token_json: Union[str, Path] = Path("~/.arm_token.json"),
     ):
-        # The SAIL data seems specific to the GUC site, but just in case
-        # we want to add more sites in the future, we will keep this as a tuple
-        # of sites
+        super().__init__(
+            station_id=station_id,
+            name="Surface Atmosphere Integrated Field Laboratory (SAIL)",
+            metadata=metadata,
+        )
+        # The SAIL data is specific to the GUC site in Gunnison, CO
         self._sites = ("GUC",)
+        self._cache = cache
+        self._token_json = Path(token_json).expanduser() if token_json else None
 
         # ARM data requires a user id and access token to download, these must be
         # provided in environment variables
@@ -40,29 +52,32 @@ class SAILPointData(PointData):
 
     def get_daily_data(
         self,
-        variables: List[SensorDescription],
-        *,
-        start_date: date = date(2021, 9, 1),
-        end_date: date = date(2023, 6, 16),
+        start_date: datetime,
+        end_date: datetime,
+        variables: list[SensorDescription],
     ):
         self._check_start_end_dates(start_date, end_date)
-        return self._download_sail_raw_data(start_date, end_date, variables, interval="D")
+        return self._download_sail_data(
+            start_date,
+            end_date,
+            variables,
+            interval="D",
+        )
 
     def get_hourly_data(
         self,
-        variables: List[SensorDescription],
-        *,
-        start_date: date = date(2021, 9, 1),
-        end_date: date = date(2023, 6, 16),
+        start_date: datetime,
+        end_date: datetime,
+        variables: list[SensorDescription],
     ):
         self._check_start_end_dates(start_date, end_date)
-        return self._download_sail_raw_data(start_date, end_date, variables, interval="h")
+        return self._download_sail_data(start_date, end_date, variables, interval="h")
 
-    def _download_sail_raw_data(
+    def _download_sail_data(
         self,
-        start_date: date,
-        end_date: date,
-        variables: List[SensorDescription],
+        start_date: datetime,
+        end_date: datetime,
+        variables: list[SensorDescription],
         interval: str,
     ) -> pd.DataFrame:
         """
@@ -95,6 +110,9 @@ class SAILPointData(PointData):
                 data_level=variable.extra["data_level"],
                 start=start_date,
                 end=end_date,
+                variables=[variable.code],
+                destination=self._cache,
+                token_json=self._token_json,
             )
             if df is not None:
                 columns.append(pd.Series(resample_series(df[variable.code], variable, interval), name=variable.name))
@@ -111,21 +129,41 @@ class SAILPointData(PointData):
             )
             return pd.DataFrame()
 
+    @classmethod
     def points_from_geometry(
-        self,
+        cls,
         geometry: gpd.GeoDataFrame,
-        variables: List[SensorDescription],
-        snow_courses=False,
+        variables: list[SensorDescription],
+        snow_courses=None,
         within_geometry=True,
         buffer=0.0,
     ):
-        raise NotImplementedError("SAILPointData.points_from_geometry not implemented")
+        if snow_courses is not None:
+            LOG.warning("The snow_courses argument is not used in SAILPointData.points_from_geometry")
+
+        if within_geometry:
+            print(geometry)
+        # get geometry object to use for searching within
+        boundary = geometry.to_crs(4326) if within_geometry else shp_to_box(geometry)
+        if buffer > 0:
+            boundary = boundary.buffer(buffer)
+
+        # get the geometry of the points to check
+        stations = list()
+        for variable in variables:
+            lat, lon, _ = SAILPointData.get_location(variable)
+            stations.append(Point(lon, lat))
+        stations = gpd.GeoSeries(stations, crs="EPSG:4326")
+        indices = stations[stations.within(boundary)].index.to_list()
+
+        points = [SAILPointData(station_id=variables[idx].extra["site"]) for idx in indices]
+        return PointDataCollection(points)
 
     def get_snow_course_data(
         self,
         start_date: date,
         end_date: date,
-        variables: List[SensorDescription],
+        variables: list[SensorDescription],
     ):
         raise NotImplementedError("SAILPointData.get_snow_course_data not implemented")
 
@@ -146,3 +184,49 @@ class SAILPointData(PointData):
             raise ValueError(f"Start date, {start}, must be after 2021-09-01, the first date of data available")
         if end > date(2023, 6, 16):
             raise ValueError(f"End date, {end}, must be before 2023-06-16, the last date of data available")
+
+    @staticmethod
+    def get_location(variable: SensorDescription) -> tuple[float, float, float]:
+        """
+        Get the location of the site and facility code.
+
+        The Gunnison SAIL site has 3 supplemental sites (S2, S3, S4) and one main site (M1). The S4 site
+        is atmospheric measurements made with a teathered balloon, thus the location is not constant and
+        it is excluded from the hard-coded locations.
+
+        Returns a tuple of (latitude, longitude, elevation [m])
+        """
+        site = variable.extra["site"].upper()
+        facility_code = variable.extra["facility_code"].upper()
+        if (site, facility_code) == ("GUC", "M1"):
+            LOG.debug(f"Using known GUC M1 location for {site} {facility_code}")
+            # m1 = arm_utils.get_station_location(
+            #     site="GUC",
+            #     measurement="wbpluvio2",
+            #     facility_code="M1",
+            #     data_level="a1",
+            # )
+            # print('GUC:M1', m1)
+            return (38.956158, -106.987854, 2886.0)
+
+        elif (site, facility_code) == ("GUC", "S2"):
+            LOG.debug(f"Using known GUC S2 location for {site} {facility_code}")
+            # return (38.956158, -106.987854, 2886.0)
+        elif (site, facility_code) == ("GUC", "S3"):
+            LOG.debug(f"Using known GUC S3 location for {site} {facility_code}")
+            # s3 = arm_utils.get_station_location(
+            #     site="GUC",
+            #     measurement="sebs",
+            #     facility_code="S3",
+            #     data_level="b1",)
+            # print('GUC:S3', s3)
+            return (38.941555, -106.97313, 2857.0)
+        else:
+            LOG.warning(f"Unepected site information, attmpting to retrieve location for {site} {facility_code}")
+            loc = arm_utils.get_station_location(
+                site=site,
+                measurement=variable.extra["measurement"],
+                facility_code=facility_code,
+                data_level=variable.extra["data_level"],
+            )
+            return loc
