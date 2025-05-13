@@ -211,7 +211,14 @@ class SAILPointData(PointData):
 
         elif (site, facility_code) == ("GUC", "S2"):
             LOG.debug(f"Using known GUC S2 location for {site} {facility_code}")
-            # return (38.956158, -106.987854, 2886.0)
+            # s2 = arm_utils.get_station_location(
+            #     site="GUC",
+            #     measurement="ld",
+            #     facility_code="S2",
+            #     data_level="b1",
+            # )
+            # print("GUC:S2", s2)
+            return (38.89836, -106.94314, 3137.0)
         elif (site, facility_code) == ("GUC", "S3"):
             LOG.debug(f"Using known GUC S3 location for {site} {facility_code}")
             # s3 = arm_utils.get_station_location(
