@@ -27,18 +27,15 @@ class SAILPointData(PointData):
 
     def __init__(
         self,
-        station_id: str = "GUC",
         metadata: dict = None,
         cache: Union[str, Path] = Path(".cache"),
         token_json: Union[str, Path] = Path("~/.arm_token.json"),
     ):
         super().__init__(
-            station_id=station_id,
+            station_id="GUC",
             name="Surface Atmosphere Integrated Field Laboratory (SAIL)",
             metadata=metadata,
         )
-        # The SAIL data is specific to the GUC site in Gunnison, CO
-        self._sites = ("GUC",)
         self._cache = cache
         self._token_json = Path(token_json).expanduser() if token_json else None
 
@@ -96,11 +93,9 @@ class SAILPointData(PointData):
             if not hasattr(self.ALLOWED_VARIABLES, variable.name):
                 raise ValueError(f"Variable {variable} is not allowed. Allowed variables are: {self.ALLOWED_VARIABLES}")
 
-            sites = {s.upper() for s in self._sites}
-            if variable.extra["site"].upper() not in sites:
+            if variable.extra["site"].upper() != "GUC":
                 raise ValueError(
-                    f"Variable {variable} is not from a SAIL site ({variable.extra['site']}). "
-                    f"Allowed site(s) are: {', '.join(sites)}"
+                    f"Variable {variable} is not from a SAIL site (GUC), but {variable.extra['site']} provided. "
                 )
 
             df = arm_utils.get_station_data(
