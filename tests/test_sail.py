@@ -42,7 +42,7 @@ def setup_env():
 
 def test_get_hourly_data(mock_requests_get, setup_env):
     # the nc files exist, this test will not download
-    obj = SAILPointData()
+    obj = SAILPointData("GUC:M1")
     df = obj.get_hourly_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATIONACCUM])
     assert df is not None
     assert len(df) == 48
@@ -52,7 +52,7 @@ def test_get_hourly_data(mock_requests_get, setup_env):
 
 def test_get_daily_data(mock_requests_get, setup_env):
     # this mocks the necessary function to test the download code
-    obj = SAILPointData()
+    obj = SAILPointData(station_id="GUC:M1")
     df = obj.get_daily_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATIONACCUM])
     assert df is not None
     assert len(df) == 2
@@ -61,7 +61,7 @@ def test_get_daily_data(mock_requests_get, setup_env):
 
 
 def test_check_start_end_dates():
-    obj = SAILPointData()
+    obj = SAILPointData(station_id="GUC:M1")
     # Test with end_date before start_date
     with pytest.raises(ValueError):
         obj._check_start_end_dates(datetime.fromisoformat("2023-01-02"), datetime.fromisoformat("2023-01-01"))

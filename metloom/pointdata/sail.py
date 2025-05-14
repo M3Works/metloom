@@ -27,17 +27,26 @@ class SAILPointData(PointData):
 
     def __init__(
         self,
+        station_id: str,
         metadata: dict = None,
         cache: Union[str, Path] = Path(".cache"),
         token_json: Union[str, Path] = Path("~/.arm_token.json"),
     ):
+        assert station_id.upper() in ("GUC:M1", "GUC:S1", "GUC:S2", "GUC:S3", "GUC:S4"), (
+            f"Invalid station_id: {station_id}"
+        )
+
         super().__init__(
-            station_id="GUC",
+            station_id=station_id.upper(),
             name="Surface Atmosphere Integrated Field Laboratory (SAIL)",
             metadata=metadata,
         )
         self._cache = cache
         self._token_json = Path(token_json).expanduser() if token_json else None
+
+        site = station_id.split(":")
+        self._site = site[0].upper()
+        self._facility_code = site[1].upper()
 
         # ARM data requires a user id and access token to download, these must be
         # provided in environment variables
@@ -90,12 +99,17 @@ class SAILPointData(PointData):
 
         columns = []
         for variable in variables:
+            sta_site = variable.extra["site"].upper()
+            sta_facility_code = variable.extra["facility_code"].upper()
             if not hasattr(self.ALLOWED_VARIABLES, variable.name):
                 raise ValueError(f"Variable {variable} is not allowed. Allowed variables are: {self.ALLOWED_VARIABLES}")
 
-            if variable.extra["site"].upper() != "GUC":
+            if sta_site != self._site or sta_facility_code != self._facility_code:
                 raise ValueError(
-                    f"Variable {variable} is not from a SAIL site (GUC), but {variable.extra['site']} provided. "
+                    (
+                        f"Variable {variable.code} is not defined for the SAIL site "
+                        f"({self._site}:{self._facility_code}), but {sta_site}:{sta_facility_code} provided."
+                    )
                 )
 
             df = arm_utils.get_station_data(
@@ -139,9 +153,9 @@ class SAILPointData(PointData):
         if within_geometry:
             print(geometry)
         # get geometry object to use for searching within
-        boundary = geometry.to_crs(4326) if within_geometry else shp_to_box(geometry)
+        boundary = geometry.to_crs(4326) if within_geometry else shp_to_box(geometry).to_crs(4326)
         if buffer > 0:
-            boundary = boundary.buffer(buffer)
+            boundary = boundary.to_crs(4326).buffer(buffer)
 
         # get the geometry of the points to check
         stations = list()
@@ -151,7 +165,10 @@ class SAILPointData(PointData):
         stations = gpd.GeoSeries(stations, crs="EPSG:4326")
         indices = stations[stations.within(boundary)].index.to_list()
 
-        points = [SAILPointData(station_id=variables[idx].extra["site"]) for idx in indices]
+        points = [
+            SAILPointData(station_id=f"{variables[idx].extra['site']}:{variables[idx].extra['facility_code']}")
+            for idx in indices
+        ]
         return PointDataCollection(points)
 
     def get_snow_course_data(
