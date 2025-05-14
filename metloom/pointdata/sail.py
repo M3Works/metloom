@@ -185,44 +185,34 @@ class SAILPointData(PointData):
         """
         Get the location of the site and facility code.
 
-        The Gunnison SAIL site has 3 supplemental sites (S2, S3, S4) and one main site (M1). The S4 site
+        The Gunnison SAIL site has 3 supplemental sites (S1, S2, S3, S4) and one main site (M1). The S4 site
         is atmospheric measurements made with a teathered balloon, thus the location is not constant and
         it is excluded from the hard-coded locations.
 
         Returns a tuple of (latitude, longitude, elevation [m])
+        https://www.arm.gov/capabilities/observatories/guc/locations
         """
         site = variable.extra["site"].upper()
         facility_code = variable.extra["facility_code"].upper()
         if (site, facility_code) == ("GUC", "M1"):
             LOG.debug(f"Using known GUC M1 location for {site} {facility_code}")
-            # m1 = arm_utils.get_station_location(
-            #     site="GUC",
-            #     measurement="wbpluvio2",
-            #     facility_code="M1",
-            #     data_level="a1",
-            # )
-            # print('GUC:M1', m1)
-            return (38.956158, -106.987854, 2886.0)
+            return (38.956158, -106.987856, 2886.0)
+
+        elif (site, facility_code) == ("GUC", "S1"):
+            LOG.debug(f"Using known GUC S1 location for {site} {facility_code}")
+            return (38.956158, -106.987856, 2886.0)
 
         elif (site, facility_code) == ("GUC", "S2"):
             LOG.debug(f"Using known GUC S2 location for {site} {facility_code}")
-            # s2 = arm_utils.get_station_location(
-            #     site="GUC",
-            #     measurement="ld",
-            #     facility_code="S2",
-            #     data_level="b1",
-            # )
-            # print("GUC:S2", s2)
-            return (38.89836, -106.94314, 3137.0)
+            return (38.898361, -106.94314, 3137.0)
+
         elif (site, facility_code) == ("GUC", "S3"):
             LOG.debug(f"Using known GUC S3 location for {site} {facility_code}")
-            # s3 = arm_utils.get_station_location(
-            #     site="GUC",
-            #     measurement="sebs",
-            #     facility_code="S3",
-            #     data_level="b1",)
-            # print('GUC:S3', s3)
-            return (38.941555, -106.97313, 2857.0)
+            return (38.941556, -106.973128, 2857.0)
+
+        elif (site, facility_code) == ("GUC", "S4"):
+            LOG.debug(f"Using known GUC S4 location for {site} {facility_code}")
+            return (38.922019, -106.9509, 2764.0)
         else:
             LOG.warning(f"Unepected site information, attmpting to retrieve location for {site} {facility_code}")
             loc = arm_utils.get_station_location(

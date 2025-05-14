@@ -141,36 +141,6 @@ def get_station_data(
     return df
 
 
-def _download_arm_files(
-    user_id: str,
-    access_token: str,
-    ds: str,
-    url: str,
-    variables: list[str],
-    destination: os.PathLike,
-    files: list[str],
-) -> list[os.PathLike]:
-    """
-    Download a list of files from the ARM Live Data Webservice, using /saveData
-    """
-    d0 = ARM_FILE_DATE_REGEX.search(files[0]).group("date")
-    dn = ARM_FILE_DATE_REGEX.search(files[-1]).group("date")
-    dv = "_".join(variables)
-    output = pathlib.Path(destination, f"{ds}_{dv}_{d0}_{dn}.csv")
-
-    if output.exists():
-        LOG.debug(f"File {output} already exists, skipping download.")
-        return output
-
-    params = dict(user=f"{user_id}:{access_token}", variables=",".join(variables), wt="csv")
-    response = requests.get(f"{url}/mod", params=params, data=json.dumps(files))
-    response.raise_for_status()
-    with open(output, "wb") as f:
-        f.write(response.content)
-
-    return output
-
-
 def get_station_location(
     site: str,
     measurement: str,
@@ -213,3 +183,33 @@ def _get_location_helper(data: pd.Series, text: str) -> float:
         )
         return float(data.mean())
     return float(unique_data.iloc[0])
+
+
+def _download_arm_files(
+    user_id: str,
+    access_token: str,
+    ds: str,
+    url: str,
+    variables: list[str],
+    destination: os.PathLike,
+    files: list[str],
+) -> list[os.PathLike]:
+    """
+    Download a list of files from the ARM Live Data Webservice, using /saveData
+    """
+    d0 = ARM_FILE_DATE_REGEX.search(files[0]).group("date")
+    dn = ARM_FILE_DATE_REGEX.search(files[-1]).group("date")
+    dv = "_".join(variables)
+    output = pathlib.Path(destination, f"{ds}_{dv}_{d0}_{dn}.csv")
+
+    if output.exists():
+        LOG.debug(f"File {output} already exists, skipping download.")
+        return output
+
+    params = dict(user=f"{user_id}:{access_token}", variables=",".join(variables), wt="csv")
+    response = requests.get(f"{url}/mod", params=params, data=json.dumps(files))
+    response.raise_for_status()
+    with open(output, "wb") as f:
+        f.write(response.content)
+
+    return output
