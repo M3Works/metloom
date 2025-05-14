@@ -497,17 +497,37 @@ class SnowExVariables(VariableBase):
     DOWNSHORTWAVE = SensorDescription(
         "SDn_Avg",
         "DOWNWARD SHORTWAVE RADIATION",
+        units="w/m^2",
         description="Shortwave radiation measured with downward-facing sensor",
+    )
+    UPLONGWAVE = SensorDescription(
+        "LUpCo_Avg",
+        "UPWARD LONGWAVE RADIATION",
+        units="w/m^2",
+        description="Longwave radiation measured with upward-facing sensor")
+
+    DOWNLONGWAVE = SensorDescription(
+        "LDnCo_Avg",
+        "DOWNWARD LONGWAVE RADIATION",
+        units="w/m^2",
+        description="Longwave radiation measured with downward-facing sensor",
     )
     SNOWDEPTH = SensorDescription(
         "SnowDepthFilter(m)",
         "SNOWDEPTH",
+        units='meters',
         description="Snow surface height in meters w/ filtering",
     )
 
-    TEMPGROUND5CM = SensorDescription("TC_5cm_Avg", "SOIL TEMP @ 5cm")
-    TEMPGROUND20CM = SensorDescription("TC_20cm_Avg", "SOIL TEMP @ 20cm")
-    TEMPGROUND50CM = SensorDescription("TC_50cm_Avg", "SOIL TEMP @ 50cm")
+    TEMPGROUND5CM = SensorDescription("TC_5cm_Avg",
+                                      "SOIL TEMP @ 5cm",
+                                      units="deg C")
+    TEMPGROUND20CM = SensorDescription("TC_20cm_Avg",
+                                       "SOIL TEMP @ 20cm",
+                                       units='deg C')
+    TEMPGROUND50CM = SensorDescription("TC_50cm_Avg",
+                                       "SOIL TEMP @ 50cm",
+                                       units='deg C')
 
 
 class CSASVariables(VariableBase):
