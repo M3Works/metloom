@@ -577,3 +577,42 @@ class SAILStationVariables(VariableBase):
             units="mm",
         ),
     )
+    SNOWDEPTH = SensorDescription(
+        "snow_depth_intensity",
+        "SNOWDEPTH",
+        description="New snow height",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="LD",
+            facility_code="M1",
+            data_level="b1",
+            units="mm",
+        ),
+    )
+    DOWNSHORTWAVE = SensorDescription(
+        "down_short_hemisp",
+        "DOWN SHORTWAVE RADIATION",
+        description="Downwelling shortwave hemispheric irradiance",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="SEBS",
+            facility_code="M1",
+            data_level="b1",
+            units="w/m^2",
+        ),
+    )
+    UPSHORTWAVE = SensorDescription(
+        "up_short_hemisp",
+        "UP SHORTWAVE RADIATION",
+        description="Upwelling shortwave hemispheric irradiance",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="SEBS",
+            facility_code="M1",
+            data_level="b1",
+            units="w/m^2",
+        ),
+    )
