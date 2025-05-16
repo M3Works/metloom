@@ -129,11 +129,10 @@ class SAILPointData(PointData):
                 if units is not None:
                     columns.append(pd.Series(units, index=columns[-1].index, name=f"{variable.name}_units"))
 
-
         if columns:
             df = pd.concat(columns, axis="columns")
-            df['site'] = f"{self._site}:{self._facility_code}"
-            df['datasource'] = "ARM"
+            df["site"] = f"{self._site}:{self._facility_code}"
+            df["datasource"] = "ARM"
             df.reset_index(inplace=True)
             df = df.set_index(["datetime", "site"])
             return df
@@ -141,7 +140,7 @@ class SAILPointData(PointData):
             LOG.error(
                 f"No data found for the specified variables: {', '.join(v.name for v in variables)}.\n"
                 f"Please check the variable names and the date range."
-        )
+            )
         return pd.DataFrame()
 
     @classmethod
@@ -203,7 +202,7 @@ class SAILPointData(PointData):
             raise ValueError(f"End date, {end}, must be before 2023-06-16, the last date of data available")
 
     @staticmethod
-    def get_location(station_id: str, variable: SensorDescription=None) -> tuple[float, float, float]:
+    def get_location(station_id: str, variable: SensorDescription = None) -> tuple[float, float, float]:
         """
         Get the location of the site and facility code.
 
@@ -217,15 +216,15 @@ class SAILPointData(PointData):
 
         if station_id == "GUC:M1":
             LOG.debug(f"Using known GUC M1 location for {station_id}")
-            return (38.956158, -106.987856, 2886.0*3.28084)
+            return (38.956158, -106.987856, 2886.0 * 3.28084)
 
         elif station_id == "GUC:S1":
             LOG.debug(f"Using known GUC S1 location for {station_id}")
-            return (38.956158, -106.987856, 2886.0*3.28084)
+            return (38.956158, -106.987856, 2886.0 * 3.28084)
 
         elif station_id == "GUC:S2":
             LOG.debug(f"Using known GUC S2 location for {station_id}")
-            return (38.898361, -106.94314, 3137.0*3.28084)
+            return (38.898361, -106.94314, 3137.0 * 3.28084)
 
         elif station_id == "GUC:S3":
             LOG.debug(f"Using known GUC S3 location for {station_id}")
@@ -233,7 +232,7 @@ class SAILPointData(PointData):
 
         elif station_id == "GUC:S4":
             LOG.debug(f"Using known GUC S4 location for {station_id}")
-            return (38.922019, -106.9509, 2764.0*3.28084)
+            return (38.922019, -106.9509, 2764.0 * 3.28084)
         else:
             LOG.warning(f"Unexpected site information, attmpting to retrieve location for {station_id}")
             if variable is None:

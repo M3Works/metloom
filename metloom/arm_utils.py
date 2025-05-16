@@ -81,21 +81,31 @@ def get_station_data(
     user_id = user_id or os.getenv("M3W_ARM_USER_ID", None)
 
     # check if user_id and access_token are provided
-    assert user_id is not None, "user_id must be provided, set M3W_ARM_USER_ID environment variable"
-    assert access_token is not None, "access_token must be provided, set M3W_ARM_ACCESS_TOKEN environment variable"
+    assert (
+        user_id is not None
+    ), "user_id must be provided, set M3W_ARM_USER_ID environment variable"
+    assert (
+        access_token is not None
+    ), "access_token must be provided, set M3W_ARM_ACCESS_TOKEN environment variable"
 
     #  define the parameters for the query
     q_params = dict(
         user=f"{user_id}:{access_token}",
-        ds=(f"{site.lower()}{measurement.lower()}{facility_code.upper()}.{data_level.lower()}"),
+        ds=(
+            f"{site.lower()}{measurement.lower()}{facility_code.upper()}.{data_level.lower()}"
+        ),
         wt="json",
     )
     if start is not None:
         start = datetime.fromisoformat(start) if isinstance(start, str) else start
-        q_params["start"] = start.date().isoformat() if hasattr(start, "date") else start.isoformat()
+        q_params["start"] = (
+            start.date().isoformat() if hasattr(start, "date") else start.isoformat()
+        )
     if end is not None:
         end = datetime.fromisoformat(end) if isinstance(end, str) else end
-        q_params["end"] = end.date().isoformat() if hasattr(end, "date") else end.isoformat()
+        q_params["end"] = (
+            end.date().isoformat() if hasattr(end, "date") else end.isoformat()
+        )
 
     # make the request to the ARM Live Data Webservice
     LOG.info(f"Querying {url}/query for data.")
@@ -130,11 +140,16 @@ def get_station_data(
                     files=chunk,
                 )
             )
-        csv_files = [future.result() for future in concurrent.futures.as_completed(jobs)]
+        csv_files = [
+            future.result() for future in concurrent.futures.as_completed(jobs)
+        ]
 
     # read the csv files into a single DataFrame
     LOG.info("Reading files into a single DataFrame.")
-    df = pd.concat([pd.read_csv(f, index_col="time", parse_dates=True) for f in csv_files], axis="index")
+    df = pd.concat(
+        [pd.read_csv(f, index_col="time", parse_dates=True) for f in csv_files],
+        axis="index",
+    )
     df.sort_index(inplace=True)
     df = df[~df.index.duplicated(keep="first")]
     df.index.name = "datetime"
@@ -169,7 +184,7 @@ def get_station_location(
     lat = _get_location_helper(df["lat"], "latitude")
     lon = _get_location_helper(df["lon"], "longitude")
     alt = _get_location_helper(df["alt"], "altitude")
-    return lat, lon, alt * 3.28084 # convert meters to feet
+    return lat, lon, alt * 3.28084  # convert meters to feet
 
 
 def _get_location_helper(data: pd.Series, text: str) -> float:
@@ -206,7 +221,9 @@ def _download_arm_files(
         LOG.debug(f"File {output} already exists, skipping download.")
         return output
 
-    params = dict(user=f"{user_id}:{access_token}", variables=",".join(variables), wt="csv")
+    params = dict(
+        user=f"{user_id}:{access_token}", variables=",".join(variables), wt="csv"
+    )
     response = requests.get(f"{url}/mod", params=params, data=json.dumps(files))
     response.raise_for_status()
     with open(output, "wb") as f:
