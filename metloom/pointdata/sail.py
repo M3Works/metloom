@@ -129,14 +129,20 @@ class SAILPointData(PointData):
                 if units is not None:
                     columns.append(pd.Series(units, index=columns[-1].index, name=f"{variable.name}_units"))
 
+
         if columns:
-            return pd.concat(columns, axis="columns")
+            df = pd.concat(columns, axis="columns")
+            df['site'] = f"{self._site}:{self._facility_code}"
+            df['datasource'] = "ARM"
+            df.reset_index(inplace=True)
+            df = df.set_index(["datetime", "site"])
+            return df
         else:
             LOG.error(
                 f"No data found for the specified variables: {', '.join(v.name for v in variables)}.\n"
                 f"Please check the variable names and the date range."
-            )
-            return pd.DataFrame()
+        )
+        return pd.DataFrame()
 
     @classmethod
     def points_from_geometry(
@@ -150,8 +156,6 @@ class SAILPointData(PointData):
         if snow_courses is not None:
             LOG.warning("The snow_courses argument is not used in SAILPointData.points_from_geometry")
 
-        if within_geometry:
-            print(geometry)
         # get geometry object to use for searching within
         boundary = geometry.to_crs(4326) if within_geometry else shp_to_box(geometry).to_crs(4326)
         if buffer > 0:
@@ -160,7 +164,8 @@ class SAILPointData(PointData):
         # get the geometry of the points to check
         stations = list()
         for variable in variables:
-            lat, lon, _ = SAILPointData.get_location(variable)
+            station_id = f"{variable.extra['site']}:{variable.extra['facility_code']}"
+            lat, lon, _ = SAILPointData.get_location(station_id, variable)
             stations.append(Point(lon, lat))
         stations = gpd.GeoSeries(stations, crs="EPSG:4326")
         indices = stations[stations.within(boundary)].index.to_list()
@@ -198,7 +203,7 @@ class SAILPointData(PointData):
             raise ValueError(f"End date, {end}, must be before 2023-06-16, the last date of data available")
 
     @staticmethod
-    def get_location(variable: SensorDescription) -> tuple[float, float, float]:
+    def get_location(station_id: str, variable: SensorDescription=None) -> tuple[float, float, float]:
         """
         Get the location of the site and facility code.
 
@@ -209,33 +214,34 @@ class SAILPointData(PointData):
         Returns a tuple of (latitude, longitude, elevation [m])
         https://www.arm.gov/capabilities/observatories/guc/locations
         """
-        site = variable.extra["site"].upper()
-        facility_code = variable.extra["facility_code"].upper()
-        if (site, facility_code) == ("GUC", "M1"):
-            LOG.debug(f"Using known GUC M1 location for {site} {facility_code}")
+
+        if station_id == "GUC:M1":
+            LOG.debug(f"Using known GUC M1 location for {station_id}")
             return (38.956158, -106.987856, 2886.0)
 
-        elif (site, facility_code) == ("GUC", "S1"):
-            LOG.debug(f"Using known GUC S1 location for {site} {facility_code}")
+        elif station_id == "GUC:S1":
+            LOG.debug(f"Using known GUC S1 location for {station_id}")
             return (38.956158, -106.987856, 2886.0)
 
-        elif (site, facility_code) == ("GUC", "S2"):
-            LOG.debug(f"Using known GUC S2 location for {site} {facility_code}")
+        elif station_id == "GUC:S2":
+            LOG.debug(f"Using known GUC S2 location for {station_id}")
             return (38.898361, -106.94314, 3137.0)
 
-        elif (site, facility_code) == ("GUC", "S3"):
-            LOG.debug(f"Using known GUC S3 location for {site} {facility_code}")
+        elif station_id == "GUC:S3":
+            LOG.debug(f"Using known GUC S3 location for {station_id}")
             return (38.941556, -106.973128, 2857.0)
 
-        elif (site, facility_code) == ("GUC", "S4"):
-            LOG.debug(f"Using known GUC S4 location for {site} {facility_code}")
+        elif station_id == "GUC:S4":
+            LOG.debug(f"Using known GUC S4 location for {station_id}")
             return (38.922019, -106.9509, 2764.0)
         else:
-            LOG.warning(f"Unepected site information, attmpting to retrieve location for {site} {facility_code}")
+            LOG.warning(f"Unexpected site information, attmpting to retrieve location for {station_id}")
+            if variable is None:
+                raise ValueError("Variable must be provided to get location")
             loc = arm_utils.get_station_location(
-                site=site,
+                site=variable.extra["site"],
                 measurement=variable.extra["measurement"],
-                facility_code=facility_code,
+                facility_code=variable.extra["facility_code"],
                 data_level=variable.extra["data_level"],
             )
             return loc

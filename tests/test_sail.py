@@ -43,21 +43,21 @@ def setup_env():
 def test_get_hourly_data(mock_requests_get, setup_env):
     # the nc files exist, this test will not download
     obj = SAILPointData("GUC:M1")
-    df = obj.get_hourly_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATIONACCUM])
+    df = obj.get_hourly_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATION])
     assert df is not None
     assert len(df) == 48
-    assert df.iloc[24]["PRECIPITATIONACCUM"] == 0.74
-    assert df.iloc[24]["PRECIPITATIONACCUM_units"] == "mm"
+    assert df.iloc[24]["PRECIPITATION"] == 0.74
+    assert df.iloc[24]["PRECIPITATION_units"] == "mm"
 
 
 def test_get_daily_data(mock_requests_get, setup_env):
     # this mocks the necessary function to test the download code
     obj = SAILPointData(station_id="GUC:M1")
-    df = obj.get_daily_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATIONACCUM])
+    df = obj.get_daily_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATION])
     assert df is not None
     assert len(df) == 2
-    assert df.iloc[1]["PRECIPITATIONACCUM"] == 6.27
-    assert df.iloc[1]["PRECIPITATIONACCUM_units"] == "mm"
+    assert df.iloc[1]["PRECIPITATION"] == 6.27
+    assert df.iloc[1]["PRECIPITATION_units"] == "mm"
 
 
 def test_check_start_end_dates():
@@ -89,7 +89,7 @@ def test_points_from_geometry_within_false(station_inside_gdf, station_outside_g
     # bounding box, both should be within bounding box
     gdf = SAILPointData.points_from_geometry(
         geometry=station_inside_gdf,
-        variables=[SAILStationVariables.PRECIPITATIONACCUM],
+        variables=[SAILStationVariables.PRECIPITATION],
         within_geometry=False,
         buffer=0.0,
     )
@@ -97,7 +97,7 @@ def test_points_from_geometry_within_false(station_inside_gdf, station_outside_g
 
     gdf = SAILPointData.points_from_geometry(
         geometry=station_outside_gdf,
-        variables=[SAILStationVariables.PRECIPITATIONACCUM],
+        variables=[SAILStationVariables.PRECIPITATION],
         within_geometry=False,
         buffer=0.0,
     )
@@ -107,7 +107,7 @@ def test_points_from_geometry_within_false(station_inside_gdf, station_outside_g
 def test_points_from_geometry_within_true(station_inside_gdf, station_outside_gdf):
     gdf = SAILPointData.points_from_geometry(
         geometry=station_inside_gdf,
-        variables=[SAILStationVariables.PRECIPITATIONACCUM],
+        variables=[SAILStationVariables.PRECIPITATION],
         within_geometry=True,
         buffer=0.0,
     )
@@ -115,7 +115,7 @@ def test_points_from_geometry_within_true(station_inside_gdf, station_outside_gd
 
     gdf = SAILPointData.points_from_geometry(
         geometry=station_outside_gdf,
-        variables=[SAILStationVariables.PRECIPITATIONACCUM],
+        variables=[SAILStationVariables.PRECIPITATION],
         within_geometry=True,
         buffer=0.0,
     )
@@ -125,7 +125,7 @@ def test_points_from_geometry_within_true(station_inside_gdf, station_outside_gd
 def test_points_from_geometry_within_true_with_buffer(station_inside_gdf, station_outside_gdf):
     gdf = SAILPointData.points_from_geometry(
         geometry=station_outside_gdf,
-        variables=[SAILStationVariables.PRECIPITATIONACCUM],
+        variables=[SAILStationVariables.PRECIPITATION],
         within_geometry=True,
         buffer=0.3,
     )

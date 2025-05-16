@@ -133,7 +133,7 @@ def get_station_data(
         csv_files = [future.result() for future in concurrent.futures.as_completed(jobs)]
 
     # read the csv files into a single DataFrame
-    LOG.info(f"Reading {len(csv_files)} files into a single DataFrame.")
+    LOG.info("Reading files into a single DataFrame.")
     df = pd.concat([pd.read_csv(f, index_col="time", parse_dates=True) for f in csv_files], axis="index")
     df.sort_index(inplace=True)
     df = df[~df.index.duplicated(keep="first")]
