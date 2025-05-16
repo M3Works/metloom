@@ -277,8 +277,9 @@ class PointData(GenericPoint):
                 kwargs[k] = v
         return kwargs
 
+    @classmethod
     def points_from_geometry(
-        self,
+        cls,
         geometry: gpd.GeoDataFrame,
         variables: List[SensorDescription],
         snow_courses=False,
