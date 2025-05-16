@@ -169,7 +169,7 @@ def get_station_location(
     lat = _get_location_helper(df["lat"], "latitude")
     lon = _get_location_helper(df["lon"], "longitude")
     alt = _get_location_helper(df["alt"], "altitude")
-    return lat, lon, alt
+    return lat, lon, alt * 3.28084 # convert meters to feet
 
 
 def _get_location_helper(data: pd.Series, text: str) -> float:

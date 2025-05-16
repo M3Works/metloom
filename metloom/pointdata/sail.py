@@ -217,15 +217,15 @@ class SAILPointData(PointData):
 
         if station_id == "GUC:M1":
             LOG.debug(f"Using known GUC M1 location for {station_id}")
-            return (38.956158, -106.987856, 2886.0)
+            return (38.956158, -106.987856, 2886.0*3.28084)
 
         elif station_id == "GUC:S1":
             LOG.debug(f"Using known GUC S1 location for {station_id}")
-            return (38.956158, -106.987856, 2886.0)
+            return (38.956158, -106.987856, 2886.0*3.28084)
 
         elif station_id == "GUC:S2":
             LOG.debug(f"Using known GUC S2 location for {station_id}")
-            return (38.898361, -106.94314, 3137.0)
+            return (38.898361, -106.94314, 3137.0*3.28084)
 
         elif station_id == "GUC:S3":
             LOG.debug(f"Using known GUC S3 location for {station_id}")
@@ -233,7 +233,7 @@ class SAILPointData(PointData):
 
         elif station_id == "GUC:S4":
             LOG.debug(f"Using known GUC S4 location for {station_id}")
-            return (38.922019, -106.9509, 2764.0)
+            return (38.922019, -106.9509, 2764.0*3.28084)
         else:
             LOG.warning(f"Unexpected site information, attmpting to retrieve location for {station_id}")
             if variable is None:
