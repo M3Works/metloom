@@ -561,9 +561,9 @@ class SAILStationVariables(VariableBase):
     https://adc.arm.gov/discovery/#/results/site_code::guc
     """
 
-    PRECIPITATIONACCUM = SensorDescription(
+    PRECIPITATION = SensorDescription(
         "accum_rtnrt",
-        "PRECIPITATIONACCUM",
+        "PRECIPITATION",
         description=(
             "Accumulated amounts of precipitation over the sampling interval exceeding a threshold of 005mm "
             "or the accumulated amount of fine precipitation observed over the last hour"
