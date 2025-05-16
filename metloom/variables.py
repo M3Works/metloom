@@ -568,12 +568,52 @@ class SAILStationVariables(VariableBase):
             "Accumulated amounts of precipitation over the sampling interval exceeding a threshold of 005mm "
             "or the accumulated amount of fine precipitation observed over the last hour"
         ),
-        accumulated=True,
+        accumulated=False,
         extra=dict(
             site="GUC",
             measurement="wbpluvio2",
             facility_code="M1",
             data_level="a1",
             units="mm",
+        ),
+    )
+    SNOWDEPTH = SensorDescription(
+        "snow_depth_intensity",
+        "SNOWDEPTH",
+        description="New snow height",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="LD",
+            facility_code="M1",
+            data_level="b1",
+            units="mm",
+        ),
+    )
+    DOWNSHORTWAVE = SensorDescription(
+        "down_short_hemisp",
+        "DOWN SHORTWAVE RADIATION",
+        description="Downwelling shortwave hemispheric irradiance",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="SEBS",
+            facility_code="M1",
+            data_level="b1",
+            units="WpM2",
+        ),
+    )
+
+    UPSHORTWAVE = SensorDescription(
+        "up_short_hemisp",
+        "UP SHORTWAVE RADIATION",
+        description="Upwelling shortwave hemispheric irradiance",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="SEBS",
+            facility_code="M1",
+            data_level="b1",
+            units="WpM2",
         ),
     )
