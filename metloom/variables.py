@@ -568,7 +568,7 @@ class SAILStationVariables(VariableBase):
             "Accumulated amounts of precipitation over the sampling interval exceeding a threshold of 005mm "
             "or the accumulated amount of fine precipitation observed over the last hour"
         ),
-        accumulated=True,
+        accumulated=False,  # not a cumulative sum, just "accumulated" over the sampling interval
         extra=dict(
             site="GUC",
             measurement="wbpluvio2",

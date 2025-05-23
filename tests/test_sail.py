@@ -46,7 +46,7 @@ def test_get_hourly_data(mock_requests_get, setup_env):
     df = obj.get_hourly_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATION])
     assert df is not None
     assert len(df) == 48
-    assert df.iloc[24]["PRECIPITATION"] == 0.74
+    assert df.iloc[24]["PRECIPITATION"] == pytest.approx(0.01233333)
     assert df.iloc[24]["PRECIPITATION_units"] == "mm"
 
 
@@ -56,7 +56,7 @@ def test_get_daily_data(mock_requests_get, setup_env):
     df = obj.get_daily_data("2023-01-01", "2023-01-02", [SAILStationVariables.PRECIPITATION])
     assert df is not None
     assert len(df) == 2
-    assert df.iloc[1]["PRECIPITATION"] == 6.27
+    assert df.iloc[1]["PRECIPITATION"] == pytest.approx(0.004354167)
     assert df.iloc[1]["PRECIPITATION_units"] == "mm"
 
 
