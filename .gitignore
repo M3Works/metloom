@@ -112,3 +112,6 @@ ENV/
 scratch/
 **/.ipynb_checkpoints/*
 **/cache/**
+
+# ARM data download folders
+.armdata/

@@ -10,11 +10,12 @@ from .nws_forecast import NWSForecastPointData
 from .files import CSVPointData, StationInfo
 from .snowex import SnowExMet
 from .csas import CSASMet
+from .sail import SAILPointData
 
 __all__ = [
     "PointData", "PointDataCollection", "CDECPointData", "SnotelPointData",
     "MesowestPointData", "USGSPointData", "GeoSphereHistPointData",
     "GeoSphereCurrentPointData", "CuesLevel1", "MetNorwayPointData",
     "NWSForecastPointData",
-    "CSVPointData", "StationInfo", "SnowExMet", "CSASMet"
+    "CSVPointData", "StationInfo", "SnowExMet", "CSASMet", "SAILPointData"
 ]
