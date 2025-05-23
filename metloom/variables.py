@@ -590,29 +590,29 @@ class SAILStationVariables(VariableBase):
             units="mm",
         ),
     )
-    DOWNSHORTWAVE = SensorDescription(
-        "down_short_hemisp",
-        "DOWN SHORTWAVE RADIATION",
-        description="Downwelling shortwave hemispheric irradiance",
+    UP_BROADBAND = SensorDescription(
+        "swup",
+        "UP SHORTWAVE RADIATION",
+        description="Surface upwelling shortwave hemispheric irradiance, hourly mean",
         accumulated=False,
         extra=dict(
             site="GUC",
-            measurement="SEBS",
+            measurement="ARMBECLDRAD",
             facility_code="M1",
-            data_level="b1",
+            data_level="c1",
             units="w/m^2",
         ),
     )
-    UPSHORTWAVE = SensorDescription(
-        "up_short_hemisp",
-        "UP SHORTWAVE RADIATION",
-        description="Upwelling shortwave hemispheric irradiance",
+    DOWN_BROADBAND = SensorDescription(
+        "swdn",
+        "DOWN SHORTWAVE RADIATION",
+        description="Best estimate of surface downwelling shortwave hemispheric irradiance, hourly mean",
         accumulated=False,
         extra=dict(
             site="GUC",
-            measurement="SEBS",
+            measurement="ARMBECLDRAD",
             facility_code="M1",
-            data_level="b1",
+            data_level="c1",
             units="w/m^2",
-        ),
+        )
     )

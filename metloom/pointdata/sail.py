@@ -63,12 +63,7 @@ class SAILPointData(PointData):
         variables: list[SensorDescription],
     ):
         self._check_start_end_dates(start_date, end_date)
-        return self._download_sail_data(
-            start_date,
-            end_date,
-            variables,
-            interval="D",
-        )
+        return self._download_sail_data(start_date, end_date, variables, interval="D")
 
     def get_hourly_data(
         self,
