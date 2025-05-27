@@ -223,7 +223,7 @@ class SAILPointData(PointData):
 
         elif station_id == "GUC:S3":
             LOG.debug(f"Using known GUC S3 location for {station_id}")
-            return (38.941556, -106.973128, 2857.0)
+            return (38.941556, -106.973128, 2857.0 * 3.28084)
 
         elif station_id == "GUC:S4":
             LOG.debug(f"Using known GUC S4 location for {station_id}")
