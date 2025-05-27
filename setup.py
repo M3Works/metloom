@@ -16,7 +16,8 @@ requirements = [
     'lxml>=4.9.3',
     'requests>2.0.0,<3.0.0',
     'beautifulsoup4>4,<5',
-    'zeep>4.0.0'
+    'zeep>4.0.0',
+    'pydash>=8.0.0',
 ]
 
 test_requirements = ['pytest>=3', ]
