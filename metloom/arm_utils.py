@@ -81,12 +81,10 @@ def get_station_data(
     user_id = user_id or os.getenv("M3W_ARM_USER_ID", None)
 
     # check if user_id and access_token are provided
-    assert (
-        user_id is not None
-    ), "user_id must be provided, set M3W_ARM_USER_ID environment variable or use token_json JSON file."
-    assert (
-        access_token is not None
-    ), "access_token must be provided, set M3W_ARM_ACCESS_TOKEN environment variable or use token_json JSON file."
+    if user_id is None:
+        raise ValueError("user_id must be provided, set M3W_ARM_USER_ID environment variable or use token_json JSON file.")
+    if access_token is None:
+        raise ValueError("access_token must be provided, set M3W_ARM_ACCESS_TOKEN environment variable or use token_json JSON file.")
 
     #  define the parameters for the query
     q_params = dict(
