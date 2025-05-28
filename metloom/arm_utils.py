@@ -83,10 +83,10 @@ def get_station_data(
     # check if user_id and access_token are provided
     assert (
         user_id is not None
-    ), "user_id must be provided, set M3W_ARM_USER_ID environment variable"
+    ), "user_id must be provided, set M3W_ARM_USER_ID environment variable or use token_json JSON file."
     assert (
         access_token is not None
-    ), "access_token must be provided, set M3W_ARM_ACCESS_TOKEN environment variable"
+    ), "access_token must be provided, set M3W_ARM_ACCESS_TOKEN environment variable or use token_json JSON file."
 
     #  define the parameters for the query
     q_params = dict(

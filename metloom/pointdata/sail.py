@@ -1,4 +1,3 @@
-import os
 from typing import Union
 from datetime import date, datetime
 from pathlib import Path
@@ -47,14 +46,6 @@ class SAILPointData(PointData):
         site = station_id.split(":")
         self._site = site[0].upper()
         self._facility_code = site[1].upper()
-
-        # ARM data requires a user id and access token to download, these must be
-        # provided in environment variables
-        if (os.getenv("M3W_ARM_USER_ID", None) is None) or (os.getenv("M3W_ARM_ACCESS_TOKEN", None) is None):
-            raise ValueError(
-                "ARM data requires a user id and access token to download, "
-                "these must be provided in environment variables: M3W_ARM_USER_ID and M3W_ARM_ACCESS_TOKEN"
-            )
 
     def get_daily_data(
         self,
