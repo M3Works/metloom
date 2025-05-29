@@ -222,6 +222,7 @@ class CDECPointData(PointData):
                 break
         return response_data, df_duration
 
+    @PointData.computes_derived
     def _get_data(
         self,
         start_date: datetime,
@@ -238,7 +239,7 @@ class CDECPointData(PointData):
                 from self.ALLOWED_VARIABLES
             duration_list: CDEC duration code and fallbacks ['D', 'H', 'E']
             include_measurement_date: boolean for including the
-                'measurmentDate' column in the resulting dataframe. This column
+                'measurementDate' column in the resulting dataframe. This column
                 is only relevant for snow courses
         Returns:
             GeoDataFrame of data, indexed on datetime, site
@@ -253,7 +254,10 @@ class CDECPointData(PointData):
         desired_duration = duration_list[0]
         if include_measurement_date:
             final_columns += ["measurementDate"]
-        for sensor in variables:
+
+        # Get the variables to call from api
+        required_sensors = self.get_required_sensors(variables)
+        for sensor in required_sensors:
             params["SensorNums"] = sensor.code
             response_data, response_duration = self._get_data_fallback(
                 params, duration_list
@@ -270,6 +274,8 @@ class CDECPointData(PointData):
                     response_data, sensor, final_columns,
                     resample_duration=resample_duration
                 )
+                sensor_df["sensor"] = sensor.name
+
                 df = merge_df(df, sensor_df)
 
         if df is not None:
@@ -279,9 +285,11 @@ class CDECPointData(PointData):
                 df.reset_index(inplace=True)
                 df.set_index(keys=["datetime", "site"], inplace=True)
                 df.index.set_names(["datetime", "site"], inplace=True)
+                # handle any derived data
             else:
                 df = None
-        self.validate_sensor_df(df)
+        # TODO: If the decorated function works we should removed this.
+        # self.validate_sensor_df(df)
         return df
 
     def get_event_data(
@@ -410,7 +418,8 @@ class CDECPointData(PointData):
         if kwargs['snow_courses']:
             station_search_kwargs["dur"] = "M"
             station_search_kwargs["collect"] = "MANUAL+ENTRY"
-        for variable in variables:
+        require_sensors = cls.get_required_sensors(variables)
+        for variable in require_sensors:
             result_df = cls._station_sensor_search(
                 bounds, variable, buffer=kwargs["buffer"],
                 **station_search_kwargs

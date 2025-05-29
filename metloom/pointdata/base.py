@@ -2,12 +2,11 @@ import copy
 import logging
 from datetime import datetime
 from typing import List
-
+from functools import wraps
 import pandas as pd
-
 import geopandas as gpd
-
 from ..variables import SensorDescription, VariableBase, DerivedDataDescription
+
 
 LOG = logging.getLogger("metloom.pointdata.base")
 
@@ -277,6 +276,7 @@ class PointData(GenericPoint):
                 kwargs[k] = v
         return kwargs
 
+
     @classmethod
     def points_from_geometry(
         cls,
@@ -302,6 +302,23 @@ class PointData(GenericPoint):
             PointDataCollection
         """
         raise NotImplementedError("points_from_geometry not implemented")
+
+    @staticmethod
+    def computes_derived(data_request_func):
+        """
+        Decorator to mark a function to compute derived data.
+        """
+        @wraps(data_request_func)
+        def wrapper(self:PointData, *args, **kwargs):
+            gdf = data_request_func(self, *args, **kwargs)
+            if gdf is not None:
+                gdf = self.get_derived_data(gdf, kwargs.get('variables', []))
+
+                # Validate the GeoDataFrame
+                self.validate_sensor_df(gdf)
+                # Get the derived data and add it to the GeoDataFrame
+            return gdf
+        return wrapper
 
     @classmethod
     def get_required_sensors(cls, variables: List[SensorDescription]) -> List[SensorDescription]:
