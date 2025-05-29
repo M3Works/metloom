@@ -309,14 +309,21 @@ class PointData(GenericPoint):
         Decorator to mark a function to compute derived data.
         """
         @wraps(data_request_func)
-        def wrapper(self:PointData, *args, **kwargs):
-            gdf = data_request_func(self, *args, **kwargs)
+        def wrapper(self:PointData,
+                    start_date: datetime,
+                    end_date: datetime,
+                    variables: List[SensorDescription],
+                    **kwargs):
+            # only request the sensors needed, not any derived
+            required_sensors = self.get_required_sensors(variables)
+            gdf = data_request_func(self, start_date, end_date, required_sensors, **kwargs)
             if gdf is not None:
-                gdf = self.get_derived_data(gdf, kwargs.get('variables', []))
+                # in fill the derived data, use the original variables list
+                gdf = self.get_derived_data(gdf, variables)
 
                 # Validate the GeoDataFrame
                 self.validate_sensor_df(gdf)
-                # Get the derived data and add it to the GeoDataFrame
+
             return gdf
         return wrapper
 

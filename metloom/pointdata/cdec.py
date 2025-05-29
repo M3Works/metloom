@@ -222,7 +222,6 @@ class CDECPointData(PointData):
                 break
         return response_data, df_duration
 
-    @PointData.computes_derived
     def _get_data(
         self,
         start_date: datetime,
@@ -283,13 +282,11 @@ class CDECPointData(PointData):
                 df.reset_index(inplace=True)
                 df.set_index(keys=["datetime", "site"], inplace=True)
                 df.index.set_names(["datetime", "site"], inplace=True)
-                # handle any derived data
             else:
                 df = None
-        # TODO: If the decorated function works we should removed this.
-        # self.validate_sensor_df(df)
         return df
 
+    @PointData.computes_derived
     def get_event_data(
         self,
         start_date: datetime,
@@ -298,6 +295,7 @@ class CDECPointData(PointData):
     ):
         return self._get_data(start_date, end_date, variables, ["E"])
 
+    @PointData.computes_derived
     def get_daily_data(
         self,
         start_date: datetime,
@@ -312,6 +310,7 @@ class CDECPointData(PointData):
         """
         return self._get_data(start_date, end_date, variables, ["D", "H", "E"])
 
+    @PointData.computes_derived
     def get_hourly_data(
         self,
         start_date: datetime,
@@ -323,6 +322,7 @@ class CDECPointData(PointData):
         """
         return self._get_data(start_date, end_date, variables, ["H", "E"])
 
+    @PointData.computes_derived
     def get_snow_course_data(
         self,
         start_date: datetime,
@@ -416,8 +416,8 @@ class CDECPointData(PointData):
         if kwargs['snow_courses']:
             station_search_kwargs["dur"] = "M"
             station_search_kwargs["collect"] = "MANUAL+ENTRY"
-        require_sensors = cls.get_required_sensors(variables)
-        for variable in require_sensors:
+
+        for variable in variables:
             result_df = cls._station_sensor_search(
                 bounds, variable, buffer=kwargs["buffer"],
                 **station_search_kwargs
