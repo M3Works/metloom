@@ -304,7 +304,7 @@ class PointData(GenericPoint):
         raise NotImplementedError("points_from_geometry not implemented")
 
     @classmethod
-    def get_required_variables(cls, variables: List[SensorDescription]) -> List[SensorDescription]:
+    def get_required_sensors(cls, variables: List[SensorDescription]) -> List[SensorDescription]:
         """ Retrieves all the variables directly and indirectly requested."""
         required = []
         for v in variables:
@@ -319,12 +319,10 @@ class PointData(GenericPoint):
         return required
 
     @classmethod
-    def get_derived_data(cls, gdf: gpd.GeoDataFrame, variables:List[SensorDescription]) -> gpd.GeoDataFrame:
+    def get_derived_descriptions(cls, variables:List[SensorDescription]) -> List[DerivedDataDescription]:
         """ Run the compute for each derived sensor."""
         derived = [v for v in variables if isinstance(v, DerivedDataDescription)]
-        for v in derived:
-            gdf = v.compute(gdf)
-        return gdf
+        return derived
 
     @classmethod
     def _validate_geodataframe(cls, gdf: gpd.GeoDataFrame):
