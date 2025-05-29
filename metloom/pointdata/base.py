@@ -308,11 +308,11 @@ class PointData(GenericPoint):
         """ Retrieves all the variables directly and indirectly requested."""
         required = []
         for v in variables:
-            if isinstance(v, SensorDescription):
-                required.append(v)
-            elif isinstance(v, DerivedDataDescription):
+            if isinstance(v, DerivedDataDescription):
                 # If this is a derived variable, add the base variables
                 required += v.required_sensors
+            elif isinstance(v, SensorDescription):
+                required.append(v)
             else:
                 raise TypeError(f"Unknown variable type: {type(v)}")
         required = list(set(required))  # Remove duplicates
