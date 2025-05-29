@@ -320,9 +320,29 @@ class PointData(GenericPoint):
 
     @classmethod
     def get_derived_descriptions(cls, variables:List[SensorDescription]) -> List[DerivedDataDescription]:
-        """ Run the compute for each derived sensor."""
+        """ Filter out variables to only variables that are derived."""
         derived = [v for v in variables if isinstance(v, DerivedDataDescription)]
         return derived
+
+    @classmethod
+    def get_derived_data(cls, gdf: gpd.GeoDataFrame, variables: List[SensorDescription]) -> gpd.GeoDataFrame:
+        """
+        Get derived data from the GeoDataFrame based on the variables provided.
+        This will add new columns to the GeoDataFrame for each derived variable.
+
+        Args:
+            gdf: GeoDataFrame containing the data
+            variables: List of SensorDescription objects, some of which may be derived
+
+        Returns:
+            gpd.GeoDataFrame with derived data added
+        """
+        # Filter for derived variables
+        derived_vars = cls.get_derived_descriptions(variables)
+        for dv in derived_vars:
+            gdf[dv.name] = dv.compute(gdf)
+            gdf[f"{dv.name}_units"] = dv.units
+        return gdf
 
     @classmethod
     def _validate_geodataframe(cls, gdf: gpd.GeoDataFrame):

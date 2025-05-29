@@ -28,8 +28,9 @@ class DerivedDataDescription(SensorDescription):
     """
     required_sensors: typing.List[SensorDescription] = None
 
-    def compute(self, gdf:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    def compute(self, gdf:gpd.GeoDataFrame) -> gpd.GeoSeries:
         raise NotImplementedError("Compute method must be implemented in derived data classes")
+
 
 
 class VariableBase:
