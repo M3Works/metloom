@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field, make_dataclass
 import typing
 import geopandas as gpd
+import numpy as np
 
 
 @dataclass(eq=True, frozen=True)
@@ -461,6 +462,17 @@ class SnowExVariables(VariableBase):
     TEMPGROUND50CM = SensorDescription("TC_50cm_Avg", "SOIL TEMP @ 50cm")
 
 
+class SensorDifferenceDescription(DerivedDataDescription):
+    def compute(self, gdf:gpd.GeoDataFrame) -> gpd.GeoSeries:
+        """
+        Subtract the values of the second sensor from the first sensor.
+        Useful for things like net solar
+        """
+        result = gdf[self.required_sensors[0].name] - gdf[self.required_sensors[1].name]
+        result.name = self.name
+        return result
+
+
 class CSASVariables(VariableBase):
     """
     Variable meta for the stations:
@@ -561,7 +573,15 @@ class CSASVariables(VariableBase):
         units="deg C",
         description="Soil temperature at a depth of 40cm",
     )
-
+    NET_SOLAR = SensorDifferenceDescription(
+        "net_solar",
+        "NET SOLAR RADIATION",
+        description="Net solar radiation, computed from up and down broadband radiation",
+        accumulated=False,
+        units='w/m^2',
+        # Incoming - Outgoing
+        required_sensors=[UP_BROADBAND, DOWN_BROADBAND],
+    )
 
 class SAILStationVariables(VariableBase):
     """

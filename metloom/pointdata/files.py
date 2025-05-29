@@ -221,15 +221,16 @@ class CSVPointData(PointData):
         df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
         df = df.reset_index().set_index(["datetime", "site"])
 
-        self.validate_sensor_df(df)
         return df
 
+    @PointData.computes_derived
     def get_daily_data(self, start_date: datetime, end_date: datetime,
                        variables: List[SensorDescription]):
         return self._get_data(
             start_date, end_date, variables, "D"
         )
 
+    @PointData.computes_derived
     def get_hourly_data(self, start_date: datetime, end_date: datetime,
                         variables: List[SensorDescription]):
         return self._get_data(

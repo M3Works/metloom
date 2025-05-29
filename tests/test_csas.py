@@ -156,14 +156,18 @@ class TestCSASMet:
 
     @pytest.mark.parametrize('station_id, variable, start, end, expected_mean', [
         ('SASP', CSASVariables.SURF_TEMP, DT_20230301, DT_20230315, -11.59220),
-        # Span two files, Test data wont be complete but requires two files
+        # # Span two files, Test data wont be complete but requires two files
         ('SASP', CSASVariables.SURF_TEMP, DT_20090301, DT_20230315, -10.35284),
+        # Quick test for derived data
+        ('SASP', CSASVariables.NET_SOLAR, DT_20090301, DT_20230315, 23.367211),
+
     ])
     def test_get_daily_data(self, station, station_id, variable, start, end,
                             expected_mean):
         """ Check pulling two weeks of data """
 
         df = station.get_daily_data(start, end, [variable])
+
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq == 'D'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
@@ -180,3 +184,15 @@ class TestCSASMet:
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq.lower() == 'h'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
+
+    @pytest.mark.parametrize('station_id, variable, start, end', [
+        ('SASB', CSASVariables.NET_SOLAR, DT_20230301, DT_20230315),
+    ])
+    def test_derived_data_none(self, station, station_id, variable, start, end):
+        """
+        Test that derived data doesn't crash when no data is available
+        """
+        # Get a date range with no data
+        df = station.get_daily_data(start, end, [variable])
+        assert df is None
+
