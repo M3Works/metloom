@@ -41,7 +41,7 @@ class CuesLevel1(PointData):
         self._raw_metadata = None
         self._tzinfo = timezone(timedelta(hours=-8.0))
 
-    def _get_one_vaiable(
+    def _get_one_variable(
         self, start_date, end_date, variables: SensorDescription,
         period, method
     ):
@@ -120,7 +120,7 @@ class CuesLevel1(PointData):
         df.index.name = "datetime"
         for variable in variables:
             method = "sum" if variable.accumulated else "average"
-            data = self._get_one_vaiable(
+            data = self._get_one_variable(
                 start_date, end_date, variable, period, method
             )
             df_var = self._sensor_response_to_df(data, variable)
@@ -132,15 +132,15 @@ class CuesLevel1(PointData):
         # Make this a geodataframe
         df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
         df = df.reset_index().set_index(["datetime", "site"])
-        self.validate_sensor_df(df)
         return df
 
+    @PointData.computes_derived
     def get_daily_data(self, start_date: datetime, end_date: datetime,
                        variables: List[SensorDescription]):
         return self._get_data(
             start_date, end_date, variables, "day"
         )
-
+    @PointData.computes_derived
     def get_hourly_data(self, start_date: datetime, end_date: datetime,
                         variables: List[SensorDescription]):
         return self._get_data(

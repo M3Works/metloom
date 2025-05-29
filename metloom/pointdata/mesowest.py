@@ -135,7 +135,6 @@ class MesowestPointData(PointData):
                 df.index.set_names(["datetime", "site"], inplace=True)
             else:
                 df = None
-        self.validate_sensor_df(df)
         return df
 
     @staticmethod
@@ -239,6 +238,7 @@ class MesowestPointData(PointData):
 
         return sensor_df
 
+    @PointData.computes_derived
     def get_hourly_data(
         self,
         start_date: datetime,
@@ -265,6 +265,7 @@ class MesowestPointData(PointData):
         df = self._get_data(start_date, end_date, variables, interval='H')
         return df
 
+    @PointData.computes_derived
     def get_daily_data(
         self,
         start_date: datetime,

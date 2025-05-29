@@ -105,7 +105,6 @@ class SnotelPointData(PointData):
             df.reset_index(inplace=True)
             df.set_index(keys=["datetime", "site"], inplace=True)
             df.index.set_names(["datetime", "site"], inplace=True)
-        self.validate_sensor_df(df)
         return df
 
     def _fetch_data_for_variables(self, client: SeriesSnotelClient,
@@ -125,6 +124,7 @@ class SnotelPointData(PointData):
             result_map, duration, include_measurement_date=include_measurement_date
         )
 
+    @PointData.computes_derived
     def get_daily_data(
         self,
         start_date: datetime,
@@ -141,7 +141,7 @@ class SnotelPointData(PointData):
         )
         return self._fetch_data_for_variables(client, variables,
                                               client.DURATION)
-
+    @PointData.computes_derived
     def get_hourly_data(
         self,
         start_date: datetime,
@@ -159,6 +159,7 @@ class SnotelPointData(PointData):
         )
         return self._fetch_data_for_variables(client, variables, "HOURLY")
 
+    @PointData.computes_derived
     def get_snow_course_data(
         self,
         start_date: datetime,

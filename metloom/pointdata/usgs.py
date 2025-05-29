@@ -327,10 +327,9 @@ class USGSPointData(PointData):
                 df.index.set_names(["datetime", "site"], inplace=True)
             else:
                 df = None
-        self.validate_sensor_df(df)
-
         return df
 
+    @PointData.computes_derived
     def get_daily_data(
         self,
         start_date: datetime,
@@ -345,6 +344,7 @@ class USGSPointData(PointData):
             resample_duration="24H"
         )
 
+    @PointData.computes_derived
     def get_hourly_data(
         self,
         start_date: datetime,
