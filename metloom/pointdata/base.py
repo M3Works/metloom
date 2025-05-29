@@ -7,7 +7,7 @@ import pandas as pd
 
 import geopandas as gpd
 
-from ..variables import SensorDescription, VariableBase
+from ..variables import SensorDescription, VariableBase, DerivedDataDescription
 
 LOG = logging.getLogger("metloom.pointdata.base")
 
@@ -302,6 +302,29 @@ class PointData(GenericPoint):
             PointDataCollection
         """
         raise NotImplementedError("points_from_geometry not implemented")
+
+    @classmethod
+    def get_required_variables(cls, variables: List[SensorDescription]) -> List[SensorDescription]:
+        """ Retrieves all the variables directly and indirectly requested."""
+        required = []
+        for v in variables:
+            if isinstance(v, SensorDescription):
+                required.append(v)
+            elif isinstance(v, DerivedDataDescription):
+                # If this is a derived variable, add the base variables
+                required += v.required_sensors
+            else:
+                raise TypeError(f"Unknown variable type: {type(v)}")
+        required = list(set(required))  # Remove duplicates
+        return required
+
+    @classmethod
+    def get_derived_data(cls, gdf: gpd.GeoDataFrame, variables:List[SensorDescription]) -> gpd.GeoDataFrame:
+        """ Run the compute for each derived sensor."""
+        derived = [v for v in variables if isinstance(v, DerivedDataDescription)]
+        for v in derived:
+            gdf = v.compute(gdf)
+        return gdf
 
     @classmethod
     def _validate_geodataframe(cls, gdf: gpd.GeoDataFrame):

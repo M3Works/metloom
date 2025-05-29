@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field, make_dataclass
 import typing
+import geopandas as gpd
 
 
 @dataclass(eq=True, frozen=True)
@@ -14,16 +15,21 @@ class SensorDescription:
     accumulated: bool = False  # whether the data is accumulated
     units: str = None  # Optional units kwarg
     extra: typing.Any = field(default=None, hash=False)  # Optional extra data for sub-class specific information
+    # description of the specific instrument for the variable
+    instrument: str = None
 
 
 @dataclass(eq=True, frozen=True)
-class InstrumentDescription(SensorDescription):
+class DerivedDataDescription(SensorDescription):
     """
-    Extend the Sensor Description to include instrument
+    Data class for describing derived data. This is used for compute
+    data from multiple sensors. When one is called from the point data class
+    the compute method is called to generate the data.
     """
+    required_sensors: typing.List[SensorDescription] = None
 
-    # description of the specific instrument for the variable
-    instrument: str = None
+    def compute(self, gdf:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+        raise NotImplementedError("Compute method must be implemented in derived data classes")
 
 
 class VariableBase:
@@ -33,7 +39,7 @@ class VariableBase:
     are synonymous across implementations.(i.e. PRECIPITATION should have the
     same meaning in each implementation).
     Additionally, variables with the same meaning should have the same
-    `name` attribute of the SensorDescription. This way, if multiple datsources
+    `name` attribute of the SensorDescription. This way, if multiple data sources
     are used to sample the same variable, they can be written to the same
     column in a csv.
 
@@ -305,35 +311,35 @@ class CuesLevel1Variables(VariableBase):
 
     """
 
-    TEMP = InstrumentDescription("air temperature", "AIR TEMP")
-    RH = InstrumentDescription("RH", "RELATIVE HUMIDITY")
-    LASERSNOWDEPTH = InstrumentDescription("laser snow depth", "LASER SNOWDEPTH")
-    SNOWDEPTH = InstrumentDescription("snow depth", "SNOWDEPTH")
-    NEWSNOWDEPTH = InstrumentDescription("new snow depth", "NEW SNOWDEPTH")
-    SWE = InstrumentDescription("Snow Pillow (DWR) SWE", "SWE")
-    # PRECIPITATION = InstrumentDescription(
+    TEMP = SensorDescription("air temperature", "AIR TEMP")
+    RH = SensorDescription("RH", "RELATIVE HUMIDITY")
+    LASERSNOWDEPTH = SensorDescription("laser snow depth", "LASER SNOWDEPTH")
+    SNOWDEPTH = SensorDescription("snow depth", "SNOWDEPTH")
+    NEWSNOWDEPTH = SensorDescription("new snow depth", "NEW SNOWDEPTH")
+    SWE = SensorDescription("Snow Pillow (DWR) SWE", "SWE")
+    # PRECIPITATION = SensorDescription(
     #     "nied", "Precipitation Total", accumulated=True
     # )
-    TEMPSURFSNOW = InstrumentDescription("snow surface temperature", "SNOW SURFACE TEMPERATURE")
-    DOWNSHORTWAVE = InstrumentDescription(
+    TEMPSURFSNOW = SensorDescription("snow surface temperature", "SNOW SURFACE TEMPERATURE")
+    DOWNSHORTWAVE = SensorDescription(
         "downward looking solar radiation",
         "DOWNWARD SHORTWAVE RADIATION",
     )
-    UPSHORTWAVE = InstrumentDescription(
+    UPSHORTWAVE = SensorDescription(
         "upward looking solar radiation",
         "UPWARD SHORTWAVE RADIATION",
         instrument="Eppley Lab precision spectral pyranometer",
     )
-    UPSHORTWAVE2 = InstrumentDescription(
+    UPSHORTWAVE2 = SensorDescription(
         "upward looking solar radiation",
         "UPWARD SHORTWAVE RADIATION 2",
-        instrument="uplooking Sunshine pyranometer  direct and diffus",
+        instrument="uplooking Sunshine pyranometer  direct and diffuse",
     )
-    DOWNSHORTWAVEIR = InstrumentDescription(
+    DOWNSHORTWAVEIR = SensorDescription(
         "downward looking near-IR radiation",
         "DOWNWARD NIR SHORTWAVE RADIATION",
     )
-    UPSHORTWAVEIR = InstrumentDescription(
+    UPSHORTWAVEIR = SensorDescription(
         "upward looking near-IR radiation",
         "UPWARD NIR SHORTWAVE RADIATION",
     )
@@ -378,14 +384,14 @@ class MetNorwayVariables(VariableBase):
         "Total precipitation amount in gauge"
         " (accumulated since last emptying). Timing for emptying and"
         " algorithm for calculating the precipitation"
-        " amount depends on sensortype",
+        " amount depends on sensor type",
     )
     PRECIPITATION = SensorDescription(
         "precipitation_amount",
         "PRECIPITATION",
         "Tipping bucket. The gauge tips for every 0.1 mm."
         " Each tip is registered along with the time stamp for the tip."
-        " This is the basis for calcutation of precipitation sum per minute",
+        " This is the basis for calculation of precipitation sum per minute",
     )
 
 
