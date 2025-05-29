@@ -274,8 +274,6 @@ class CDECPointData(PointData):
                     response_data, sensor, final_columns,
                     resample_duration=resample_duration
                 )
-                sensor_df["sensor"] = sensor.name
-
                 df = merge_df(df, sensor_df)
 
         if df is not None:
