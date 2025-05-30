@@ -94,10 +94,10 @@ class TestCSASMet:
         ('SBSP', datetime(2003, 1, 1),
          datetime(2003, 1, 1), ['SBSP_1hr_2003-2009.csv']),
         ('SBSP', datetime(2010, 1, 1),
-         datetime(2010, 1, 1), ['SBSP_1hr_2010-2023.csv']),
+         datetime(2010, 1, 1), ['SBSP_1hr_2010-2024.csv']),
         # Test straddling the files
         ('SBSP', datetime(2008, 1, 1),
-         datetime(2010, 1, 1), ['SBSP_1hr_2003-2009.csv', 'SBSP_1hr_2010-2023.csv']),
+         datetime(2010, 1, 1), ['SBSP_1hr_2003-2009.csv', 'SBSP_1hr_2010-2024.csv']),
         # test stations that don't have year specific timeframes
         ('PTSP', datetime(2010, 1, 1), datetime(2010, 1, 2), ["PTSP_1hr.csv"]),
         ('SBSG', datetime(2010, 1, 1), datetime(2010, 1, 2), ["SBSG_1hr.csv"])
