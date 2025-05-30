@@ -20,15 +20,15 @@ class CSASStationInfo(StationInfo):
     SWAMP_ANGEL = ("Swamp Angel Study Plot", "SASP", 37.90691, -107.71132, 11060,
                    "2023/11/SASP_1hr_2003-2009.csv")
     PUTNEY = ("Putney Study Plot", "PTSP", 37.89233, -107.69577, 12323,
-              "2023/11/PTSP_1hr.csv")
+              "2025/05/PTSP_1hr.csv")
     SENATOR_BECK_STREAM_GAUGE = ("Senator Beck Stream Gauge", "SBSG", 37.90678,
-                                 -107.70943, 11030, "2023/11/SBSG_1hr.csv")
+                                 -107.70943, 11030, "2025/05/SBSG_1hr.csv")
 
 
 class CSASMet(CSVPointData):
     """
     """
-    CURRENT_AVAILABLE_YEAR = 2023
+    CURRENT_AVAILABLE_YEAR = 2024
     ALLOWED_VARIABLES = CSASVariables
     ALLOWED_STATIONS = CSASStationInfo
 
@@ -57,8 +57,10 @@ class CSASMet(CSVPointData):
             # Account for later file use or even straddling thge data
             if start.year > 2009 or end.year > 2009:  # TODO: add to the info enum?
                 partial = str(self._station_info.path).replace("2003", "2010")
+                partial = partial.replace('2009', str(current_available_year))
+                # Change the subdirectory in the url
+                filename = partial.replace('2023/11/', '2025/05/')
 
-                filename = partial.replace('2009', str(current_available_year))
                 urls.append(os.path.join(self.URL, filename))
 
             if start.year < 2003 or end.year > current_available_year:
