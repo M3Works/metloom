@@ -89,6 +89,9 @@ class TestGeoSphereCurrentPointData(BasePointDataTest):
             (datetime(2024, 1, 24), datetime(2023, 10, 24)),
             (datetime(2023, 6, 24), datetime(2023, 3, 24)),
             (datetime(2023, 3, 1), datetime(2022, 12, 1)),
+            # Check 3 months ago accounts for february dates
+            (datetime(2025, 5, 30), datetime(2025, 2, 28)),
+
         ]
     )
     def test_back_3_months(self, dt, expected, station):
