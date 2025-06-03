@@ -172,7 +172,7 @@ class MesowestPointData(PointData):
         return sensor_col
 
     def _sensor_response_to_df(self, response_data, sensor, final_columns,
-                               interval: str = 'H'):
+                               interval: str = 'h'):
         """
         Convert the response data from the API to a GeoDataFrame
         Format and map columns in the dataframe

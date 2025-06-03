@@ -232,7 +232,7 @@ class TestCDECStation(BasePointDataTest):
                 mock.json.return_value = cls.cdec_daily_precip_response()
             elif params.get("dur_code") == "D" and params.get('SensorNums') == "30":
                 mock.json.return_value = cls.cdec_daily_temp_response()
-            elif params.get("dur_code") == 'H':
+            elif params.get("dur_code") == 'h':
                 mock.json.return_value = cls.cdec_hourly_temp_response()
             else:
                 raise NotImplementedError("Not implemented")
@@ -253,7 +253,7 @@ class TestCDECStation(BasePointDataTest):
         if params:
             if params.get("dur_code") == 'D':
                 mock.json.return_value = []
-            elif params.get("dur_code") == 'H':
+            elif params.get("dur_code") == 'h':
                 mock.json.return_value = cls.cdec_hourly_temp_response()
             else:
                 raise NotImplementedError("Not implemented")
