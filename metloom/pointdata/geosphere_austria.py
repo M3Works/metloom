@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import requests
 import logging
-from dateutil.relativedelta import relativedelta
 from geopandas import GeoDataFrame
 
 from .base import PointData
@@ -324,7 +323,7 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
 
     @staticmethod
     def _back_3_months(dt):
-        data_valid_start = dt - relativedelta(months=3)
+        data_valid_start = dt - pd.DateOffset(months=3)
         return data_valid_start
 
     def _validate_dates(self, end_date):
