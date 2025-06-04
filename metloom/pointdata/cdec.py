@@ -264,8 +264,6 @@ class CDECPointData(PointData):
                     resample_duration = None
                 else:
                     resample_duration = desired_duration
-                    if resample_duration == "H":
-                        resample_duration = "h"  # pandas compatibility
                 sensor_df = self._sensor_response_to_df(
                     response_data, sensor, final_columns,
                     resample_duration=resample_duration
@@ -304,7 +302,7 @@ class CDECPointData(PointData):
         https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet?
         Stations=TNY&SensorNums=3&dur_code=D&Start=2021-05-16&End=2021-05-16
         """
-        return self._get_data(start_date, end_date, variables, ["D", "H", "E"])
+        return self._get_data(start_date, end_date, variables, ["D", "h", "E"])
 
     def get_hourly_data(
         self,
@@ -315,7 +313,7 @@ class CDECPointData(PointData):
         """
         See docstring for PointData.get_hourly_data
         """
-        return self._get_data(start_date, end_date, variables, ["H", "E"])
+        return self._get_data(start_date, end_date, variables, ["h", "E"])
 
     def get_snow_course_data(
         self,

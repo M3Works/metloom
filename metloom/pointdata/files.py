@@ -205,8 +205,8 @@ class CSVPointData(PointData):
             df_var = self._get_one_variable(isolated, period, variable)
             if df_var is not None:
                 if not np.all(df_var.isnull()):
-                    df[variable.name].loc[df_var.index] = df_var
-                    df[f"{variable.name}_units"] = variable.units
+                    df.loc[df_var.index, variable.name] = df_var
+                    df.loc[:, f"{variable.name}_units"] = variable.units
             else:
                 df = df.drop(columns=[variable.name])
 
