@@ -27,12 +27,60 @@ This is an opensource package with the goal of making data wrangling easier. We 
 no guarantees about the quality or accuracy of the data and any interpretation of the meaning
 of the data is up to you.
 
-
 * Free software: BSD license
 
+.. code-block:: python
+
+    # Find your data with ease
+    # !pip install folium mapclassify matplotlib
+    from metloom.pointdata import SnotelPointData, CDECPointData, USGSPointData
+    import geopandas as gpd
+    import pandas as pd
+
+    # Shapefile for the US states
+    shp = gpd.read_file('https://eric.clst.org/assets/wiki/uploads/Stuff/gz_2010_us_040_00_500k.json').to_crs("EPSG:4326")
+    # Filter to states of interest
+    west_states = ["Washington", "Oregon", "California", "Idaho", "Nevada", "Utah", "Wyoming", "Montana", "Colorado" ]  # , "Arizona", "New Mexico"]
+    shp = shp.loc[shp["NAME"].isin(west_states)].dissolve()
+
+    # Collect all points with SWE from CDEC and NRCS
+    dfs = []
+    for src in  [CDECPointData, SnotelPointData]:
+        dfs.append(src.points_from_geometry(shp, [src.ALLOWED_VARIABLES.SWE]).to_dataframe())
+    # Combine dataframes
+    gdf = pd.concat(dfs)
+    # plot the shapefile
+    m = shp.explore(
+        tooltip=False, color="grey", highlight=False, style_kwds={"opacity": 0.2}, popup=["NAME"]
+    )
+    # plot the points on top of the shapefile
+    gdf.explore(m=m, tooltip=["name", "id", "datasource"], color="red", marker_kwds={"radius":4})
+
+.. image:: docs/images/map_of_swe.png
+   :alt: Resulting plot of SWE trace at Banner summit
 
 Features
 --------
+.. code-block:: python
+
+    # !pip install plotly
+    from metloom.pointdata import SnotelPointData
+    import plotly.express as px
+    import pandas as pd
+
+    # Initialize your point
+    pt = SnotelPointData("312:ID:SNTL", "Banner Summit")
+    swe_variable = pt.ALLOWED_VARIABLES.SWE
+    # Get the data
+    df = pt.get_daily_data(
+        pd.to_datetime("2024-10-01"), pd.to_datetime("2025-03-11"), [swe_variable]
+    ).reset_index()
+    # Create a time series plot using Plotly Express
+    px.line(df, x="datetime", y=swe_variable.name, title=f"{pt.name} SWE")
+
+.. image:: docs/images/banner_swe.png
+   :alt: Resulting plot of SWE trace at Banner summit
+
 
 * Sampling of daily, hourly, and snow course data
 * Searching for stations from a datasource within a shapefile

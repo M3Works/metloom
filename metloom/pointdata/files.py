@@ -191,20 +191,22 @@ class CSVPointData(PointData):
         resp_df = pd.concat(dfs)
         resp_df = self._assign_datetime(resp_df)
 
-        # use a predifined index to show nans in the event of patch data
+        # use a predefined index to show nans in the event of patch data
         df = pd.DataFrame(index=pd.date_range(start_date, end_date, freq=period,
                                               name='datetime'),
                           columns=[v.name for v in variables])
 
         # Use this instead .loc to avoid index on patchy data
-        ind = (resp_df.index >= start_date) & (resp_df.index < end_date)
+        ind = (resp_df.index >= pd.Timestamp(start_date)) & (
+            resp_df.index < pd.Timestamp(end_date)
+        )
         isolated = resp_df.loc[ind, resp_df.columns]
         for i, variable in enumerate(variables):
             df_var = self._get_one_variable(isolated, period, variable)
             if df_var is not None:
                 if not np.all(df_var.isnull()):
-                    df[variable.name].loc[df_var.index] = df_var
-                    df[f"{variable.name}_units"] = variable.units
+                    df.loc[df_var.index, variable.name] = df_var
+                    df.loc[:, f"{variable.name}_units"] = variable.units
             else:
                 df = df.drop(columns=[variable.name])
 

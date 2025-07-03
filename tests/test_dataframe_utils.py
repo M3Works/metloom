@@ -153,13 +153,13 @@ def test_resample_df_odd_increment():
         {"datetime": datetime(2020, 1, 2, 12, 59, 3), "AIR TEMP": 1.5},
     ])
     df.set_index("datetime", inplace=True)
-    out_df = resample_df(df, MesowestVariables.TEMP, interval="H")
+    out_df = resample_df(df, MesowestVariables.TEMP, interval="h")
     expected = pd.DataFrame.from_records([
         {"datetime": datetime(2020, 1, 2, 11), "AIR TEMP": 2.0},
         {"datetime": datetime(2020, 1, 2, 12,), "AIR TEMP": 1.75},
     ])
     expected.set_index("datetime", inplace=True)
-    expected.index.freq = "H"
+    expected.index.freq = "h"
     pd.testing.assert_frame_equal(out_df, expected)
 
 
@@ -177,11 +177,11 @@ def test_resample_full_df_odd_increment():
          "AIR TEMP": 1.5},
     ])
     df.set_index("datetime", inplace=True)
-    out_df = resample_whole_df(df, MesowestVariables.TEMP, interval="H")
+    out_df = resample_whole_df(df, MesowestVariables.TEMP, interval="h")
     expected = pd.DataFrame.from_records([
         {"datetime": datetime(2020, 1, 2, 11), "other": "value", "AIR TEMP": 2.0},
         {"datetime": datetime(2020, 1, 2, 12,), "other": "value", "AIR TEMP": 1.75},
     ])
     expected.set_index("datetime", inplace=True)
-    expected.index.freq = "H"
+    expected.index.freq = "h"
     pd.testing.assert_frame_equal(out_df, expected, check_like=True)

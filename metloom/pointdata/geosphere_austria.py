@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import requests
 import logging
-
 from geopandas import GeoDataFrame
 
 from .base import PointData
@@ -181,7 +180,7 @@ class GeoSpherePointDataBase(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
-            desired_duration: duration code ['D', 'H', 'E']
+            desired_duration: duration code ['D', 'h']
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -324,13 +323,7 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
 
     @staticmethod
     def _back_3_months(dt):
-        start_month = dt.month - 3
-        if start_month <= 0:
-            data_valid_start = dt.replace(
-                month=start_month + 12, year=dt.year - 1
-            )
-        else:
-            data_valid_start = dt.replace(month=start_month)
+        data_valid_start = dt - pd.DateOffset(months=3)
         return data_valid_start
 
     def _validate_dates(self, end_date):
@@ -373,7 +366,7 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         See docstring for PointData.get_hourly_data
         """
         self._validate_dates(end_date)
-        return self._get_data(start_date, end_date, variables, "H")
+        return self._get_data(start_date, end_date, variables, "h")
 
 
 class GeoSphereHistPointData(GeoSpherePointDataBase):

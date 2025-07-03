@@ -13,9 +13,7 @@ class SensorDescription:
     description: str = None  # description of the sensor
     accumulated: bool = False  # whether the data is accumulated
     units: str = None  # Optional units kwarg
-    extra: typing.Any = field(
-        default=None, hash=False
-    )  # Optional extra data for sub-class specific information
+    extra: typing.Any = field(default=None, hash=False)  # Optional extra data for sub-class specific information
 
 
 @dataclass(eq=True, frozen=True)
@@ -76,12 +74,8 @@ class CdecStationVariables(VariableBase):
     http://cdec4gov.water.ca.gov/reportapp/javareports?name=SensList
     """
 
-    PRECIPITATIONACCUM = SensorDescription(
-        "2", "ACCUMULATED PRECIPITATION", "PRECIPITATION, ACCUMULATED", False
-    )
-    PRECIPITATION = SensorDescription(
-        "45", "PRECIPITATION", "PRECIPITATION, INCREMENTAL", True
-    )
+    PRECIPITATIONACCUM = SensorDescription("2", "ACCUMULATED PRECIPITATION", "PRECIPITATION, ACCUMULATED", False)
+    PRECIPITATION = SensorDescription("45", "PRECIPITATION", "PRECIPITATION, INCREMENTAL", True)
     SNOWDEPTH = SensorDescription("18", "SNOWDEPTH", "SNOW DEPTH")
     SWE = SensorDescription("3", "SWE", "SNOW, WATER CONTENT", False)
     TEMP = SensorDescription("4", "AIR TEMP", "TEMPERATURE, AIR")
@@ -90,18 +84,10 @@ class CdecStationVariables(VariableBase):
     TEMPMAX = SensorDescription("31", "MAX AIR TEMP", "TEMPERATURE, AIR MAXIMUM")
     RH = SensorDescription("12", "Relative Humidity", "RELATIVE HUMIDITY")
     # TODO confirm with CDWR if these depths are standard, no metadata available
-    TEMPGROUND = SensorDescription(
-        "52", "GROUND TEMPERATURE INT", "GROUND TEMPERATURE SNOW/SOIL INTERFACE"
-    )
-    TEMPGROUND25CM = SensorDescription(
-        "194", "GROUND TEMPERATURE -25CM", "GROUND TEMPERATURE OBS -25CM"
-    )
-    TEMPGROUND50CM = SensorDescription(
-        "195", "GROUND TEMPERATURE -50CM", "GROUND TEMPERATURE OBS -50CM"
-    )
-    TEMPGROUND100CM = SensorDescription(
-        "196", "GROUND TEMPERATURE -100CM", "GROUND TEMPERATURE OBS -100CM"
-    )
+    TEMPGROUND = SensorDescription("52", "GROUND TEMPERATURE INT", "GROUND TEMPERATURE SNOW/SOIL INTERFACE")
+    TEMPGROUND25CM = SensorDescription("194", "GROUND TEMPERATURE -25CM", "GROUND TEMPERATURE OBS -25CM")
+    TEMPGROUND50CM = SensorDescription("195", "GROUND TEMPERATURE -50CM", "GROUND TEMPERATURE OBS -50CM")
+    TEMPGROUND100CM = SensorDescription("196", "GROUND TEMPERATURE -100CM", "GROUND TEMPERATURE OBS -100CM")
     SOLARRAD = SensorDescription("103", "SOLAR RADIATION", "SOLAR RADIATION")
     WINDSPEED = SensorDescription("9", "WIND SPEED", "WIND SPEED")
     WINDDIR = SensorDescription("10", "WIND DIRECTION", "WIND DIRECTION")
@@ -125,77 +111,46 @@ SnotelVariables = make_dataclass(
         (
             "TEMPAVG",
             SensorDescription,
-            field(
-                default=SensorDescription(
-                    "TAVG", "AVG AIR TEMP", "AIR TEMPERATURE AVERAGE"
-                )
-            ),
+            field(default=SensorDescription("TAVG", "AVG AIR TEMP", "AIR TEMPERATURE AVERAGE")),
         ),
         (
             "TEMPMIN",
             SensorDescription,
-            field(
-                default=SensorDescription(
-                    "TMIN", "MIN AIR TEMP", "AIR TEMPERATURE MINIMUM"
-                )
-            ),
+            field(default=SensorDescription("TMIN", "MIN AIR TEMP", "AIR TEMPERATURE MINIMUM")),
         ),
         (
             "TEMPMAX",
             SensorDescription,
-            field(
-                default=SensorDescription(
-                    "TMAX", "MAX AIR TEMP", "AIR TEMPERATURE MAXIMUM"
-                )
-            ),
+            field(default=SensorDescription("TMAX", "MAX AIR TEMP", "AIR TEMPERATURE MAXIMUM")),
         ),
         (
             "PRECIPITATION",
             SensorDescription,
-            field(
-                default=SensorDescription(
-                    "PRCPSA", "PRECIPITATION", "PRECIPITATION INCREMENT SNOW-ADJUSTED"
-                )
-            ),
+            field(default=SensorDescription("PRCPSA", "PRECIPITATION", "PRECIPITATION INCREMENT SNOW-ADJUSTED")),
         ),
         (
             "PRECIPITATIONACCUM",
             SensorDescription,
-            field(
-                default=SensorDescription(
-                    "PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION"
-                )
-            ),
+            field(default=SensorDescription("PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION")),
         ),
         # TODO for the SCAN network this appears to be "RHUM", we may need a new class
         (
             "RH",
             SensorDescription,
-            field(
-                default=SensorDescription(
-                    "RHUMV", "Relative Humidity", "RELATIVE HUMIDITY"
-                )
-            ),
+            field(default=SensorDescription("RHUMV", "Relative Humidity", "RELATIVE HUMIDITY")),
         ),
         (
             "STREAMVOLUMEOBS",
             SensorDescription,
-            field(
-                default=SensorDescription(
-                    "SRVO", "STREAM VOLUME OBS", "STREAM VOLUME OBS"
-                )
-            ),
+            field(default=SensorDescription("SRVO", "STREAM VOLUME OBS", "STREAM VOLUME OBS")),
         ),
         (
             "STREAMVOLUMEADJ",
             SensorDescription,
-            field(
-                default=SensorDescription(
-                    "SRVOX", "STREAM VOLUME ADJ", "STREAM VOLUME ADJ"
-                )
-            ),
+            field(default=SensorDescription("SRVOX", "STREAM VOLUME ADJ", "STREAM VOLUME ADJ")),
         ),
-    ] + [
+    ]
+    + [
         (
             f"TEMPGROUND{abs(d)}IN",
             SensorDescription,
@@ -209,7 +164,8 @@ SnotelVariables = make_dataclass(
             ),
         )
         for d in [2, 4, 8, 20]
-    ] + [
+    ]
+    + [
         (
             f"SOILMOISTURE{abs(d)}IN",
             SensorDescription,
@@ -223,7 +179,8 @@ SnotelVariables = make_dataclass(
             ),
         )
         for d in [2, 4, 8, 20]
-    ] + [
+    ]
+    + [
         (
             f"TEMPPROFILENEG{abs(d)}IN" if d < 0 else f"TEMPPROFILE{d}IN",
             SensorDescription,
@@ -257,9 +214,7 @@ class MesowestVariables(VariableBase):
     PRESSURE = SensorDescription("pressure", "PRESSURE")
     SNOWDEPTH = SensorDescription("snow_depth", "SNOWDEPTH")
     SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
-    WETBULBTEMPERATURE = SensorDescription(
-        "wet_bulb_temperature", "WET BULB TEMPERATURE"
-    )
+    WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature", "WET BULB TEMPERATURE")
     SOILTEMP = SensorDescription("soil_temp", "SOIL TEMPERATURE")
     SOILTEMPIR = SensorDescription("soil_temp_ir", "SOIL TEMPERATURE IR")
     SWE = SensorDescription("snow_water_equiv", "SWE")
@@ -275,14 +230,10 @@ class USGSVariables(VariableBase):
     """
 
     DISCHARGE = SensorDescription("00060", "DISCHARGE", "DISCHARGE (CFS)")
-    STREAMFLOW = SensorDescription(
-        "74082", "STREAMFLOW", "STREAMFLOW, DAILY VOLUME (AC-FT)"
-    )
+    STREAMFLOW = SensorDescription("74082", "STREAMFLOW", "STREAMFLOW, DAILY VOLUME (AC-FT)")
     SNOWDEPTH = SensorDescription("72189", "SNOWDEPTH", "Snow depth, Meters")
     SWE = SensorDescription("72341", "SWE", "Water content of snow, millimeters")
-    SOLARRADIATION = SensorDescription(
-        "72179", "SOLAR RADIATION", "Shortwave solar radiation, watts per square meter"
-    )
+    SOLARRADIATION = SensorDescription("72179", "SOLAR RADIATION", "Shortwave solar radiation, watts per square meter")
     UPSHORTWAVE = SensorDescription(
         "72185",
         "UPWARD SHORTWAVE RADIATION",
@@ -323,9 +274,7 @@ class USGSVariables(VariableBase):
 class GeoSphereCurrentVariables(VariableBase):
     TEMP = SensorDescription("TL", "Air Temperature")
     SNOWDEPTH = SensorDescription("SCHNEE", "Snowdepth")
-    PRECIPITATION = SensorDescription(
-        "RR", "Rainfall in the last 10 minutes", accumulated=True
-    )
+    PRECIPITATION = SensorDescription("RR", "Rainfall in the last 10 minutes", accumulated=True)
     TEMPGROUND10CM = SensorDescription("TB1", "Soil temperature at a depth of 10cm")
     TEMPGROUND20CM = SensorDescription("TB2", "Soil temperature at a depth of 20cm")
     TEMPGROUND50CM = SensorDescription("TB3", "Soil temperature at a depth of 50cm")
@@ -365,9 +314,7 @@ class CuesLevel1Variables(VariableBase):
     # PRECIPITATION = InstrumentDescription(
     #     "nied", "Precipitation Total", accumulated=True
     # )
-    TEMPSURFSNOW = InstrumentDescription(
-        "snow surface temperature", "SNOW SURFACE TEMPERATURE"
-    )
+    TEMPSURFSNOW = InstrumentDescription("snow surface temperature", "SNOW SURFACE TEMPERATURE")
     DOWNSHORTWAVE = InstrumentDescription(
         "downward looking solar radiation",
         "DOWNWARD SHORTWAVE RADIATION",
@@ -408,8 +355,7 @@ class MetNorwayVariables(VariableBase):
     TEMPAVG = SensorDescription(
         "best_estimate_mean(air_temperature P1D)",
         "AVG AIR TEMP",
-        "Homogenised daily mean temperature."
-        " The mean is an arithmetic mean of 24 hourly values (00-00 UTC),",
+        "Homogenised daily mean temperature. The mean is an arithmetic mean of 24 hourly values (00-00 UTC),",
     )
     SNOWDEPTH = SensorDescription(
         "surface_snow_thickness",
@@ -450,9 +396,7 @@ class NWSForecastVariables(VariableBase):
     """
 
     # Precipitation is not returned hourly
-    PRECIPITATIONACCUM = SensorDescription(
-        "quantitativePrecipitation", "ACCUMULATED PRECIPITATION", accumulated=True
-    )
+    PRECIPITATIONACCUM = SensorDescription("quantitativePrecipitation", "ACCUMULATED PRECIPITATION", accumulated=True)
     # PRECIPITATION = SensorDescription(
     #     "quantitativePrecipitation", "PRECIPITATION",
     #     accumulated=False
@@ -581,7 +525,7 @@ class CSASVariables(VariableBase):
     PRECIPITATION = SensorDescription(
         "Day_H2O_mm",
         "DAILY PRECIP",
-        accumulated=True,
+        accumulated=False,
         units="mm",
         description="Daily accumulated precipitation in mm",
     )
@@ -609,4 +553,66 @@ class CSASVariables(VariableBase):
         "GROUND TEMPERATURE -40CM",
         units="deg C",
         description="Soil temperature at a depth of 40cm",
+    )
+
+
+class SAILStationVariables(VariableBase):
+    """
+    https://adc.arm.gov/discovery/#/results/site_code::guc
+    """
+
+    PRECIPITATION = SensorDescription(
+        "accum_rtnrt",
+        "PRECIPITATION",
+        description=(
+            "Accumulated amounts of precipitation over the sampling interval exceeding a threshold of 005mm "
+            "or the accumulated amount of fine precipitation observed over the last hour"
+        ),
+        accumulated=False,  # not a cumulative sum, just "accumulated" over the sampling interval
+        extra=dict(
+            site="GUC",
+            measurement="wbpluvio2",
+            facility_code="M1",
+            data_level="a1",
+            units="mm",
+        ),
+    )
+    SNOWDEPTH = SensorDescription(
+        "snow_depth_intensity",
+        "SNOWDEPTH",
+        description="New snow height",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="LD",
+            facility_code="M1",
+            data_level="b1",
+            units="mm",
+        ),
+    )
+    UP_BROADBAND = SensorDescription(
+        "swup",
+        "UP SHORTWAVE RADIATION",
+        description="Surface upwelling shortwave hemispheric irradiance, hourly mean",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="ARMBECLDRAD",
+            facility_code="M1",
+            data_level="c1",
+            units="w/m^2",
+        ),
+    )
+    DOWN_BROADBAND = SensorDescription(
+        "swdn",
+        "DOWN SHORTWAVE RADIATION",
+        description="Best estimate of surface downwelling shortwave hemispheric irradiance, hourly mean",
+        accumulated=False,
+        extra=dict(
+            site="GUC",
+            measurement="ARMBECLDRAD",
+            facility_code="M1",
+            data_level="c1",
+            units="w/m^2",
+        )
     )

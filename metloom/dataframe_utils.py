@@ -130,8 +130,29 @@ def resample_df(raw_df: pd.DataFrame,
     return df
 
 
-def resample_whole_df(raw_df: pd.DataFrame, variable: SensorDescription,
-                      interval: str = 'H'):
+def resample_series(raw_series: pd.Series, variable: SensorDescription, interval: str = "h"):
+    """
+    Resample a pandas series to hourly or daily timer intervals.
+    Resample a datetime indexed pandas series for 1 variable
+
+    Args:
+        raw_series: Pandas Series containing a datetime index at an interval
+            smaller than hourly.
+        variable: SensorDescriptions to be found in the dataframe
+        interval: Interval to resample to. Options are H = Hourly, D=Daily
+
+    Returns:
+        Pandas Series of a single variable resampled to the desired interval
+    """
+    if variable.accumulated:
+        result = raw_series.resample(interval).sum()
+    else:
+        result = raw_series.resample(interval).mean()
+
+    return result
+
+
+def resample_whole_df(raw_df: pd.DataFrame, variable: SensorDescription, interval: str = "h"):
     """
     Resample an datatime indexed pandas dateframe to hourly or daily timer
     intervals.

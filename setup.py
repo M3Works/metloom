@@ -11,12 +11,13 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'geopandas>=0.9.0,<1.0.0',
-    'pandas>1.0.0',
-    'lxml==4.9.3',
+    'geopandas>=1.0.0,<2.0.0',
+    'pandas>=1.0.0,<3.0.0',
+    'lxml>=5.4.0,<6.0.0',
     'requests>2.0.0,<3.0.0',
     'beautifulsoup4>4,<5',
-    'zeep>4.0.0'
+    'zeep>4.0.0',
+    'pydash>=8.0.0,<9.0.0',
 ]
 
 test_requirements = ['pytest>=3', ]
@@ -31,10 +32,11 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
     ],
     description="Location Oriented Observed Meteorology (LOOM)",
     entry_points={
@@ -52,6 +54,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/M3Works/metloom',
-    version='0.6.1',
+    version='0.8.0',
     zip_safe=False,
 )
