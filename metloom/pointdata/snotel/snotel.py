@@ -6,9 +6,9 @@ import pandas as pd
 from functools import reduce
 import requests
 
-from .base import PointData
-from ..variables import SnotelVariables, SensorDescription
-from ..dataframe_utils import append_df, merge_df
+from metloom.pointdata.base import PointData
+from .variables import SnotelVariables, SensorDescription
+from metloom.dataframe_utils import append_df, merge_df
 
 from .snotel_client import (
     DailySnotelDataClient, MetaDataSnotelClient, HourlySnotelDataClient,
@@ -44,8 +44,10 @@ class SnotelPointData(PointData):
         self._raw_elements = None
         self._tzinfo = None
 
-    def _snotel_response_to_df(self, result_map: Dict[SensorDescription, List[dict]],
-                               duration: str, include_measurement_date=False):
+    def _snotel_response_to_df(
+        self, result_map: Dict[SensorDescription, Dict[str, List[dict]]],
+        duration: str, include_measurement_date=False
+    ):
         """
         Convert the response from climata.snotel classes into
         Args:
@@ -63,14 +65,19 @@ class SnotelPointData(PointData):
         if include_measurement_date:
             final_columns += ["measurementDate"]
 
-        for variable, data in result_map.items():
+        date_key = "datetime" if duration == "HOURLY" else "date"
+        for variable, info in result_map.items():
+            data = info["values"]
+            element = info["stationElement"]
+            unit_name = element["storedUnitCode"]
             transformed = []
             for row in data:
+
                 row_obj = {
-                    "datetime": row["datetime"],
+                    "datetime": row[date_key],
                     "site": self.id,
                     variable.name: row["value"],
-                    f"{variable.name}_units": self._get_units(variable, duration),
+                    f"{variable.name}_units": unit_name,
                 }
                 if include_measurement_date:
                     row_obj["measurementDate"] = row["datetime"]
@@ -110,33 +117,60 @@ class SnotelPointData(PointData):
         self.validate_sensor_df(df)
         return df
 
-    def _fetch_data_for_variables(self, client: SeriesSnotelClient,
-                                  variables: List[SensorDescription],
-                                  duration: str,
-                                  include_measurement_date=False,
-                                  ):
+    def _fetch_data_for_variables(
+        self, start_date: datetime, end_date: datetime,
+        variables: List[SensorDescription],
+        duration: str,
+        include_measurement_date=False,
+    ):
+        """
+        Fetch data for the given variables using the Snotel API.
+        Args:
+            start_date: start date for the data
+            end_date: end date for the data
+            variables: list of SensorDescription objects for the variables
+            duration: string representation of the duration tag for the
+                API (i.e. HOURLY)
+            include_measurement_date: boolean for including the
+                'measurementDate' column in the resulting dataframe.
+
+        """
+        endpoint_url = self.API_URL + "services/v1/data"
         result_map = {}
+        params = dict(
+            beginDate=start_date.strftime("%Y-%m-%d %H:%M"),
+            endDate=end_date.strftime("%Y-%m-%d %H:%M"),
+            stationTriplets=self.id,
+            duration=duration,
+        )
         for variable in variables:
-<<<<<<< Updated upstream
-            params = variable.extra or {}
-=======
-            # need to add extra_params for ground temp call, this may not be the
-            # best logic
-            if 'GROUND' in variable.name or 'SOIL' in variable.name:
-                params = extra_params[variable.name]
+            extra = variable.extra or {}
+            height_depth = extra.get("height_depth", {})
+            # Add the height depth for sensors with a heigh component
+            if height_depth:
+                code = variable.code + f":{height_depth['value']}"
             else:
-                params = {}
-            requests.get(
-                self.API_URL + ""
+                code = variable.code
+
+            # TODO: we could request multiple variables at once
+            result = requests.get(
+                endpoint_url, params={**params, "elements": code}
             )
->>>>>>> Stashed changes
-            data = client.get_data(element_cd=variable.code, **params)
-            if len(data) > 0:
-                result_map[variable] = data
+            result.raise_for_status()
+            data = result.json()
+            # Get the first station return, since we only requested one station
+            data = data[0]["data"]
+            # TODO: this is where we could iterate through multiple variables
+            #   if we wanted to. We would need to be careful of the meas height
+            if len(data) == 1:
+                result_map[variable] = data[0]
+            elif len(data["data"]) > 1:
+                raise RuntimeError("We received too many results")
             else:
                 LOG.warning(f"No {variable.name} found for {self.name}")
         return self._snotel_response_to_df(
-            result_map, duration, include_measurement_date=include_measurement_date
+            result_map, duration,
+            include_measurement_date=include_measurement_date
         )
 
     def get_daily_data(
@@ -148,13 +182,9 @@ class SnotelPointData(PointData):
         """
         See docstring for PointData.get_daily_data
         """
-        client = DailySnotelDataClient(
-            station_triplet=self.id,
-            begin_date=start_date,
-            end_date=end_date,
+        return self._fetch_data_for_variables(
+            start_date, end_date, variables, "DAILY"
         )
-        return self._fetch_data_for_variables(client, variables,
-                                              client.DURATION)
 
     def get_hourly_data(
         self,
@@ -165,13 +195,9 @@ class SnotelPointData(PointData):
         """
         See docstring for PointData.get_hourly_data
         """
-
-        client = HourlySnotelDataClient(
-            station_triplet=self.id,
-            begin_date=start_date,
-            end_date=end_date,
+        return self._fetch_data_for_variables(
+            start_date, end_date, variables, "HOURLY"
         )
-        return self._fetch_data_for_variables(client, variables, "HOURLY")
 
     def get_snow_course_data(
         self,
@@ -182,13 +208,9 @@ class SnotelPointData(PointData):
         """
         See docstring for PointData.get_snow_course_data
         """
-        client = SemiMonthlySnotelClient(
-            station_triplet=self.id,
-            begin_date=start_date,
-            end_date=end_date,
-        )
+
         return self._fetch_data_for_variables(
-            client, variables, client.DURATION, include_measurement_date=True
+            start_date, end_date, variables, "SEMIMONTHLY", include_measurement_date=True
         )
 
     def _get_all_metadata(self):
@@ -208,16 +230,6 @@ class SnotelPointData(PointData):
             client = ElementSnotelClient(station_triplet=self.id)
             self._raw_elements = client.get_data()
         return self._raw_elements
-
-    def _get_units(self, variable: SensorDescription, duration: str):
-        units = None
-        for meta in self._get_all_elements():
-            if meta["elementCd"] == variable.code and meta["duration"] == duration:
-                units = meta["storedUnitCd"]
-                break
-        if units is None:
-            raise ValueError(f"Could not find units for {variable}")
-        return units
 
     def _get_metadata(self):
         """
