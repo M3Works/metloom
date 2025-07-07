@@ -244,9 +244,9 @@ class SnotelPointData(PointData):
         """
         Return timezone info that pandas can use from the raw_metadata
         """
-        metadata = self._get_all_metadata()
+        metadata = self._all_metadata
         # Snow courses might not have a timezone attached
-        tz_hours = metadata.get("stationDataTimeZone")
+        tz_hours = metadata.get("dataTimeZone")
         if tz_hours is None:
             LOG.error(f"Could not find timezone info for {self.id} ({self.name})")
             tz_hours = 0
