@@ -85,42 +85,6 @@ class BaseSnotelClient:
         return data
 
 
-class MetaDataSnotelClient(BaseSnotelClient):
-    """
-    Read metadata from the metadata service for a particular station triplet
-    """
-    SERVICE_NAME = "getStationMetadata"
-
-    def __init__(self, station_triplet: str, **kwargs):
-        super(MetaDataSnotelClient, self).__init__(
-            station_triplet=station_triplet, **kwargs
-        )
-
-    def get_data(self):
-        """
-        Returns a dictionary of metadata values
-        """
-        data = self._make_request(**self.params)
-        # change ordered dict of values to regular dict
-        return dict(data.__values__)
-
-
-class ElementSnotelClient(BaseSnotelClient):
-    """
-    Get all station elements for a station triplet. Station triplets
-    are descriptions of each sensor on the station
-
-    get_data returns a list of zeep objects. Zeep objects are indexible
-    or attributes can be accessed with getattr or ``.``
-    """
-    SERVICE_NAME = "getStationElements"
-
-    def __init__(self, station_triplet: str, **kwargs):
-        super(ElementSnotelClient, self).__init__(
-            station_triplet=station_triplet, **kwargs
-        )
-
-
 class PointSearchSnotelClient(BaseSnotelClient):
     """
     Search for stations based on criteria. This search is default logical

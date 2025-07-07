@@ -3,7 +3,7 @@ from typing import List, Dict
 import logging
 import geopandas as gpd
 import pandas as pd
-from functools import reduce
+from functools import reduce, cached_property
 import requests
 
 from metloom.pointdata.base import PointData
@@ -11,9 +11,7 @@ from .variables import SnotelVariables, SensorDescription
 from metloom.dataframe_utils import append_df, merge_df
 
 from .snotel_client import (
-    DailySnotelDataClient, MetaDataSnotelClient, HourlySnotelDataClient,
-    SemiMonthlySnotelClient, PointSearchSnotelClient, SeriesSnotelClient,
-    ElementSnotelClient
+    PointSearchSnotelClient
 )
 
 LOG = logging.getLogger("metloom.pointdata.snotel")
@@ -213,29 +211,27 @@ class SnotelPointData(PointData):
             start_date, end_date, variables, "SEMIMONTHLY", include_measurement_date=True
         )
 
-    def _get_all_metadata(self):
+    @cached_property
+    def _all_metadata(self):
         """
         Set _raw_metadata once using Snotel API
         """
-        if self._raw_metadata is None:
-            client = MetaDataSnotelClient(station_triplet=self.id)
-            self._raw_metadata = client.get_data()
-        return self._raw_metadata
-
-    def _get_all_elements(self):
-        """
-        Set _raw_metadata once using Snotel API
-        """
-        if self._raw_elements is None:
-            client = ElementSnotelClient(station_triplet=self.id)
-            self._raw_elements = client.get_data()
-        return self._raw_elements
+        endpoint_url = self.API_URL + "services/v1/stations"
+        params = dict(
+            stationTriplets=self.id,
+        )
+        result = requests.get(
+            endpoint_url, params=params
+        )
+        result.raise_for_status()
+        data = result.json()
+        return data
 
     def _get_metadata(self):
         """
         See docstring for PointData._get_metadata
         """
-        all_metadata = self._get_all_metadata()
+        all_metadata = self._all_metadata
         if isinstance(all_metadata, list):
             data = all_metadata[0]
         else:
