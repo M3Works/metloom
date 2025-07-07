@@ -36,12 +36,26 @@ class TestSnotelPointData(BasePointDataTest):
     def points(self):
         return gpd.points_from_xy([-107.67552], [37.9339], z=[9800.0])[0]
 
+
+    @classmethod
+    def side_effect(cls, *args, **kwargs):
+        url = args[0]
+        if "services/v1/stations" in url:
+            result = cls.snotel_meta_sideeffect(*args, **kwargs)
+        elif "services/v1/data" in url:
+            result = cls.snotel_data_sideeffect(*args, **kwargs)
+        else:
+            raise ValueError("Unknown URL in mock: " + url)
+        obj = MagicMock()
+        obj.json.return_value = result
+        return obj
+
     @staticmethod
     def snotel_meta_sideeffect(*args, **kwargs):
         """
         Mock out the metadata response
         """
-        code = kwargs["stationTriplet"]
+        codes = kwargs["params"]["stationTriplets"].split(",")
         available_stations = {
             "538:CO:SNTL": {
                 "stationTriplet": "538:CO:SNTL",
@@ -95,7 +109,7 @@ class TestSnotelPointData(BasePointDataTest):
                 "stationTriplet": "BBB:CA:SNOW",
             },
         }
-        return MockZeepObject(available_stations[code])
+        return [available_stations[code] for code in codes]
 
     @staticmethod
     def snotel_data_sideeffect(*args, **kwargs):
@@ -183,71 +197,29 @@ class TestSnotelPointData(BasePointDataTest):
         else:
             raise ValueError(f"{element_cd} not configured in this mock")
 
-    @pytest.fixture(scope="class")
-    def mock_elements(self):
-        return [
-            MockZeepObject(
-                {
-                    'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-                    'duration': 'DAILY', 'elementCd': 'WTEQ',
-                    'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                    'ordinal': 1,
-                    'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                    'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-                 'duration': 'SEMIMONTHLY', 'elementCd': 'WTEQ',
-                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                 'ordinal': 1,
-                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
-                 'duration': 'HOURLY', 'elementCd': 'WTEQ',
-                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                 'ordinal': 1,
-                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-                 'duration': 'MONTHLY', 'elementCd': 'WTEQ',
-                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                 'ordinal': 1,
-                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
-                 'duration': 'HOURLY', 'elementCd': 'PRCPSA',
-                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                 'ordinal': 1,
-                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
-                 'duration': 'HOURLY', 'elementCd': 'STO',
-                 'endDate': '2100-01-01 00:00:00',
-                 'heightDepth': {'unitCd': 'in', 'value': '-2'},
-                 'ordinal': 1,
-                 'originalUnitCd': 'degF', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'degF'})
-        ]
-
     @pytest.fixture
-    def mock_zeep_client(self, mock_elements):
-        with patch("metloom.pointdata.snotel_client.zeep.Client") as mock_client:
+    def mock_requests(self):
+        with patch("requests.get") as mock_get:
+            # Mock our gets
+            mock_get.side_effect = self.side_effect
+            # mock our zeep request
+            # TODO: mock request return
+            yield mock_get
+
+    @pytest.fixture(scope="class")
+    def mock_zeep_find(self):
+        with patch(
+            "metloom.pointdata.snotel.snotel_client.zeep.Client"
+        ) as mock_client:
             mock_service = MagicMock()
             # setup the individual services
-            mock_service.getStationMetadata.side_effect = self.snotel_meta_sideeffect
-            mock_service.getStationElements.return_value = mock_elements
             mock_service.getStations.return_value = ["FFF:CA:SNOW",
                                                      "BBB:CA:SNOW"]
-            mock_service.getData.side_effect = self.snotel_data_sideeffect
-            mock_service.getHourlyData.side_effect = self.snotel_hourly_sideeffect
             # assign service to client
             mock_client.return_value.service = mock_service
             yield mock_client
 
-    def test_metadata(self, mock_zeep_client):
+    def test_metadata(self, mock_requests):
         obj = SnotelPointData("538:CO:SNTL", "eh")
         assert (
             obj.metadata == gpd.points_from_xy(
@@ -311,7 +283,7 @@ class TestSnotelPointData(BasePointDataTest):
     )
     def test_get_data_methods(
             self, station_id, dts, expected_dts, vals, d1,
-            d2, fn_name, points, mock_zeep_client):
+            d2, fn_name, points, mock_requests):
         station = SnotelPointData(station_id, "TestSite")
         if 'GROUND TEMPERATURE -2IN' in list(vals.keys()):
             vrs = [SnotelVariables.TEMPGROUND2IN]
@@ -327,7 +299,7 @@ class TestSnotelPointData(BasePointDataTest):
             result.sort_index(axis=1), expected
         )
 
-    def test_get_hourly_data_multi_sensor(self, points, mock_zeep_client):
+    def test_get_hourly_data_multi_sensor(self, points, mock_requests):
         expected_dts = [
             "2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00",
             "2020-03-20 11:00"
@@ -351,7 +323,7 @@ class TestSnotelPointData(BasePointDataTest):
             result.sort_index(axis=1), expected
         )
 
-    def test_points_from_geometry(self, shape_obj, mock_zeep_client):
+    def test_points_from_geometry(self, shape_obj, mock_requests, mock_zeep_find):
         result = SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=True
         )
@@ -361,11 +333,11 @@ class TestSnotelPointData(BasePointDataTest):
         assert set(ids) == {"FFF:CA:SNOW", "BBB:CA:SNOW"}
         assert set(names) == {"Fake1", "Fake2"}
 
-    def test_points_from_geomtery_buffer(self, shape_obj, mock_zeep_client):
+    def test_points_from_geomtery_buffer(self, shape_obj, mock_requests):
         SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=False, buffer=0.1
         )
-        search_kwargs = mock_zeep_client().method_calls[0][2]
+        search_kwargs = mock_requests().method_calls[0][2]
         expected = {
             'maxLatitude': 38.3, 'minLatitude': 37.6,
             'maxLongitude': -119.1, 'minLongitude': -119.9
@@ -373,8 +345,8 @@ class TestSnotelPointData(BasePointDataTest):
         for k, v in expected.items():
             assert v == pytest.approx(search_kwargs[k])
 
-    def test_points_from_geometry_fail(self, shape_obj, mock_zeep_client):
-        mock_zeep_client.return_value.service.getStations.return_value = []
+    def test_points_from_geometry_fail(self, shape_obj, mock_requests):
+        mock_requests.return_value.service.getStations.return_value = []
         result = SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=True
         )
