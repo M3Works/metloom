@@ -211,14 +211,18 @@ class SnotelPointData(PointData):
             start_date, end_date, variables, "SEMIMONTHLY", include_measurement_date=True
         )
 
-    @cached_property
-    def _all_metadata(self):
+    @classmethod
+    def _metadata_call(cls, point_ids):
         """
-        Set _raw_metadata once using Snotel API
+        Call the Snotel API to get metadata for a point_id
+        Args:
+            point_ids: string of comma separated station triplets
+        Returns:
+            dict: metadata for the point
         """
-        endpoint_url = self.API_URL + "services/v1/stations"
+        endpoint_url = cls.API_URL + "services/v1/stations"
         params = dict(
-            stationTriplets=self.id,
+            stationTriplets=point_ids,
         )
         result = requests.get(
             endpoint_url, params=params
@@ -226,6 +230,13 @@ class SnotelPointData(PointData):
         result.raise_for_status()
         data = result.json()
         return data
+
+    @cached_property
+    def _all_metadata(self):
+        """
+        Set _raw_metadata once using Snotel API
+        """
+        return self._metadata_call(self.id)
 
     def _get_metadata(self):
         """
@@ -316,15 +327,13 @@ class SnotelPointData(PointData):
 
         # no duplicate codes
         point_codes = list(set(point_codes))
-        dfs = [
-            pd.DataFrame.from_records(
-                [MetaDataSnotelClient(station_triplet=code).get_data()]
-            ).set_index("stationTriplet") for code in point_codes
-        ]
+        codes_string = ",".join(point_codes)
+        df = pd.DataFrame.from_records(
+            cls._metadata_call(codes_string)
+        ).set_index("stationTriplet")
 
-        if len(dfs) > 0:
-            df = reduce(lambda a, b: append_df(a, b), dfs)
-        else:
+        if len(df) == 0:
+            # Short circuit, return empty class
             return cls.ITERATOR_CLASS([])
 
         df.reset_index(inplace=True)
