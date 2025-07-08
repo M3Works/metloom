@@ -276,7 +276,7 @@ class TestSnotelPointData(BasePointDataTest):
         assert set(ids) == {"FFF:CA:SNOW", "BBB:CA:SNOW"}
         assert set(names) == {"Fake1", "Fake2"}
 
-    def test_points_from_geomtery_buffer(
+    def test_points_from_geometry_buffer(
         self, shape_obj, mock_requests, mock_zeep_find
     ):
         SnotelPointData.points_from_geometry(
