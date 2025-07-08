@@ -63,14 +63,13 @@ class SnotelPointData(PointData):
         if include_measurement_date:
             final_columns += ["measurementDate"]
 
-        date_key = "datetime" if duration == "HOURLY" else "date"
+        date_key = "collectionDate" if duration == "SEMIMONTHLY" else "date"
         for variable, info in result_map.items():
             data = info["values"]
             element = info["stationElement"]
             unit_name = element["storedUnitCode"]
             transformed = []
             for row in data:
-
                 row_obj = {
                     "datetime": row[date_key],
                     "site": self.id,
@@ -78,7 +77,7 @@ class SnotelPointData(PointData):
                     f"{variable.name}_units": unit_name,
                 }
                 if include_measurement_date:
-                    row_obj["measurementDate"] = row["datetime"]
+                    row_obj["measurementDate"] = row[date_key]
                 transformed.append(row_obj)
 
             final_columns += [variable.name, f"{variable.name}_units"]
@@ -257,7 +256,7 @@ class SnotelPointData(PointData):
         """
         metadata = self._all_metadata
         # Snow courses might not have a timezone attached
-        tz_hours = metadata.get("dataTimeZone")
+        tz_hours = metadata[0].get("dataTimeZone")
         if tz_hours is None:
             LOG.error(f"Could not find timezone info for {self.id} ({self.name})")
             tz_hours = 0

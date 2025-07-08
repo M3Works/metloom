@@ -1,0 +1,34 @@
+[
+  {
+    "stationTriplet": "538:CO:SNTL",
+    "data": [
+      {
+        "stationElement": {
+          "elementCode": "PREC",
+          "ordinal": 1,
+          "durationName": "HOURLY",
+          "dataPrecision": 1,
+          "storedUnitCode": "in",
+          "originalUnitCode": "in",
+          "beginDate": "1985-10-01 00:00",
+          "endDate": "2100-01-01 00:00",
+          "derivedData": false
+        },
+        "values": [
+          {
+            "date": "2020-01-02 00:00",
+            "value": 6
+          },
+          {
+            "date": "2020-01-02 01:00",
+            "value": 6
+          },
+          {
+            "date": "2020-01-02 02:00",
+            "value": 6.1
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "stationTriplet": "658:CO:SNTL",
+    "data": [
+      {
+        "stationElement": {
+          "elementCode": "WTEQ",
+          "ordinal": 1,
+          "durationName": "SEMIMONTHLY",
+          "dataPrecision": 1,
+          "storedUnitCode": "in",
+          "originalUnitCode": "in",
+          "beginDate": "1985-10-01 00:00",
+          "endDate": "2100-01-01 00:00",
+          "derivedData": false
+        },
+        "values": [
+          {
+            "month": 1,
+            "monthPart": "1",
+            "year": 2020,
+            "collectionDate": "2020-01-16 00:00",
+            "value": 6.4
+          },
+          {
+            "month": 1,
+            "monthPart": "2",
+            "year": 2020,
+            "collectionDate": "2020-02-01 00:00",
+            "value": 7.3
+          },
+          {
+            "month": 2,
+            "monthPart": "1",
+            "year": 2020,
+            "collectionDate": "2020-02-16 00:00",
+            "value": 8.8
+          },
+          {
+            "month": 2,
+            "monthPart": "2",
+            "year": 2020,
+            "collectionDate": "2020-03-01 00:00",
+            "value": 9.9
+          }
+        ]
+      }
+    ]
+  }
+]
