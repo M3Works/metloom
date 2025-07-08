@@ -126,12 +126,12 @@ class TestSnotelPointData(BasePointDataTest):
             fname = cls.MOCKS_DIR.joinpath("daily.json")
         elif duration == "HOURLY":
             element_cd = kwargs["params"]["elements"]
-            if element_cd == "WTEQ":
-                fname = cls.MOCKS_DIR.joinpath("hourly_swe.json")
-            elif element_cd == "PRCPSA":
-                fname = cls.MOCKS_DIR.joinpath("hourly_precip.json")
-            elif element_cd == "STO:-2":
-                fname = cls.MOCKS_DIR.joinpath("hourly_soil.json")
+            cd_file_map = {
+                "WTEQ": "hourly_swe.json",
+                "PRCPSA": "hourly_precip.json",
+                "STO:-2": "hourly_soil.json",
+            }
+            fname = cls.MOCKS_DIR.joinpath(cd_file_map.get(element_cd))
 
         if fname is None:
             raise ValueError("No mock file found for duration: " + duration)
@@ -145,7 +145,7 @@ class TestSnotelPointData(BasePointDataTest):
             mock_get.side_effect = self.side_effect
             yield mock_get
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def mock_zeep_find(self):
         """
         Mock the zeep client to return a mock service with
@@ -276,7 +276,9 @@ class TestSnotelPointData(BasePointDataTest):
         assert set(ids) == {"FFF:CA:SNOW", "BBB:CA:SNOW"}
         assert set(names) == {"Fake1", "Fake2"}
 
-    def test_points_from_geomtery_buffer(self, shape_obj, mock_requests, mock_zeep_find):
+    def test_points_from_geomtery_buffer(
+        self, shape_obj, mock_requests, mock_zeep_find
+    ):
         SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=False, buffer=0.1
         )
