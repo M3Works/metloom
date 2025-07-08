@@ -161,7 +161,7 @@ class SnotelPointData(PointData):
             #   if we wanted to. We would need to be careful of the meas height
             if len(data) == 1:
                 result_map[variable] = data[0]
-            elif len(data["data"]) > 1:
+            elif len(data) > 1:
                 raise RuntimeError("We received too many results")
             else:
                 LOG.warning(f"No {variable.name} found for {self.name}")
