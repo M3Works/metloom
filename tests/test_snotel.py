@@ -114,7 +114,7 @@ class TestSnotelPointData(BasePointDataTest):
                 "stationTriplet": "BBB:CA:SNOW",
             },
         }
-        return [available_stations[code] for code in codes]
+        return [available_stations[code] for code in codes if code in available_stations]
 
     @classmethod
     def snotel_data_sideeffect(cls, *args, **kwargs):
@@ -244,20 +244,20 @@ class TestSnotelPointData(BasePointDataTest):
 
     def test_get_hourly_data_multi_sensor(self, points, mock_requests):
         expected_dts = [
-            "2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00",
-            "2020-03-20 11:00"
+            "2020-01-02 08:00", "2020-01-02 09:00", "2020-01-02 10:00",
+            "2020-01-02 11:00"
         ]
         expected_vals_obj = {
-            SnotelVariables.SWE.name: [13.19, 13.17, 13.14, np.nan],
+            SnotelVariables.SWE.name: [6.9, 6.9,  6.8, np.nan],
             f"{SnotelVariables.SWE.name}_units": ["in", "in", "in", np.nan],
-            SnotelVariables.PRECIPITATION.name: [4.1, np.nan, 4.3, 4.4],
+            SnotelVariables.PRECIPITATION.name: [6, 6, 6.1, 6.5],
             f"{SnotelVariables.PRECIPITATION.name}_units": [
-                "in", np.nan, "in", "in"],
+                "in", "in", "in", "in"],
         }
         station = SnotelPointData("538:CO:SNTL", "TestSite")
         vrs = [SnotelVariables.PRECIPITATION, SnotelVariables.SWE]
         result = station.get_hourly_data(
-            datetime(2020, 3, 20, 0), datetime(2020, 3, 20, 4), vrs
+            datetime(2020, 1, 2, 0), datetime(2020, 1, 2, 4), vrs
         )
         expected = self.expected_response(
             expected_dts, expected_vals_obj, station, points
@@ -276,11 +276,11 @@ class TestSnotelPointData(BasePointDataTest):
         assert set(ids) == {"FFF:CA:SNOW", "BBB:CA:SNOW"}
         assert set(names) == {"Fake1", "Fake2"}
 
-    def test_points_from_geomtery_buffer(self, shape_obj, mock_requests):
+    def test_points_from_geomtery_buffer(self, shape_obj, mock_requests, mock_zeep_find):
         SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=False, buffer=0.1
         )
-        search_kwargs = mock_requests().method_calls[0][2]
+        search_kwargs = mock_zeep_find().method_calls[0][2]
         expected = {
             'maxLatitude': 38.3, 'minLatitude': 37.6,
             'maxLongitude': -119.1, 'minLongitude': -119.9
@@ -288,8 +288,8 @@ class TestSnotelPointData(BasePointDataTest):
         for k, v in expected.items():
             assert v == pytest.approx(search_kwargs[k])
 
-    def test_points_from_geometry_fail(self, shape_obj, mock_requests):
-        mock_requests.return_value.service.getStations.return_value = []
+    def test_points_from_geometry_fail(self, shape_obj, mock_requests, mock_zeep_find):
+        mock_zeep_find.return_value.service.getStations.return_value = []
         result = SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=True
         )

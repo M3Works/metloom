@@ -329,11 +329,13 @@ class SnotelPointData(PointData):
         codes_string = ",".join(point_codes)
         df = pd.DataFrame.from_records(
             cls._metadata_call(codes_string)
-        ).set_index("stationTriplet")
+        )
 
         if len(df) == 0:
             # Short circuit, return empty class
             return cls.ITERATOR_CLASS([])
+
+        df = df.set_index("stationTriplet")
 
         df.reset_index(inplace=True)
         gdf = gpd.GeoDataFrame(
