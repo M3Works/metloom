@@ -65,4 +65,3 @@ class VariableBase:
                 cls._validate_sensor(v)
                 return v
         raise ValueError(f"Could not find sensor for code {code}")
-

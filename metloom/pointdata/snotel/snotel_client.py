@@ -1,5 +1,4 @@
 from datetime import datetime
-import pandas as pd
 import zeep
 
 from metloom.request_utils import no_ssl_verification

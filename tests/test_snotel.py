@@ -178,7 +178,7 @@ class TestSnotelPointData(BasePointDataTest):
                 ["2020-01-02 00:00", "2020-01-02= 01:00", "2020-01-02 02:00"],
                 ["2020-01-02 08:00", "2020-01-02 09:00", "2020-01-02 10:00"],
                 {
-                    SnotelVariables.SWE.name: [6.9, 6.9,  6.8],
+                    SnotelVariables.SWE.name: [6.9, 6.9, 6.8],
                     f"{SnotelVariables.SWE.name}_units": ["in", "in", "in"]
                 },
                 datetime(2020, 1, 2, 0),
@@ -248,7 +248,7 @@ class TestSnotelPointData(BasePointDataTest):
             "2020-01-02 11:00"
         ]
         expected_vals_obj = {
-            SnotelVariables.SWE.name: [6.9, 6.9,  6.8, np.nan],
+            SnotelVariables.SWE.name: [6.9, 6.9, 6.8, np.nan],
             f"{SnotelVariables.SWE.name}_units": ["in", "in", "in", np.nan],
             SnotelVariables.PRECIPITATION.name: [6, 6, 6.1, 6.5],
             f"{SnotelVariables.PRECIPITATION.name}_units": [

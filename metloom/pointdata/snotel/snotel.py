@@ -3,12 +3,12 @@ from typing import List, Dict
 import logging
 import geopandas as gpd
 import pandas as pd
-from functools import reduce, cached_property
+from functools import cached_property
 import requests
 
 from metloom.pointdata.base import PointData
 from .variables import SnotelVariables, SensorDescription
-from metloom.dataframe_utils import append_df, merge_df
+from metloom.dataframe_utils import merge_df
 
 from .snotel_client import (
     PointSearchSnotelClient

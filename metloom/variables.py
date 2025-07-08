@@ -30,7 +30,6 @@ class CdecStationVariables(VariableBase):
     WINDDIR = SensorDescription("10", "WIND DIRECTION", "WIND DIRECTION")
 
 
-
 class MesowestVariables(VariableBase):
     """
     Available sensors from Mesowest
