@@ -156,6 +156,8 @@ class SnotelPointData(PointData):
             result.raise_for_status()
             data = result.json()
             # Get the first station return, since we only requested one station
+            if len(data) == 0:
+                return None
             data = data[0]["data"]
             # TODO: this is where we could iterate through multiple variables
             #   if we wanted to. We would need to be careful of the meas height
