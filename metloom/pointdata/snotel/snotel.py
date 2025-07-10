@@ -3,16 +3,16 @@ from typing import List, Dict
 import logging
 import geopandas as gpd
 import pandas as pd
-from functools import reduce
+from functools import cached_property
+import requests
+import numpy as np
 
-from .base import PointData
-from ..variables import SnotelVariables, SensorDescription
-from ..dataframe_utils import append_df, merge_df
+from metloom.pointdata.base import PointData
+from .variables import SnotelVariables, SensorDescription
+from metloom.dataframe_utils import merge_df
 
 from .snotel_client import (
-    DailySnotelDataClient, MetaDataSnotelClient, HourlySnotelDataClient,
-    SemiMonthlySnotelClient, PointSearchSnotelClient, SeriesSnotelClient,
-    ElementSnotelClient
+    PointSearchSnotelClient
 )
 
 LOG = logging.getLogger("metloom.pointdata.snotel")
@@ -30,6 +30,7 @@ class SnotelPointData(PointData):
 
     ALLOWED_VARIABLES = SnotelVariables
     DATASOURCE = "NRCS"
+    API_URL = "https://wcc.sc.egov.usda.gov/awdbRestApi/"
 
     def __init__(self, station_id, name, metadata=None):
         """
@@ -42,8 +43,10 @@ class SnotelPointData(PointData):
         self._raw_elements = None
         self._tzinfo = None
 
-    def _snotel_response_to_df(self, result_map: Dict[SensorDescription, List[dict]],
-                               duration: str, include_measurement_date=False):
+    def _snotel_response_to_df(
+        self, result_map: Dict[SensorDescription, Dict[str, List[dict]]],
+        duration: str, include_measurement_date=False
+    ):
         """
         Convert the response from climata.snotel classes into
         Args:
@@ -61,17 +64,21 @@ class SnotelPointData(PointData):
         if include_measurement_date:
             final_columns += ["measurementDate"]
 
-        for variable, data in result_map.items():
+        date_key = "collectionDate" if duration == "SEMIMONTHLY" else "date"
+        for variable, info in result_map.items():
+            data = info["values"]
+            element = info["stationElement"]
+            unit_name = element["storedUnitCode"]
             transformed = []
             for row in data:
                 row_obj = {
-                    "datetime": row["datetime"],
+                    "datetime": row[date_key],
                     "site": self.id,
-                    variable.name: row["value"],
-                    f"{variable.name}_units": self._get_units(variable, duration),
+                    variable.name: row.get("value", np.nan),
+                    f"{variable.name}_units": unit_name,
                 }
                 if include_measurement_date:
-                    row_obj["measurementDate"] = row["datetime"]
+                    row_obj["measurementDate"] = row[date_key]
                 transformed.append(row_obj)
 
             final_columns += [variable.name, f"{variable.name}_units"]
@@ -108,21 +115,62 @@ class SnotelPointData(PointData):
         self.validate_sensor_df(df)
         return df
 
-    def _fetch_data_for_variables(self, client: SeriesSnotelClient,
-                                  variables: List[SensorDescription],
-                                  duration: str,
-                                  include_measurement_date=False,
-                                  ):
+    def _fetch_data_for_variables(
+        self, start_date: datetime, end_date: datetime,
+        variables: List[SensorDescription],
+        duration: str,
+        include_measurement_date=False,
+    ):
+        """
+        Fetch data for the given variables using the Snotel API.
+        Args:
+            start_date: start date for the data
+            end_date: end date for the data
+            variables: list of SensorDescription objects for the variables
+            duration: string representation of the duration tag for the
+                API (i.e. HOURLY)
+            include_measurement_date: boolean for including the
+                'measurementDate' column in the resulting dataframe.
+
+        """
+        endpoint_url = self.API_URL + "services/v1/data"
         result_map = {}
+        params = dict(
+            beginDate=start_date.strftime("%Y-%m-%d %H:%M"),
+            endDate=end_date.strftime("%Y-%m-%d %H:%M"),
+            stationTriplets=self.id,
+            duration=duration,
+        )
         for variable in variables:
-            params = variable.extra or {}
-            data = client.get_data(element_cd=variable.code, **params)
-            if len(data) > 0:
-                result_map[variable] = data
+            extra = variable.extra or {}
+            height_depth = extra.get("height_depth", {})
+            # Add the height depth for sensors with a heigh component
+            if height_depth:
+                code = variable.code + f":{height_depth['value']}"
+            else:
+                code = variable.code
+
+            # TODO: we could request multiple variables at once
+            result = requests.get(
+                endpoint_url, params={**params, "elements": code}
+            )
+            result.raise_for_status()
+            data = result.json()
+            # Get the first station return, since we only requested one station
+            if len(data) == 0:
+                return None
+            data = data[0]["data"]
+            # TODO: this is where we could iterate through multiple variables
+            #   if we wanted to. We would need to be careful of the meas height
+            if len(data) == 1:
+                result_map[variable] = data[0]
+            elif len(data) > 1:
+                raise RuntimeError("We received too many results")
             else:
                 LOG.warning(f"No {variable.name} found for {self.name}")
         return self._snotel_response_to_df(
-            result_map, duration, include_measurement_date=include_measurement_date
+            result_map, duration,
+            include_measurement_date=include_measurement_date
         )
 
     def get_daily_data(
@@ -134,13 +182,9 @@ class SnotelPointData(PointData):
         """
         See docstring for PointData.get_daily_data
         """
-        client = DailySnotelDataClient(
-            station_triplet=self.id,
-            begin_date=start_date,
-            end_date=end_date,
+        return self._fetch_data_for_variables(
+            start_date, end_date, variables, "DAILY"
         )
-        return self._fetch_data_for_variables(client, variables,
-                                              client.DURATION)
 
     def get_hourly_data(
         self,
@@ -151,13 +195,9 @@ class SnotelPointData(PointData):
         """
         See docstring for PointData.get_hourly_data
         """
-
-        client = HourlySnotelDataClient(
-            station_triplet=self.id,
-            begin_date=start_date,
-            end_date=end_date,
+        return self._fetch_data_for_variables(
+            start_date, end_date, variables, "HOURLY"
         )
-        return self._fetch_data_for_variables(client, variables, "HOURLY")
 
     def get_snow_course_data(
         self,
@@ -168,48 +208,43 @@ class SnotelPointData(PointData):
         """
         See docstring for PointData.get_snow_course_data
         """
-        client = SemiMonthlySnotelClient(
-            station_triplet=self.id,
-            begin_date=start_date,
-            end_date=end_date,
-        )
+
         return self._fetch_data_for_variables(
-            client, variables, client.DURATION, include_measurement_date=True
+            start_date, end_date, variables, "SEMIMONTHLY", include_measurement_date=True
         )
 
-    def _get_all_metadata(self):
+    @classmethod
+    def _metadata_call(cls, point_ids):
+        """
+        Call the Snotel API to get metadata for a point_id
+        Args:
+            point_ids: string of comma separated station triplets
+        Returns:
+            dict: metadata for the point
+        """
+        endpoint_url = cls.API_URL + "services/v1/stations"
+        params = dict(
+            stationTriplets=point_ids,
+        )
+        result = requests.get(
+            endpoint_url, params=params
+        )
+        result.raise_for_status()
+        data = result.json()
+        return data
+
+    @cached_property
+    def _all_metadata(self):
         """
         Set _raw_metadata once using Snotel API
         """
-        if self._raw_metadata is None:
-            client = MetaDataSnotelClient(station_triplet=self.id)
-            self._raw_metadata = client.get_data()
-        return self._raw_metadata
-
-    def _get_all_elements(self):
-        """
-        Set _raw_metadata once using Snotel API
-        """
-        if self._raw_elements is None:
-            client = ElementSnotelClient(station_triplet=self.id)
-            self._raw_elements = client.get_data()
-        return self._raw_elements
-
-    def _get_units(self, variable: SensorDescription, duration: str):
-        units = None
-        for meta in self._get_all_elements():
-            if meta["elementCd"] == variable.code and meta["duration"] == duration:
-                units = meta["storedUnitCd"]
-                break
-        if units is None:
-            raise ValueError(f"Could not find units for {variable}")
-        return units
+        return self._metadata_call(self.id)
 
     def _get_metadata(self):
         """
         See docstring for PointData._get_metadata
         """
-        all_metadata = self._get_all_metadata()
+        all_metadata = self._all_metadata
         if isinstance(all_metadata, list):
             data = all_metadata[0]
         else:
@@ -222,9 +257,9 @@ class SnotelPointData(PointData):
         """
         Return timezone info that pandas can use from the raw_metadata
         """
-        metadata = self._get_all_metadata()
+        metadata = self._all_metadata
         # Snow courses might not have a timezone attached
-        tz_hours = metadata.get("stationDataTimeZone")
+        tz_hours = metadata[0].get("dataTimeZone")
         if tz_hours is None:
             LOG.error(f"Could not find timezone info for {self.id} ({self.name})")
             tz_hours = 0
@@ -294,16 +329,16 @@ class SnotelPointData(PointData):
 
         # no duplicate codes
         point_codes = list(set(point_codes))
-        dfs = [
-            pd.DataFrame.from_records(
-                [MetaDataSnotelClient(station_triplet=code).get_data()]
-            ).set_index("stationTriplet") for code in point_codes
-        ]
+        codes_string = ",".join(point_codes)
+        df = pd.DataFrame.from_records(
+            cls._metadata_call(codes_string)
+        )
 
-        if len(dfs) > 0:
-            df = reduce(lambda a, b: append_df(a, b), dfs)
-        else:
+        if len(df) == 0:
+            # Short circuit, return empty class
             return cls.ITERATOR_CLASS([])
+
+        df = df.set_index("stationTriplet")
 
         df.reset_index(inplace=True)
         gdf = gpd.GeoDataFrame(
