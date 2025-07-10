@@ -73,7 +73,7 @@ class SnotelPointData(PointData):
                 row_obj = {
                     "datetime": row[date_key],
                     "site": self.id,
-                    variable.name: row["value"],
+                    variable.name: row.get("value", np.nan),
                     f"{variable.name}_units": unit_name,
                 }
                 if include_measurement_date:
