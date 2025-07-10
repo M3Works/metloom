@@ -5,6 +5,7 @@ import geopandas as gpd
 import pandas as pd
 from functools import cached_property
 import requests
+import numpy as np
 
 from metloom.pointdata.base import PointData
 from .variables import SnotelVariables, SensorDescription
