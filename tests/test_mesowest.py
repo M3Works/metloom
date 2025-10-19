@@ -53,49 +53,58 @@ class TestMesowestPointData(BasePointDataTest):
         if 'stid' in params.keys():
             stid = params['stid']
             if stid == 'KMYL':
-                response = {'STATION': [{'ELEVATION': '5020',
-                                         'NAME': 'McCall Airport',
-                                         'STID': 'KMYL',
-                                         'ELEV_DEM': '5006.6',
-                                         'LONGITUDE': '-116.09978',
-                                         'LATITUDE': '44.89425',
-                                         'TIMEZONE': 'America/Boise'}]}
+                response = {
+                    'SUMMARY': {'NUMBER_OF_OBJECTS': 1},
+                    'STATION': [{'ELEVATION': '5020',
+                                 'NAME': 'McCall Airport',
+                                 'STID': 'KMYL',
+                                 'ELEV_DEM': '5006.6',
+                                 'LONGITUDE': '-116.09978',
+                                 'LATITUDE': '44.89425',
+                                 'TIMEZONE': 'America/Boise'}]
+                }
 
             elif stid == 'INTRI':
-                response = {'STATION': [{'ELEVATION': '9409',
-                                         'NAME': 'IN TRIANGLE',
-                                         'STID': 'INTRI',
-                                         'LONGITUDE': '-119.5',
-                                         'LATITUDE': '38.0',
-                                         'TIMEZONE': 'America/Los_Angeles',
-                                         }]}
+                response = {
+                    'SUMMARY': {'NUMBER_OF_OBJECTS': 1},
+                    'STATION': [{'ELEVATION': '9409',
+                                 'NAME': 'IN TRIANGLE',
+                                 'STID': 'INTRI',
+                                 'LONGITUDE': '-119.5',
+                                 'LATITUDE': '38.0',
+                                 'TIMEZONE': 'America/Los_Angeles'}]
+                }
 
             elif stid == 'OUTTRI':
-                response = {'STATION': [
-                    {'ELEVATION': '7201',
-                     'NAME': 'OUT TRIANGLE W/IN BOUNDS',
-                     'STID': 'OUTTRI',
-                     'TIMEZONE': 'America/Los_Angeles',
-                     'LONGITUDE': '-119.7',
-                     'LATITUDE': '38.0',
-                     }]}
+                response = {
+                    'SUMMARY': {'NUMBER_OF_OBJECTS': 1},
+                    'STATION': [{'ELEVATION': '7201',
+                                 'NAME': 'OUT TRIANGLE W/IN BOUNDS',
+                                 'STID': 'OUTTRI',
+                                 'TIMEZONE': 'America/Los_Angeles',
+                                 'LONGITUDE': '-119.7',
+                                 'LATITUDE': '38.0'}]
+                }
 
         elif 'bbox' in params.keys():
-            response = {'STATION': [{'ELEVATION': '9409',
-                                     'NAME': 'IN TRIANGLE',
-                                     'STID': 'INTRI',
-                                     'LONGITUDE': '-119.5',
-                                     'LATITUDE': '38.0',
-                                     'TIMEZONE': 'America/Los_Angeles',
-                                     },
-                                    {'ELEVATION': '7201',
-                                     'NAME': 'OUT TRIANGLE W/IN BOUNDS',
-                                     'STID': 'OUTTRI',
-                                     'TIMEZONE': 'America/Los_Angeles',
-                                     'LONGITUDE': '-119.7',
-                                     'LATITUDE': '38.0',
-                                     }
-                                    ]}
+            response = {
+                'SUMMARY': {'NUMBER_OF_OBJECTS': 2},
+                'STATION': [{'ELEVATION': '9409',
+                             'NAME': 'IN TRIANGLE',
+                             'STID': 'INTRI',
+                             'LONGITUDE': '-119.5',
+                             'LATITUDE': '38.0',
+                             'TIMEZONE': 'America/Los_Angeles',
+                             },
+                            {'ELEVATION': '7201',
+                             'NAME': 'OUT TRIANGLE W/IN BOUNDS',
+                             'STID': 'OUTTRI',
+                             'TIMEZONE': 'America/Los_Angeles',
+                             'LONGITUDE': '-119.7',
+                             'LATITUDE': '38.0',
+                             }]
+            }
+
         else:
             raise ValueError('Invalid test STID provided')
 
@@ -271,6 +280,29 @@ class TestMesowestPointData(BasePointDataTest):
 
         df = pnts.to_dataframe()
         assert df['id'].values == pytest.approx(expected_sid)
+
+    def test_points_from_geometry_no_points(self, token_file, shape_obj):
+        """
+        Tests behavior when there are no points within the given geometry
+        """
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            'SUMMARY': {'NUMBER_OF_OBJECTS': 0}
+        }
+
+        with patch(
+            "metloom.pointdata.mesowest.requests.get",
+            return_value=mock_response
+        ):
+            points = MesowestPointData.points_from_geometry(
+                shape_obj,
+                [MesowestVariables.TEMP],
+                within_geometry=True,
+                token_json=token_file,
+            )
+
+        assert len(points) == 0
 
     def test_points_from_geometry_buffer(self, token_file, shape_obj):
 
