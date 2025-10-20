@@ -346,7 +346,7 @@ class MesowestPointData(PointData):
                                                     token_json=kwargs['token_json']))
             else:
                 points = []
-                
+
         # build the result geodataframe
         result_df = gpd.GeoDataFrame.from_dict({'STID': [p.id for p in points],
                                                 'NAME': [p.name for p in points]},
