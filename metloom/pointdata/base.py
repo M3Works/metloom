@@ -7,7 +7,7 @@ import pandas as pd
 
 import geopandas as gpd
 
-from ..variables import SensorDescription, VariableBase
+from ..sensors import SensorDescription, VariableBase
 
 LOG = logging.getLogger("metloom.pointdata.base")
 
