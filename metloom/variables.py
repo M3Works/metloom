@@ -457,14 +457,16 @@ class SnowExVariables(VariableBase):
 class CSASVariables(VariableBase):
     """
     Variable meta for the stations:
-    SASP - https://snowstudies.org/wp-content/uploads/2023/11/SASP_Variable_Table.xlsx
-    SBSP - https://snowstudies.org/wp-content/uploads/2023/11/SBSP_Variable_Table.xlsx
-    PTSP - https://snowstudies.org/wp-content/uploads/2023/11/PTSP_Variable_Table.xlsx
+    SASP - https://snowstudies.org/wp-content/uploads/2026/01/SASP_Variable_Table.xlsx
+    SBSP - https://snowstudies.org/wp-content/uploads/2026/01/SBSP_Variable_Table.xlsx
+    PTSP - https://snowstudies.org/wp-content/uploads/2026/01/PTSP_Variable_Table.xlsx
     SGSB - https://snowstudies.org/wp-content/uploads/2023/11/SBSG_Variable_Table.xlsx
     """
 
     SNOWDEPTH = SensorDescription("Sno_Height_M", "SNOWDEPTH", units="meters")
-    RH = SensorDescription("RH", "RELATIVE HUMIDITY", units="%")
+    RH_LOWER = SensorDescription("Lo_RH", "RELATIVE HUMIDITY", units="%")
+    RH_UPPER = SensorDescription("Up_RH", "RELATIVE HUMIDITY", units="%")
+
     STREAMFLOW_CFS = SensorDescription("Discharge_CFS", "STREAMFLOW", units="CFS")
     SURF_TEMP = SensorDescription(
         "Sno_IR_C",
