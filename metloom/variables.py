@@ -464,8 +464,8 @@ class CSASVariables(VariableBase):
     """
 
     SNOWDEPTH = SensorDescription("Sno_Height_M", "SNOWDEPTH", units="meters")
-    RH = SensorDescription("Lo_RH", "RELATIVE HUMIDITY", units="%")
-    RH_UP = SensorDescription("Up_RH", "RELATIVE HUMIDITY", units="%")
+    RH_LOWER = SensorDescription("Lo_RH", "RELATIVE HUMIDITY", units="%")
+    RH_UPPER = SensorDescription("Up_RH", "RELATIVE HUMIDITY", units="%")
 
     STREAMFLOW_CFS = SensorDescription("Discharge_CFS", "STREAMFLOW", units="CFS")
     SURF_TEMP = SensorDescription(
