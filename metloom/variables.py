@@ -498,28 +498,28 @@ class CSASVariables(VariableBase):
         units="degrees",
         description="Wind direction at the lower location",
     )
-    DOWN_BROADBAND = SensorDescription(
-        "PyDwn_Unfilt_W",
-        "DOWNWARD BROADBAND RADIATION",
+    DOWNWELLING_BROADBAND = SensorDescription(
+        "PyUp_Unfilt_W",
+        "DOWNWELLING BROADBAND RADIATION",
         units="w/m^2",
         description="Reflected Broadband radiation",
     )
-    DOWN_NIR_SWIR = SensorDescription(
-        "PyDwn_Filt_W",
-        "DOWNWARD NIR/SWIR RADIATION",
+    DOWNWELLING_NIR_SWIR = SensorDescription(
+        "PyUp_Filt_W",
+        "DOWNWELLING NIR/SWIR RADIATION",
         units="w/m^2",
         description="Reflected NIR/SWIR radiation",
     )
-    UP_BROADBAND = SensorDescription(
-        "PyUp_Unfilt_W",
-        "UPWARD BROADBAND RADIATION",
+    UPWELLING_BROADBAND = SensorDescription(
+        "PyDwn_Unfilt_W",
+        "UPWELLING BROADBAND RADIATION",
         units="w/m^2",
         description="Incoming Broadband radiation",
     )
 
-    UP_NIR_SWIR = SensorDescription(
-        "PyUp_Filt_W",
-        "UPWARD NIR/SWIR RADIATION",
+    UPWELLING_NIR_SWIR = SensorDescription(
+        "PyDwn_Filt_W",
+        "UPWELLING NIR/SWIR RADIATION",
         units="w/m^2",
         description="Incoming NIR/SWIR radiation",
     )
