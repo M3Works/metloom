@@ -1,4 +1,5 @@
 from datetime import timezone, timedelta, datetime
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 from collections import OrderedDict
 
@@ -10,6 +11,7 @@ import pytest
 from metloom.pointdata import SnotelPointData
 from metloom.variables import SnotelVariables
 from tests.test_point_data import BasePointDataTest
+from tests.utils import read_json
 
 
 class MockZeepObject:
@@ -31,55 +33,54 @@ class MockZeepObject:
 
 
 class TestSnotelPointData(BasePointDataTest):
+    MOCKS_DIR = Path(__file__).parent.joinpath("data/snotel_mocks/").absolute()
 
     @pytest.fixture(scope="class")
     def points(self):
-        return gpd.points_from_xy([-107.67552], [37.9339], z=[9800.0])[0]
+        return gpd.points_from_xy([-107.6762], [37.93389], z=[9800.0])[0]
+
+    @classmethod
+    def side_effect(cls, *args, **kwargs):
+        """
+        All request side effects
+        """
+        url = args[0]
+        if "services/v1/stations" in url:
+            result = cls.snotel_meta_sideeffect(*args, **kwargs)
+        elif "services/v1/data" in url:
+            result = cls.snotel_data_sideeffect(*args, **kwargs)
+        else:
+            raise ValueError("Unknown URL in mock: " + url)
+        obj = MagicMock()
+        obj.json.return_value = result
+        return obj
 
     @staticmethod
     def snotel_meta_sideeffect(*args, **kwargs):
         """
         Mock out the metadata response
         """
-        code = kwargs["stationTriplet"]
+        codes = kwargs["params"]["stationTriplets"].split(",")
         available_stations = {
             "538:CO:SNTL": {
-                "actonId": "07M27S",
-                "beginDate": "1979-10-01 00:00:00",
-                "countyName": "Ouray",
-                "elevation": 9800.0,
-                "endDate": "2100-01-01 00:00:00",
-                "fipsCountryCd": "US",
-                "fipsCountyCd": "091",
-                "fipsStateNumber": "08",
-                "huc": "140200060201",
-                "hud": "14020006",
-                "latitude": 37.9339,
-                "longitude": -107.67552,
-                "name": "Idarado",
-                "shefId": "IDRC2",
                 "stationTriplet": "538:CO:SNTL",
-                "stationDataTimeZone": -8.0
-            },
-            "538:CO:SNOW": {
-                "actonId": "07M27S",
-                "beginDate": "1979-10-01 00:00:00",
-                "countyName": "Ouray",
-                "elevation": 9800.0,
-                "endDate": "2100-01-01 00:00:00",
-                "fipsCountryCd": "US",
-                "fipsCountyCd": "091",
-                "fipsStateNumber": "08",
-                "huc": "140200060201",
-                "hud": "14020006",
-                "latitude": 37.9339,
-                "longitude": -107.67552,
+                "stationId": "538",
+                "stateCode": "CO",
+                "networkCode": "SNTL",
                 "name": "Idarado",
+                "dcoCode": "CO",
+                "countyName": "Ouray",
+                "huc": "140200060201",
+                "elevation": 9800,
+                "latitude": 37.93389,
+                "longitude": -107.6762,
+                "dataTimeZone": -8,
                 "shefId": "IDRC2",
-                "stationTriplet": "538:CO:SNOW",
+                "operator": "NRCS",
+                "beginDate": "1979-10-01 00:00",
+                "endDate": "2100-01-01 00:00"
             },
             "FFF:CA:SNOW": {
-                "actonId": None,
                 "beginDate": "1930-02-01 00:00:00",
                 "countyName": "Tuolumne",
                 "elevation": 6500.0,
@@ -92,10 +93,10 @@ class TestSnotelPointData(BasePointDataTest):
                 "longitude": -119.78,
                 "name": "Fake1",
                 "shefId": None,
+                "dataTimeZone": -8,
                 "stationTriplet": "FFF:CA:SNOW",
             },
             "BBB:CA:SNOW": {
-                "actonId": None,
                 "beginDate": "1948-02-01 00:00:00",
                 "countyName": "Tuolumne",
                 "elevation": 9300.0,
@@ -109,166 +110,63 @@ class TestSnotelPointData(BasePointDataTest):
                 "longitude": -119.61667,
                 "name": "Fake2",
                 "shefId": None,
+                "dataTimeZone": -8,
                 "stationTriplet": "BBB:CA:SNOW",
             },
         }
-        return MockZeepObject(available_stations[code])
+        return [available_stations[code] for code in codes if code in available_stations]
 
-    @staticmethod
-    def snotel_data_sideeffect(*args, **kwargs):
-        duration = kwargs["duration"]
+    @classmethod
+    def snotel_data_sideeffect(cls, *args, **kwargs):
+        duration = kwargs["params"]["duration"]
+        fname = None
         if duration == "SEMIMONTHLY":
-            return [
-                MockZeepObject({
-                    'beginDate': '2020-01-20 00:00:00',
-                    'collectionDates': ['2020-01-28', '2020-02-27'],
-                    'duration': 'SEMIMONTHLY',
-                    'endDate': '2020-03-14 00:00:00',
-                    'flags': ['V', 'V'], 'stationTriplet': '538:CO:SNTL',
-                    'values': [13.19, 13.17]})
-            ]
-        if duration == "DAILY":
-            return [MockZeepObject({
-                'beginDate': '2020-03-20 00:00:00',
-                'collectionDates': [], 'duration': 'DAILY',
-                'endDate': '2020-03-22 00:00:00', 'flags': ['V', 'V', 'V'],
-                'stationTriplet': '538:CO:SNTL',
-                'values': [13.19, 13.17, 13.14]})]
+            fname = cls.MOCKS_DIR.joinpath("semimonthly_swe.json")
+        elif duration == "DAILY":
+            fname = cls.MOCKS_DIR.joinpath("daily.json")
+        elif duration == "HOURLY":
+            element_cd = kwargs["params"]["elements"]
+            cd_file_map = {
+                "WTEQ": "hourly_swe.json",
+                "PRCPSA": "hourly_precip.json",
+                "STO:-2": "hourly_soil.json",
+            }
+            fname = cls.MOCKS_DIR.joinpath(cd_file_map.get(element_cd))
 
-    @staticmethod
-    def snotel_hourly_sideeffect(*args, **kwargs):
-        element_cd = kwargs["elementCd"]
-        if element_cd == "WTEQ":
-            return [
-                {
-                    'beginDate': '2020-01-02 00:00', 'endDate': '2020-01-20 00:00',
-                    'stationTriplet': '538:CO:SNTL',
-                    'values': [
-                        {
-                            'dateTime': '2020-03-20 00:00',
-                            'flag': 'V',
-                            'value': 13.19
-                        }, {
-                            'dateTime': '2020-03-20 01:00',
-                            'flag': 'V',
-                            'value': 13.17
-                        }, {
-                            'dateTime': '2020-03-20 02:00',
-                            'flag': 'V',
-                            'value': 13.14
-                        }]}]
-        elif element_cd == "PRCPSA":
-            return [
-                {
-                    'beginDate': '2020-01-02 00:00',
-                    'endDate': '2020-01-20 00:00',
-                    'stationTriplet': '538:CO:SNTL',
-                    'values': [
-                        {
-                            'dateTime': '2020-03-20 00:00',
-                            'flag': 'V',
-                            'value': 4.1
-                        }, {
-                            'dateTime': '2020-03-20 02:00',
-                            'flag': 'V',
-                            'value': 4.3
-                        }, {
-                            'dateTime': '2020-03-20 03:00',
-                            'flag': 'V',
-                            'value': 4.4
-                        }]}]
-        elif element_cd == "STO":
-            return [
-                {
-                    'beginDate': '2020-01-02 00:00',
-                    'endDate': '2020-01-20 00:00',
-                    'stationTriplet': '538:CO:SNTL',
-                    'values': [
-                        {
-                            'dateTime': '2020-03-20 00:00',
-                            'flag': 'V',
-                            'value': -0.3,
-                        }, {
-                            'dateTime': '2020-03-20 01:00',
-                            'flag': 'V',
-                            'value': -0.4,
-                        }, {
-                            'dateTime': '2020-03-20 02:00',
-                            'flag': 'V',
-                            'value': -0.5,
-                        }]}]
-        else:
-            raise ValueError(f"{element_cd} not configured in this mock")
+        if fname is None:
+            raise ValueError("No mock file found for duration: " + duration)
 
-    @pytest.fixture(scope="class")
-    def mock_elements(self):
-        return [
-            MockZeepObject(
-                {
-                    'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-                    'duration': 'DAILY', 'elementCd': 'WTEQ',
-                    'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                    'ordinal': 1,
-                    'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                    'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-                 'duration': 'SEMIMONTHLY', 'elementCd': 'WTEQ',
-                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                 'ordinal': 1,
-                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
-                 'duration': 'HOURLY', 'elementCd': 'WTEQ',
-                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                 'ordinal': 1,
-                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1980-07-23 00:00:00', 'dataPrecision': 1,
-                 'duration': 'MONTHLY', 'elementCd': 'WTEQ',
-                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                 'ordinal': 1,
-                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
-                 'duration': 'HOURLY', 'elementCd': 'PRCPSA',
-                 'endDate': '2100-01-01 00:00:00', 'heightDepth': None,
-                 'ordinal': 1,
-                 'originalUnitCd': 'in', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'in'}),
-            MockZeepObject(
-                {'beginDate': '1979-10-01 00:00:00', 'dataPrecision': 1,
-                 'duration': 'HOURLY', 'elementCd': 'STO',
-                 'endDate': '2100-01-01 00:00:00',
-                 'heightDepth': {'unitCd': 'in', 'value': '-2'},
-                 'ordinal': 1,
-                 'originalUnitCd': 'degF', 'stationTriplet': '538:CO:SNTL',
-                 'storedUnitCd': 'degF'})
-        ]
+        return read_json(fname)
 
     @pytest.fixture
-    def mock_zeep_client(self, mock_elements):
-        with patch("metloom.pointdata.snotel_client.zeep.Client") as mock_client:
+    def mock_requests(self):
+        with patch("requests.get") as mock_get:
+            # Mock our gets
+            mock_get.side_effect = self.side_effect
+            yield mock_get
+
+    @pytest.fixture
+    def mock_zeep_find(self):
+        """
+        Mock the zeep client to return a mock service with
+        getStations method returning a list of station triplets.
+        """
+        with patch(
+            "metloom.pointdata.snotel.snotel_client.zeep.Client"
+        ) as mock_client:
             mock_service = MagicMock()
             # setup the individual services
-            mock_service.getStationMetadata.side_effect = self.snotel_meta_sideeffect
-            mock_service.getStationElements.return_value = mock_elements
             mock_service.getStations.return_value = ["FFF:CA:SNOW",
                                                      "BBB:CA:SNOW"]
-            mock_service.getData.side_effect = self.snotel_data_sideeffect
-            mock_service.getHourlyData.side_effect = self.snotel_hourly_sideeffect
             # assign service to client
             mock_client.return_value.service = mock_service
             yield mock_client
 
-    def test_metadata(self, mock_zeep_client):
+    def test_metadata(self, mock_requests):
         obj = SnotelPointData("538:CO:SNTL", "eh")
         assert (
             obj.metadata == gpd.points_from_xy(
-                [-107.67552], [37.9339], z=[9800.0])[0]
+                [-107.6762], [37.93389], z=[9800.0])[0]
         )
         assert obj.tzinfo == timezone(timedelta(hours=-8.0))
 
@@ -277,27 +175,27 @@ class TestSnotelPointData(BasePointDataTest):
         [
             (
                 "538:CO:SNTL",
-                ["2020-03-20 00:00", "2020-03-20 01:00", "2020-03-20 02:00"],
-                ["2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00"],
+                ["2020-01-02 00:00", "2020-01-02 01:00", "2020-01-02 02:00"],
+                ["2020-01-02 08:00", "2020-01-02 09:00", "2020-01-02 10:00"],
                 {
-                    SnotelVariables.SWE.name: [13.19, 13.17, 13.14],
+                    SnotelVariables.SWE.name: [6.9, 6.9, 6.8],
                     f"{SnotelVariables.SWE.name}_units": ["in", "in", "in"]
                 },
-                datetime(2020, 3, 20, 0),
-                datetime(2020, 3, 20, 2),
+                datetime(2020, 1, 2, 0),
+                datetime(2020, 1, 2, 2),
                 "get_hourly_data",
             ),
             (
                 "538:CO:SNTL",
-                ["2020-03-20 00:00", "2020-03-20 01:00", "2020-03-20 02:00"],
-                ["2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00"],
+                ["2020-01-02 00:00", "2020-01-02 01:00", "2020-01-02 02:00"],
+                ["2020-01-02 08:00", "2020-01-02 09:00", "2020-01-02 10:00"],
                 {
-                    SnotelVariables.TEMPGROUND2IN.name: [-0.3, -0.4, -0.5],
+                    SnotelVariables.TEMPGROUND2IN.name: [-1.0, -1.2, -2.0],
                     f"{SnotelVariables.TEMPGROUND2IN.name}_units":
                         ["degF", "degF", "degF"]
                 },
-                datetime(2020, 3, 20, 0),
-                datetime(2020, 3, 20, 2),
+                datetime(2020, 1, 2, 0),
+                datetime(2020, 1, 2, 2),
                 "get_hourly_data",
             ),
             (
@@ -305,7 +203,7 @@ class TestSnotelPointData(BasePointDataTest):
                 ["2020-03-20", "2020-03-21", "2020-03-22"],
                 ["2020-03-20 08:00", "2020-03-21 08:00", "2020-03-22 08:00"],
                 {
-                    SnotelVariables.SWE.name: [13.19, 13.17, 13.14],
+                    SnotelVariables.SWE.name: [11.6, 11.6, 11.8],
                     f"{SnotelVariables.SWE.name}_units": ["in", "in", "in"]
                 },
                 datetime(2020, 3, 20),
@@ -313,12 +211,12 @@ class TestSnotelPointData(BasePointDataTest):
                 "get_daily_data",
             ),
             (
-                "538:CO:SNOW",
-                ["2020-01-28", "2020-02-27"],
-                ["2020-01-28 00:00", "2020-02-27 00:00"],
+                "538:CO:SNTL",
+                ["2020-01-16", "2020-02-01", "2020-02-16", "2020-02-27"],
+                ["2020-01-16 08:00", "2020-02-01 08:00", "2020-02-16 08:00", "2020-03-01 08:00"],
                 {
-                    SnotelVariables.SWE.name: [13.19, 13.17],
-                    f"{SnotelVariables.SWE.name}_units": ["in", "in"]
+                    SnotelVariables.SWE.name: [6.4, 7.3, 8.8, 9.9],
+                    f"{SnotelVariables.SWE.name}_units": ["in", "in", "in", "in"]
                 },
                 datetime(2020, 1, 20),
                 datetime(2020, 3, 15),
@@ -328,7 +226,7 @@ class TestSnotelPointData(BasePointDataTest):
     )
     def test_get_data_methods(
             self, station_id, dts, expected_dts, vals, d1,
-            d2, fn_name, points, mock_zeep_client):
+            d2, fn_name, points, mock_requests):
         station = SnotelPointData(station_id, "TestSite")
         if 'GROUND TEMPERATURE -2IN' in list(vals.keys()):
             vrs = [SnotelVariables.TEMPGROUND2IN]
@@ -344,22 +242,22 @@ class TestSnotelPointData(BasePointDataTest):
             result.sort_index(axis=1), expected
         )
 
-    def test_get_hourly_data_multi_sensor(self, points, mock_zeep_client):
+    def test_get_hourly_data_multi_sensor(self, points, mock_requests):
         expected_dts = [
-            "2020-03-20 08:00", "2020-03-20 09:00", "2020-03-20 10:00",
-            "2020-03-20 11:00"
+            "2020-01-02 08:00", "2020-01-02 09:00", "2020-01-02 10:00",
+            "2020-01-02 11:00"
         ]
         expected_vals_obj = {
-            SnotelVariables.SWE.name: [13.19, 13.17, 13.14, np.nan],
+            SnotelVariables.SWE.name: [6.9, 6.9, 6.8, np.nan],
             f"{SnotelVariables.SWE.name}_units": ["in", "in", "in", np.nan],
-            SnotelVariables.PRECIPITATION.name: [4.1, np.nan, 4.3, 4.4],
+            SnotelVariables.PRECIPITATION.name: [6, 6, 6.1, 6.5],
             f"{SnotelVariables.PRECIPITATION.name}_units": [
-                "in", np.nan, "in", "in"],
+                "in", "in", "in", "in"],
         }
         station = SnotelPointData("538:CO:SNTL", "TestSite")
         vrs = [SnotelVariables.PRECIPITATION, SnotelVariables.SWE]
         result = station.get_hourly_data(
-            datetime(2020, 3, 20, 0), datetime(2020, 3, 20, 4), vrs
+            datetime(2020, 1, 2, 0), datetime(2020, 1, 2, 4), vrs
         )
         expected = self.expected_response(
             expected_dts, expected_vals_obj, station, points
@@ -368,7 +266,7 @@ class TestSnotelPointData(BasePointDataTest):
             result.sort_index(axis=1), expected
         )
 
-    def test_points_from_geometry(self, shape_obj, mock_zeep_client):
+    def test_points_from_geometry(self, shape_obj, mock_requests, mock_zeep_find):
         result = SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=True
         )
@@ -378,11 +276,13 @@ class TestSnotelPointData(BasePointDataTest):
         assert set(ids) == {"FFF:CA:SNOW", "BBB:CA:SNOW"}
         assert set(names) == {"Fake1", "Fake2"}
 
-    def test_points_from_geomtery_buffer(self, shape_obj, mock_zeep_client):
+    def test_points_from_geometry_buffer(
+        self, shape_obj, mock_requests, mock_zeep_find
+    ):
         SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=False, buffer=0.1
         )
-        search_kwargs = mock_zeep_client().method_calls[0][2]
+        search_kwargs = mock_zeep_find().method_calls[0][2]
         expected = {
             'maxLatitude': 38.3, 'minLatitude': 37.6,
             'maxLongitude': -119.1, 'minLongitude': -119.9
@@ -390,8 +290,8 @@ class TestSnotelPointData(BasePointDataTest):
         for k, v in expected.items():
             assert v == pytest.approx(search_kwargs[k])
 
-    def test_points_from_geometry_fail(self, shape_obj, mock_zeep_client):
-        mock_zeep_client.return_value.service.getStations.return_value = []
+    def test_points_from_geometry_fail(self, shape_obj, mock_requests, mock_zeep_find):
+        mock_zeep_find.return_value.service.getStations.return_value = []
         result = SnotelPointData.points_from_geometry(
             shape_obj, [SnotelVariables.SWE], snow_courses=True
         )

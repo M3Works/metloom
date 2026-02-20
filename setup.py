@@ -14,9 +14,9 @@ requirements = [
     'geopandas>=1.0.0,<2.0.0',
     'pandas>=1.0.0,<3.0.0',
     'lxml>=5.4.0,<6.0.0',
-    'requests>2.0.0,<3.0.0',
-    'beautifulsoup4>4,<5',
+    'requests>=2.32.4,<3.0.0',
     'zeep>4.0.0',
+    'beautifulsoup4>4,<5',
     'pydash>=8.0.0,<9.0.0',
 ]
 
