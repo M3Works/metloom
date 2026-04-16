@@ -200,6 +200,14 @@ class SeriesSnotelClient(BaseSnotelClient):
         mapped_params = self._get_params(**extra_params)
         params = {**self.params, **mapped_params}
         data = self._make_request(**params)
+
+        # In some cases, in particlular for snow course data prior to 2011, the collection dates
+        # are not included in the reponse for the SWE variable, but are included in the depth (SNWD).
+        # This is a workaround to make a second request if the collection data are missing.
+        if all(c is None for c in data[0]["collectionDates"]):
+            data2 = self._make_request(**{**params, "elementCd": "SNWD"})
+            data[0]["collectionDates"] = data2[0]["collectionDates"]
+
         return self._parse_data(data)
 
 
