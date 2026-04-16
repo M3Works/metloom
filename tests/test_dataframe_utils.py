@@ -120,7 +120,7 @@ def sample_df(in_data, variable, delta_t, interval):
     Build a dataframe given a incoming data set and interval to
     look at and a delta time to create the datetime index.
     """
-    if interval == 'H':
+    if interval == 'h':
         dt = timedelta(minutes=delta_t)
     elif interval == 'D':
         dt = timedelta(hours=delta_t)
@@ -132,7 +132,7 @@ def sample_df(in_data, variable, delta_t, interval):
 
 
 @pytest.mark.parametrize("in_data, variable, delta_t, interval, expected_data", [
-    ([1, 3, 2, 4], MesowestVariables.TEMP, 30, 'H', [2, 3]),
+    ([1, 3, 2, 4], MesowestVariables.TEMP, 30, 'h', [2, 3]),
     ([3, 3, 2, 2], CdecStationVariables.SWE, 12, 'D', [3, 2]),
 ])
 def test_resample_df(sample_df, in_data, variable, delta_t, interval, expected_data):

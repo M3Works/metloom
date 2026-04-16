@@ -91,7 +91,7 @@ class MesowestPointData(PointData):
                   start_date: datetime,
                   end_date: datetime,
                   variables: List[SensorDescription],
-                  interval='H'):
+                  interval='h'):
         """
         Make get request to Mesowest and return JSON
         Args:
@@ -262,7 +262,7 @@ class MesowestPointData(PointData):
             TestCDECStation.tny_daily_expected for example dataframe.
             Datetimes should be in UTC
         """
-        df = self._get_data(start_date, end_date, variables, interval='H')
+        df = self._get_data(start_date, end_date, variables, interval='h')
         return df
 
     def get_daily_data(

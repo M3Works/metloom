@@ -180,7 +180,7 @@ class USGSPointData(PointData):
             sensor: SensorDescription obj
             final_columns: List of columns used for filtering
             site_id: site id
-            resample_duration: To resample the array. [None, 'D', 'H']
+            resample_duration: To resample the array. [None, 'D', 'h']
         Returns:
             GeoDataFrame
         """

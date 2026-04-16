@@ -236,7 +236,7 @@ class CDECPointData(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
-            duration_list: CDEC duration code and fallbacks ['D', 'H', 'E']
+            duration_list: CDEC duration code and fallbacks ['D', 'h', 'E']
             include_measurement_date: boolean for including the
                 'measurmentDate' column in the resulting dataframe. This column
                 is only relevant for snow courses
@@ -342,7 +342,7 @@ class CDECPointData(PointData):
             bounds: dictionary of Longitude and Latitidue bounds with keys
                 minx, maxx, miny, maxy
             sensor: SensorDescription object
-            dur: optional CDEC duration code ['M', 'H', 'D']
+            dur: optional CDEC duration code ['M', 'h', 'D']
             collect: optional CDEC collection type string i.e. 'MANUAL+ENTRY'
         Returns:
             Pandas Dataframe of table result or None if no table found
