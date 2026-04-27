@@ -212,6 +212,23 @@ class SeriesSnotelClient(BaseSnotelClient):
             data2 = self._make_request(**{**params, "elementCd": "SNWD"})
             data[0]["collectionDates"] = data2[0]["collectionDates"]
 
+        # Furthermore, in some cases the collectionDates are not included at all, so we need to assume the collection dates.
+        # Based on our analsysis the target date is the first of the month. The API returns the beginDate and endData for the 
+        # period. Thus, using the 'beginDate' and 'endDate' the range of dates can be estimated. The 'collectionDates' 
+        # can then be estimated using the data with 'values' (i.e. not None).
+        if (
+            (len(data) > 0)
+            and ("collectionDates" in data[0])
+            and all(c is None for c in data[0]["collectionDates"])
+            and data[0]["beginDate"] is not None
+            and data[0]["endDate"] is not None
+        ):
+            start_date = pd.to_datetime(data[0]["beginDate"])
+            end_date = pd.to_datetime(data[0]["endDate"])
+            date_list = pd.date_range(start=start_date, end=end_date, freq="MS")
+            collection_dates = [d for d in date_list for _ in range(2)]
+            data[0]["collectionDates"] = [collection_dates[i] if (v is not None) else None for i, v in enumerate(data[0]['values'])]
+
         return self._parse_data(data)
 
 
