@@ -202,7 +202,8 @@ class SeriesSnotelClient(BaseSnotelClient):
         data = self._make_request(**params)
 
         # In some cases, in particlular for snow course data prior to 2011, the collection dates
-        # are not included in the reponse for the SWE variable, but are included in the depth (SNWD).
+        # are not included in the reponse for the SWE variable, but are included in the depth
+        # (SNWD).
         # This is a workaround to make a second request if the collection data are missing.
         if (
             (len(data) > 0)
@@ -212,10 +213,12 @@ class SeriesSnotelClient(BaseSnotelClient):
             data2 = self._make_request(**{**params, "elementCd": "SNWD"})
             data[0]["collectionDates"] = data2[0]["collectionDates"]
 
-        # Furthermore, in some cases the collectionDates are not included at all, so we need to assume the collection dates.
-        # Based on our analsysis the target date is the first of the month. The API returns the beginDate and endData for the 
-        # period. Thus, using the 'beginDate' and 'endDate' the range of dates can be estimated. The 'collectionDates' 
-        # can then be estimated using the data with 'values' (i.e. not None).
+        # Furthermore, in some cases the collectionDates are not included at all, so we need
+        # to assume the collection dates.
+        # Based on our analsysis the target date is the first of the month. The API returns
+        # the beginDate and endData for the period. Thus, using the 'beginDate' and 'endDate'
+        # the range of dates can be estimated. The 'collectionDates' can then be estimated
+        # using the data with 'values' (i.e. not None).
         if (
             (len(data) > 0)
             and ("collectionDates" in data[0])
@@ -227,7 +230,10 @@ class SeriesSnotelClient(BaseSnotelClient):
             end_date = pd.to_datetime(data[0]["endDate"])
             date_list = pd.date_range(start=start_date, end=end_date, freq="MS")
             collection_dates = [d for d in date_list for _ in range(2)]
-            data[0]["collectionDates"] = [collection_dates[i] if (v is not None) else None for i, v in enumerate(data[0]['values'])]
+            data[0]["collectionDates"] = [
+                collection_dates[i] if (v is not None) else None
+                for i, v in enumerate(data[0]["values"])
+            ]
 
         return self._parse_data(data)
 

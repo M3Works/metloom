@@ -117,7 +117,7 @@ def resample_df(raw_df: pd.DataFrame,
     """
     name = variable.name
     if interval == 'H':
-        interval = 'h' # pandas uses lowercase for hourly resampling
+        interval = 'h'  # pandas uses lowercase for hourly resampling
     if name in raw_df.columns:
         if variable.accumulated:
             result = raw_df[name].resample(interval).sum()
