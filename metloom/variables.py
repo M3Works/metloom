@@ -149,6 +149,43 @@ SnotelVariables = make_dataclass(
             SensorDescription,
             field(default=SensorDescription("SRVOX", "STREAM VOLUME ADJ", "STREAM VOLUME ADJ")),
         ),
+        # Radiation variables (super sites only)
+        (
+            "SWINV",
+            SensorDescription,
+            field(default=SensorDescription("SWINV", "SHORTWAVE INCOMING", "SHORTWAVE RADIATION INCOMING")),
+        ),
+        (
+            "SWOTV",
+            SensorDescription,
+            field(default=SensorDescription("SWOTV", "SHORTWAVE OUTGOING", "SHORTWAVE RADIATION OUTGOING")),
+        ),
+        (
+            "LWINV",
+            SensorDescription,
+            field(default=SensorDescription("LWINV", "LONGWAVE INCOMING", "LONGWAVE RADIATION INCOMING")),
+        ),
+        (
+            "LWOTV",
+            SensorDescription,
+            field(default=SensorDescription("LWOTV", "LONGWAVE OUTGOING", "LONGWAVE RADIATION OUTGOING")),
+        ),
+        (
+            "NTRDC",
+            SensorDescription,
+            field(default=SensorDescription("NTRDC", "NET RADIATION", "NET RADIATION CALCULATED")),
+        ),
+        # Wind variables (super sites only)
+        (
+            "WINDSPEED",
+            SensorDescription,
+            field(default=SensorDescription("WSPDV", "WIND SPEED", "WIND SPEED AVERAGE")),
+        ),
+        (
+            "WINDDIR",
+            SensorDescription,
+            field(default=SensorDescription("WDIRV", "WIND DIRECTION", "WIND DIRECTION AVERAGE")),
+        ),
     ]
     + [
         (
