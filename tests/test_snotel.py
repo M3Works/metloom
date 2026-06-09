@@ -29,6 +29,13 @@ class MockZeepObject:
     def __getitem__(self, item):
         return self.mock_dict[item]
 
+    def __setitem__(self, key, value):
+        self.mock_dict[key] = value
+        setattr(self, key, value)
+
+    def __contains__(self, item):
+        return item in self.mock_dict
+
 
 class TestSnotelPointData(BasePointDataTest):
 
@@ -130,7 +137,9 @@ class TestSnotelPointData(BasePointDataTest):
         if duration == "DAILY":
             return [MockZeepObject({
                 'beginDate': '2020-03-20 00:00:00',
-                'collectionDates': [], 'duration': 'DAILY',
+                'collectionDates': [
+                    '2020-03-20', '2020-03-21', '2020-03-22'
+                ], 'duration': 'DAILY',
                 'endDate': '2020-03-22 00:00:00', 'flags': ['V', 'V', 'V'],
                 'stationTriplet': '538:CO:SNTL',
                 'values': [13.19, 13.17, 13.14]})]
