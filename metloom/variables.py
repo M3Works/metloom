@@ -129,6 +129,11 @@ SnotelVariables = make_dataclass(
             field(default=SensorDescription("PRCPSA", "PRECIPITATION", "PRECIPITATION INCREMENT SNOW-ADJUSTED")),
         ),
         (
+            "PRECIPITATIONINCREMENT",
+            SensorDescription,
+            field(default=SensorDescription("PRCP", "PRECIPITATION INCREMENT", "PRECIPITATION INCREMENT")),
+        ),
+        (
             "PRECIPITATIONACCUM",
             SensorDescription,
             field(default=SensorDescription("PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION")),
