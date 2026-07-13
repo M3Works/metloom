@@ -172,7 +172,9 @@ class SeriesSnotelClient(BaseSnotelClient):
         collection_dates = getattr(data, "collectionDates", None)
         if len(data["values"]) == 0:
             return mapped_data
-        if collection_dates:
+        # Use the API's collection dates when we actually have them. Treat an all-None list the
+        # same as no dates at all: fall back to one date per day across the requested window.
+        if collection_dates and not all(d is None for d in collection_dates):
             date_list = [pd.to_datetime(d) for d in collection_dates]
         else:
             date_list = pd.date_range(data["beginDate"], data["endDate"])
@@ -200,41 +202,8 @@ class SeriesSnotelClient(BaseSnotelClient):
         mapped_params = self._get_params(**extra_params)
         params = {**self.params, **mapped_params}
         data = self._make_request(**params)
-
-        # In some cases, in particlular for snow course data prior to 2011, the collection dates
-        # are not included in the reponse for the SWE variable, but are included in the depth
-        # (SNWD).
-        # This is a workaround to make a second request if the collection data are missing.
-        if (
-            (len(data) > 0)
-            and ("collectionDates" in data[0])
-            and all(c is None for c in data[0]["collectionDates"])
-        ):
-            data2 = self._make_request(**{**params, "elementCd": "SNWD"})
-            data[0]["collectionDates"] = data2[0]["collectionDates"]
-
-        # Furthermore, in some cases the collectionDates are not included at all, so we need
-        # to assume the collection dates.
-        # Based on our analsysis the target date is the first of the month. The API returns
-        # the beginDate and endData for the period. Thus, using the 'beginDate' and 'endDate'
-        # the range of dates can be estimated. The 'collectionDates' can then be estimated
-        # using the data with 'values' (i.e. not None).
-        if (
-            (len(data) > 0)
-            and ("collectionDates" in data[0])
-            and all(c is None for c in data[0]["collectionDates"])
-            and data[0]["beginDate"] is not None
-            and data[0]["endDate"] is not None
-        ):
-            start_date = pd.to_datetime(data[0]["beginDate"])
-            end_date = pd.to_datetime(data[0]["endDate"])
-            date_list = pd.date_range(start=start_date, end=end_date, freq="MS")
-            collection_dates = [d for d in date_list for _ in range(2)]
-            data[0]["collectionDates"] = [
-                collection_dates[i] if (v is not None) else None
-                for i, v in enumerate(data[0]["values"])
-            ]
-
+        # NOTE: snow-course (semi-monthly) collection-date workarounds live in
+        # SemiMonthlySnotelClient.get_data so they are NOT applied to daily/hourly data.
         return self._parse_data(data)
 
 
@@ -250,6 +219,50 @@ class SemiMonthlySnotelClient(SeriesSnotelClient):
     Class for getting semi monthly (snow course) data
     """
     DURATION = "SEMIMONTHLY"
+
+    def get_data(self, element_cd: str, **extra_params):
+        """
+        Semi-monthly (snow course) timeseries.
+
+        Snow-course records (esp. prior to 2011) sometimes omit ``collectionDates``. These
+        workarounds recover/estimate them and are scoped to this client so daily/hourly data
+        (which inherit the plain ``SeriesSnotelClient.get_data``) are never affected.
+        """
+        extra_params.update(element_cd=element_cd)
+        mapped_params = self._get_params(**extra_params)
+        params = {**self.params, **mapped_params}
+        data = self._make_request(**params)
+
+        # (a) The SWE response can omit collectionDates while the depth (SNWD) response includes
+        #     them; make a second request and borrow SNWD's dates.
+        if (
+            (len(data) > 0)
+            and ("collectionDates" in data[0])
+            and all(c is None for c in data[0]["collectionDates"])
+        ):
+            data2 = self._make_request(**{**params, "elementCd": "SNWD"})
+            data[0]["collectionDates"] = data2[0]["collectionDates"]
+
+        # (b) If still missing, estimate dates assuming a semi-monthly (2/month) cadence, aligned
+        #     to the values. The `i < len(...)` guard keeps an unexpectedly long series from
+        #     raising IndexError (positions beyond the estimate get no collection date).
+        if (
+            (len(data) > 0)
+            and ("collectionDates" in data[0])
+            and all(c is None for c in data[0]["collectionDates"])
+            and data[0]["beginDate"] is not None
+            and data[0]["endDate"] is not None
+        ):
+            start_date = pd.to_datetime(data[0]["beginDate"])
+            end_date = pd.to_datetime(data[0]["endDate"])
+            date_list = pd.date_range(start=start_date, end=end_date, freq="MS")
+            collection_dates = [d for d in date_list for _ in range(2)]
+            data[0]["collectionDates"] = [
+                collection_dates[i] if (v is not None and i < len(collection_dates)) else None
+                for i, v in enumerate(data[0]["values"])
+            ]
+
+        return self._parse_data(data)
 
 
 class HourlySnotelDataClient(SeriesSnotelClient):
