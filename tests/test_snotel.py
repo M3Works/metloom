@@ -405,3 +405,93 @@ class TestSnotelPointData(BasePointDataTest):
             shape_obj, [SnotelVariables.SWE], snow_courses=True
         )
         assert len(result) == 0
+
+    # ------------------------------------------------------------------
+    # Collection-date handling for missing dates.
+    #
+    # Some SNOTEL responses come back with no collection dates (all None).
+    # Snow-course (semi-monthly) data needs those dates *estimated* from the
+    # month range; daily data must NOT use that estimate (it assumes 2 dates
+    # per month and previously crashed with IndexError on longer daily
+    # series). These tests lock in that split.
+    # ------------------------------------------------------------------
+
+    def test_collection_date_workarounds_scoped_to_snow_course(self):
+        """Only the semi-monthly client carries the snow-course date workarounds.
+
+        Daily and hourly clients inherit the plain base ``get_data`` and never run them.
+        """
+        from metloom.pointdata.snotel_client import (
+            SeriesSnotelClient, DailySnotelDataClient,
+            SemiMonthlySnotelClient, HourlySnotelDataClient,
+        )
+        # The semi-monthly client defines its own get_data (holds the workarounds).
+        assert "get_data" in vars(SemiMonthlySnotelClient)
+        # Daily/hourly do not override get_data -> they use the base version.
+        assert "get_data" not in vars(DailySnotelDataClient)
+        assert "get_data" not in vars(HourlySnotelDataClient)
+        assert DailySnotelDataClient.get_data is SeriesSnotelClient.get_data
+        assert SemiMonthlySnotelClient.get_data is not SeriesSnotelClient.get_data
+
+    def test_daily_client_missing_dates_uses_one_per_day(self, mock_zeep_client):
+        """Daily data with no collection dates falls back to one date per day.
+
+        This is the regression guard: the series (40 values) is far longer than the
+        semi-monthly estimate (2 per month), which used to raise IndexError.
+        """
+        from metloom.pointdata.snotel_client import DailySnotelDataClient
+
+        n = 40
+        response = [MockZeepObject({
+            "beginDate": "2020-01-01 00:00:00",
+            "endDate": "2020-02-09 00:00:00",   # 40 calendar days
+            "collectionDates": [None] * n,      # dates missing entirely
+            "duration": "DAILY",
+            "flags": ["V"] * n,
+            "stationTriplet": "538:CO:SNTL",
+            "values": [13.0 + i * 0.1 for i in range(n)],
+        })]
+        mock_zeep_client.return_value.service.getData.side_effect = \
+            lambda *a, **k: response
+
+        client = DailySnotelDataClient(
+            begin_date=datetime(2020, 1, 1), end_date=datetime(2020, 2, 9),
+            station_triplet="538:CO:SNTL",
+        )
+        result = client.get_data(element_cd="WTEQ")
+
+        # No crash, no dropped rows, and dates are consecutive days.
+        assert len(result) == n
+        assert result[0]["datetime"] == pd.Timestamp("2020-01-01")
+        assert result[1]["datetime"] == pd.Timestamp("2020-01-02")
+
+    def test_semimonthly_client_estimates_missing_dates(self, mock_zeep_client):
+        """Snow-course data with no collection dates gets month-based estimates (2 per month)."""
+        from metloom.pointdata.snotel_client import SemiMonthlySnotelClient
+
+        response = [MockZeepObject({
+            "beginDate": "2020-01-01 00:00:00",
+            "endDate": "2020-03-01 00:00:00",
+            "collectionDates": [None, None, None],
+            "duration": "SEMIMONTHLY",
+            "flags": ["V", "V", "V"],
+            "stationTriplet": "538:CO:SNOW",
+            "values": [10.0, 11.0, 12.0],
+        })]
+        mock_zeep_client.return_value.service.getData.side_effect = \
+            lambda *a, **k: response
+
+        client = SemiMonthlySnotelClient(
+            begin_date=datetime(2020, 1, 1), end_date=datetime(2020, 3, 1),
+            station_triplet="538:CO:SNOW",
+        )
+        result = client.get_data(element_cd="WTEQ")
+
+        # Estimated dates are month-starts, two per month (Jan 1, Jan 1, Feb 1),
+        # not one-per-day. No crash.
+        assert len(result) == 3
+        assert [r["datetime"] for r in result] == [
+            pd.Timestamp("2020-01-01"),
+            pd.Timestamp("2020-01-01"),
+            pd.Timestamp("2020-02-01"),
+        ]
