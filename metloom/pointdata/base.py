@@ -1,12 +1,13 @@
 import copy
 import logging
 from datetime import datetime
-from typing import List
+from typing import Dict, List, Union
 
 import pandas as pd
 
 import geopandas as gpd
 
+from ..unit_conversions import convert_series
 from ..variables import SensorDescription, VariableBase
 
 LOG = logging.getLogger("metloom.pointdata.base")
@@ -168,6 +169,62 @@ class GenericPoint(object):
             if "_units" not in rc:
                 assert f"{rc}_units" in remaining_columns
 
+    def _convert_units(
+        self,
+        gdf: gpd.GeoDataFrame,
+        desired_units: Union[str, Dict[str, str], None],
+    ):
+        """
+        Optionally convert variable columns to a desired unit using pint.
+
+        This is a no-op unless ``desired_units`` is provided - when it is
+        ``None`` pint is never invoked and the dataframe is returned unchanged.
+
+        Args:
+            gdf: the assembled GeoDataFrame returned by a ``get_*`` method.
+                May be ``None`` or empty.
+            desired_units: either a single unit string applied to every
+                variable column, or a dict mapping ``variable.name`` to a unit
+                string. Units strings are pint-compatible (e.g. ``"degC"``,
+                ``"mm"``, ``"W/m^2"``).
+        Returns:
+            The GeoDataFrame with the requested variable columns converted in
+            place. Converted values are plain magnitudes (never pint
+            Quantities) and the matching ``{name}_units`` column is updated to
+            the target unit. NaNs are preserved.
+        """
+        # Short-circuit before touching pint when no conversion was requested
+        if desired_units is None or gdf is None or len(gdf) == 0:
+            return gdf
+
+        # variable columns are those that have a sibling `{col}_units` column
+        variable_columns = [
+            c for c in gdf.columns if f"{c}_units" in gdf.columns
+        ]
+        for column in variable_columns:
+            if isinstance(desired_units, str):
+                target = desired_units
+            else:
+                target = desired_units.get(column)
+            if target is None:
+                continue
+
+            units_column = f"{column}_units"
+            # infer the current unit from the first non-null entry
+            current = gdf[units_column].dropna()
+            if len(current) == 0:
+                LOG.warning(
+                    "No units found for %s; skipping conversion", column
+                )
+                continue
+            source_unit = current.iloc[0]
+
+            gdf[column] = convert_series(
+                gdf[column].to_numpy(), source_unit, target
+            )
+            gdf[units_column] = target
+        return gdf
+
     def __repr__(self):
         return f"{self.__class__.__name__}({self.id!r}, {self.name!r})"
 
@@ -197,6 +254,7 @@ class PointData(GenericPoint):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units: Union[str, Dict[str, str]] = None,
     ):
         """
         Get daily measurement data
@@ -205,6 +263,10 @@ class PointData(GenericPoint):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
+            desired_units: Optional pint-compatible unit conversion. Either a
+                single unit string applied to every variable, or a dict
+                mapping ``variable.name`` to a unit string. When omitted no
+                conversion is performed and the inferred units are returned.
         Returns:
             GeoDataFrame of data. The dataframe should be indexed on
             ['datetime', 'site'] and have columns
@@ -222,6 +284,7 @@ class PointData(GenericPoint):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units: Union[str, Dict[str, str]] = None,
     ):
         """
         Get hourly measurement data
@@ -230,6 +293,10 @@ class PointData(GenericPoint):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
+            desired_units: Optional pint-compatible unit conversion. Either a
+                single unit string applied to every variable, or a dict
+                mapping ``variable.name`` to a unit string. When omitted no
+                conversion is performed and the inferred units are returned.
         Returns:
             GeoDataFrame of data. The dataframe should be indexed on
             ['datetime', 'site'] and have columns
@@ -247,6 +314,7 @@ class PointData(GenericPoint):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units: Union[str, Dict[str, str]] = None,
     ):
         """
         Get snow course data
@@ -255,6 +323,10 @@ class PointData(GenericPoint):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
+            desired_units: Optional pint-compatible unit conversion. Either a
+                single unit string applied to every variable, or a dict
+                mapping ``variable.name`` to a unit string. When omitted no
+                conversion is performed and the inferred units are returned.
         Returns:
             GeoDataFrame of data. The dataframe should be indexed on
             ['datetime', 'site'] and have columns

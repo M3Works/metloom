@@ -360,6 +360,7 @@ class MetNorwayPointData(PointData):
         end_date: datetime,
         variables: List[SensorDescription],
         desired_duration=None,
+        desired_units=None,
     ):
         """
         Args:
@@ -367,6 +368,8 @@ class MetNorwayPointData(PointData):
             end_date: datetime object for end of data collection period
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
+            desired_units: Optional pint-compatible unit conversion (see
+                PointData.get_daily_data)
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -396,6 +399,7 @@ class MetNorwayPointData(PointData):
             else:
                 df = None
         self.validate_sensor_df(df)
+        df = self._convert_units(df, desired_units)
         return df
 
     def get_daily_data(
@@ -403,12 +407,14 @@ class MetNorwayPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_daily_data
         """
         return self._get_data(
-            start_date, end_date, variables, desired_duration="D"
+            start_date, end_date, variables, desired_duration="D",
+            desired_units=desired_units,
         )
 
     def get_hourly_data(
@@ -416,12 +422,14 @@ class MetNorwayPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_hourly_data
         """
         return self._get_data(
-            start_date, end_date, variables, desired_duration="h"
+            start_date, end_date, variables, desired_duration="h",
+            desired_units=desired_units,
         )
 
     def get_event_data(
@@ -429,12 +437,14 @@ class MetNorwayPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         Get data in original frequency from API
         """
         return self._get_data(
-            start_date, end_date, variables, desired_duration=None
+            start_date, end_date, variables, desired_duration=None,
+            desired_units=desired_units,
         )
 
     @classmethod
