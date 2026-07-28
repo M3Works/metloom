@@ -32,21 +32,21 @@ class TestCuesStation(BasePointDataTest):
             [
                 {
                     "datetime": pd.Timestamp("2020-03-15 08:00:00+0000", tz="UTC"),
-                    "DOWNWARD SHORTWAVE RADIATION": 95.64,
+                    "OUTGOING SHORTWAVE RADIATION": 95.64,
                 },
                 {
                     "datetime": pd.Timestamp("2020-03-16 08:00:00+0000", tz="UTC"),
-                    "DOWNWARD SHORTWAVE RADIATION": 86.87,
+                    "OUTGOING SHORTWAVE RADIATION": 86.87,
                 },
                 {
                     "datetime": pd.Timestamp("2020-03-17 08:00:00+0000", tz="UTC"),
-                    "DOWNWARD SHORTWAVE RADIATION": 182.23,
+                    "OUTGOING SHORTWAVE RADIATION": 182.23,
                 },
 
             ],
             geometry=[expected_meta] * 3,
         )
-        df["DOWNWARD SHORTWAVE RADIATION_units"] = ["Watts/meter^2"] * len(df)
+        df["OUTGOING SHORTWAVE RADIATION_units"] = ["Watts/meter^2"] * len(df)
         df["site"] = ["CUES"] * len(df)
         df["datasource"] = ["UCSB CUES"] * len(df)
         # needed to reorder the columns for the pd testing compare
@@ -54,9 +54,9 @@ class TestCuesStation(BasePointDataTest):
             [
                 "datetime",
                 "geometry",
-                "DOWNWARD SHORTWAVE RADIATION",
+                "OUTGOING SHORTWAVE RADIATION",
                 "site",
-                "DOWNWARD SHORTWAVE RADIATION_units",
+                "OUTGOING SHORTWAVE RADIATION_units",
                 "datasource",
             ]
         )
@@ -113,8 +113,8 @@ class TestCuesStation(BasePointDataTest):
         resp = resp.reset_index()
         assert resp["datetime"].values[0] == pd.to_datetime("2020-04-01 08")
         assert resp["datetime"].values[-1] == pd.to_datetime("2020-04-02 07")
-        assert resp["UPWARD SHORTWAVE RADIATION"].values[0] == -9.78
-        assert resp["UPWARD SHORTWAVE RADIATION"].values[-1] == -8.44
+        assert resp["INCOMING SHORTWAVE RADIATION"].values[0] == -9.78
+        assert resp["INCOMING SHORTWAVE RADIATION"].values[-1] == -8.44
         assert all(resp["site"].values == "CUES")
 
     def test_points_from_geometry_failure(self, station):

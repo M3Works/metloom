@@ -39,6 +39,18 @@ class VariableBase:
 
     Variables in this base class should ideally be implemented by all classes
     and cannot be directly used from the base class.
+
+    Radiation naming convention (homogenized across all datasources): radiation
+    `name`s describe the DIRECTION OF ENERGY FLUX, not the sensor orientation.
+      - "INCOMING SHORTWAVE RADIATION"  = downwelling solar (an up-LOOKING sensor)
+      - "OUTGOING SHORTWAVE RADIATION"  = reflected/upwelling solar (a down-LOOKING sensor)
+      - "INCOMING LONGWAVE RADIATION"   = downwelling thermal
+      - "OUTGOING LONGWAVE RADIATION"   = upwelling thermal
+      - "NET SHORTWAVE RADIATION" / "NET LONGWAVE RADIATION" / "NET RADIATION"
+    Spectral sub-bands append a qualifier (e.g. "INCOMING NIR SHORTWAVE RADIATION").
+    Note: the sensor for INCOMING radiation points UP, and vice-versa — so a
+    provider's "up-looking"/"downward-facing" code maps to the flux direction, not
+    the sensor direction.
     """
 
     PRECIPITATION = SensorDescription()
@@ -88,7 +100,7 @@ class CdecStationVariables(VariableBase):
     TEMPGROUND25CM = SensorDescription("194", "GROUND TEMPERATURE -25CM", "GROUND TEMPERATURE OBS -25CM")
     TEMPGROUND50CM = SensorDescription("195", "GROUND TEMPERATURE -50CM", "GROUND TEMPERATURE OBS -50CM")
     TEMPGROUND100CM = SensorDescription("196", "GROUND TEMPERATURE -100CM", "GROUND TEMPERATURE OBS -100CM")
-    SOLARRAD = SensorDescription("103", "SOLAR RADIATION", "SOLAR RADIATION")
+    SOLARRAD = SensorDescription("103", "INCOMING SHORTWAVE RADIATION", "SOLAR RADIATION")
     WINDSPEED = SensorDescription("9", "WIND SPEED", "WIND SPEED")
     WINDDIR = SensorDescription("10", "WIND DIRECTION", "WIND DIRECTION")
 
@@ -129,6 +141,11 @@ SnotelVariables = make_dataclass(
             field(default=SensorDescription("PRCPSA", "PRECIPITATION", "PRECIPITATION INCREMENT SNOW-ADJUSTED")),
         ),
         (
+            "PRECIPITATIONINCREMENT",
+            SensorDescription,
+            field(default=SensorDescription("PRCP", "PRECIPITATION INCREMENT", "PRECIPITATION INCREMENT")),
+        ),
+        (
             "PRECIPITATIONACCUM",
             SensorDescription,
             field(default=SensorDescription("PREC", "ACCUMULATED PRECIPITATION", "PRECIPITATION ACCUMULATION")),
@@ -148,6 +165,43 @@ SnotelVariables = make_dataclass(
             "STREAMVOLUMEADJ",
             SensorDescription,
             field(default=SensorDescription("SRVOX", "STREAM VOLUME ADJ", "STREAM VOLUME ADJ")),
+        ),
+        # Radiation variables (super sites only)
+        (
+            "SWINV",
+            SensorDescription,
+            field(default=SensorDescription("SWINV", "INCOMING SHORTWAVE RADIATION", "SHORTWAVE RADIATION INCOMING")),
+        ),
+        (
+            "SWOTV",
+            SensorDescription,
+            field(default=SensorDescription("SWOTV", "OUTGOING SHORTWAVE RADIATION", "SHORTWAVE RADIATION OUTGOING")),
+        ),
+        (
+            "LWINV",
+            SensorDescription,
+            field(default=SensorDescription("LWINV", "INCOMING LONGWAVE RADIATION", "LONGWAVE RADIATION INCOMING")),
+        ),
+        (
+            "LWOTV",
+            SensorDescription,
+            field(default=SensorDescription("LWOTV", "OUTGOING LONGWAVE RADIATION", "LONGWAVE RADIATION OUTGOING")),
+        ),
+        (
+            "NTRDC",
+            SensorDescription,
+            field(default=SensorDescription("NTRDC", "NET RADIATION", "NET RADIATION CALCULATED")),
+        ),
+        # Wind variables (super sites only)
+        (
+            "WINDSPEED",
+            SensorDescription,
+            field(default=SensorDescription("WSPDV", "WIND SPEED", "WIND SPEED AVERAGE")),
+        ),
+        (
+            "WINDDIR",
+            SensorDescription,
+            field(default=SensorDescription("WDIRV", "WIND DIRECTION", "WIND DIRECTION AVERAGE")),
         ),
     ]
     + [
@@ -213,7 +267,7 @@ class MesowestVariables(VariableBase):
     WINDDIRECTION = SensorDescription("wind_direction", "WIND DIRECTION")
     PRESSURE = SensorDescription("pressure", "PRESSURE")
     SNOWDEPTH = SensorDescription("snow_depth", "SNOWDEPTH")
-    SOLARRADIATION = SensorDescription("solar_radiation", "SOLAR RADIATION")
+    SOLARRADIATION = SensorDescription("solar_radiation", "INCOMING SHORTWAVE RADIATION")
     WETBULBTEMPERATURE = SensorDescription("wet_bulb_temperature", "WET BULB TEMPERATURE")
     SOILTEMP = SensorDescription("soil_temp", "SOIL TEMPERATURE")
     SOILTEMPIR = SensorDescription("soil_temp_ir", "SOIL TEMPERATURE IR")
@@ -233,15 +287,15 @@ class USGSVariables(VariableBase):
     STREAMFLOW = SensorDescription("74082", "STREAMFLOW", "STREAMFLOW, DAILY VOLUME (AC-FT)")
     SNOWDEPTH = SensorDescription("72189", "SNOWDEPTH", "Snow depth, Meters")
     SWE = SensorDescription("72341", "SWE", "Water content of snow, millimeters")
-    SOLARRADIATION = SensorDescription("72179", "SOLAR RADIATION", "Shortwave solar radiation, watts per square meter")
+    SOLARRADIATION = SensorDescription("72179", "INCOMING SHORTWAVE RADIATION", "Shortwave solar radiation, watts per square meter")  # noqa: E501
     UPSHORTWAVE = SensorDescription(
         "72185",
-        "UPWARD SHORTWAVE RADIATION",
+        "OUTGOING SHORTWAVE RADIATION",
         "Shortwave radiation, upward intensity, watts per square meter",
     )
     DOWNSHORTWAVE = SensorDescription(
         "72186",
-        "DOWNWARD SHORTWAVE RADIATION",
+        "INCOMING SHORTWAVE RADIATION",
         "Shortwave radiation, downward intensity, watts per square meter",
     )
     NETSHORTWAVE = SensorDescription(
@@ -256,12 +310,12 @@ class USGSVariables(VariableBase):
     )
     DOWNLONGWAVE = SensorDescription(
         "72175",
-        "DOWNWARD LONGWAVE RADIATION",
+        "INCOMING LONGWAVE RADIATION",
         "Longwave radiation, downward intensity, watts per square meter",
     )
     UPLONGWAVE = SensorDescription(
         "72174",
-        "UPWARD LONGWAVE RADIATION",
+        "OUTGOING LONGWAVE RADIATION",
         "Longwave radiation, upward intensity, watts per square meter",
     )
     SURFACETEMP = SensorDescription(
@@ -303,6 +357,9 @@ class CuesLevel1Variables(VariableBase):
     and `UPSHORTWAVE2` for two instrument specific implementations
     of the same variable.
 
+    Note: CUES codes describe the sensor orientation ("upward looking" /
+    "downward looking"); the `name` describes the flux direction, so an
+    up-looking sensor is INCOMING and a down-looking sensor is OUTGOING.
     """
 
     TEMP = InstrumentDescription("air temperature", "AIR TEMP")
@@ -317,25 +374,25 @@ class CuesLevel1Variables(VariableBase):
     TEMPSURFSNOW = InstrumentDescription("snow surface temperature", "SNOW SURFACE TEMPERATURE")
     DOWNSHORTWAVE = InstrumentDescription(
         "downward looking solar radiation",
-        "DOWNWARD SHORTWAVE RADIATION",
+        "OUTGOING SHORTWAVE RADIATION",
     )
     UPSHORTWAVE = InstrumentDescription(
         "upward looking solar radiation",
-        "UPWARD SHORTWAVE RADIATION",
+        "INCOMING SHORTWAVE RADIATION",
         instrument="Eppley Lab precision spectral pyranometer",
     )
     UPSHORTWAVE2 = InstrumentDescription(
         "upward looking solar radiation",
-        "UPWARD SHORTWAVE RADIATION 2",
+        "INCOMING SHORTWAVE RADIATION 2",
         instrument="uplooking Sunshine pyranometer  direct and diffus",
     )
     DOWNSHORTWAVEIR = InstrumentDescription(
         "downward looking near-IR radiation",
-        "DOWNWARD NIR SHORTWAVE RADIATION",
+        "OUTGOING NIR SHORTWAVE RADIATION",
     )
     UPSHORTWAVEIR = InstrumentDescription(
         "upward looking near-IR radiation",
-        "UPWARD NIR SHORTWAVE RADIATION",
+        "INCOMING NIR SHORTWAVE RADIATION",
     )
 
 
@@ -434,13 +491,13 @@ class SnowExVariables(VariableBase):
 
     UPSHORTWAVE = SensorDescription(
         "SUp_Avg",
-        "UPWARD SHORTWAVE RADIATION",
+        "INCOMING SHORTWAVE RADIATION",
         units="w/m^2",
         description="Shortwave radiation measured with upward-facing sensor",
     )
     DOWNSHORTWAVE = SensorDescription(
         "SDn_Avg",
-        "DOWNWARD SHORTWAVE RADIATION",
+        "OUTGOING SHORTWAVE RADIATION",
         description="Shortwave radiation measured with downward-facing sensor",
     )
     SNOWDEPTH = SensorDescription(
@@ -500,28 +557,28 @@ class CSASVariables(VariableBase):
     )
     DOWNWELLING_BROADBAND = SensorDescription(
         "PyUp_Unfilt_W",
-        "DOWNWELLING BROADBAND RADIATION",
+        "INCOMING SHORTWAVE RADIATION",
         units="w/m^2",
-        description="Reflected Broadband radiation",
+        description="Incoming broadband radiation (downwelling, up-looking pyranometer)",
     )
     DOWNWELLING_NIR_SWIR = SensorDescription(
         "PyUp_Filt_W",
-        "DOWNWELLING NIR/SWIR RADIATION",
+        "INCOMING NIR/SWIR SHORTWAVE RADIATION",
         units="w/m^2",
-        description="Reflected NIR/SWIR radiation",
+        description="Incoming NIR/SWIR radiation (downwelling, up-looking pyranometer)",
     )
     UPWELLING_BROADBAND = SensorDescription(
         "PyDwn_Unfilt_W",
-        "UPWELLING BROADBAND RADIATION",
+        "OUTGOING SHORTWAVE RADIATION",
         units="w/m^2",
-        description="Incoming Broadband radiation",
+        description="Reflected broadband radiation (upwelling, down-looking pyranometer)",
     )
 
     UPWELLING_NIR_SWIR = SensorDescription(
         "PyDwn_Filt_W",
-        "UPWELLING NIR/SWIR RADIATION",
+        "OUTGOING NIR/SWIR SHORTWAVE RADIATION",
         units="w/m^2",
-        description="Incoming NIR/SWIR radiation",
+        description="Reflected NIR/SWIR radiation (upwelling, down-looking pyranometer)",
     )
 
     PRECIPITATION = SensorDescription(
@@ -594,7 +651,7 @@ class SAILStationVariables(VariableBase):
     )
     UP_BROADBAND = SensorDescription(
         "swup",
-        "UP SHORTWAVE RADIATION",
+        "OUTGOING SHORTWAVE RADIATION",
         description="Surface upwelling shortwave hemispheric irradiance, hourly mean",
         accumulated=False,
         extra=dict(
@@ -607,7 +664,7 @@ class SAILStationVariables(VariableBase):
     )
     DOWN_BROADBAND = SensorDescription(
         "swdn",
-        "DOWN SHORTWAVE RADIATION",
+        "INCOMING SHORTWAVE RADIATION",
         description="Best estimate of surface downwelling shortwave hemispheric irradiance, hourly mean",
         accumulated=False,
         extra=dict(
