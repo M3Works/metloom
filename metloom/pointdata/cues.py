@@ -114,7 +114,7 @@ class CuesLevel1(PointData):
 
     def _get_data(
         self, start_date, end_date, variables: List[SensorDescription],
-        period,
+        period, desired_units=None,
     ):
         df = pd.DataFrame()
         df.index.name = "datetime"
@@ -133,18 +133,23 @@ class CuesLevel1(PointData):
         df = gpd.GeoDataFrame(df, geometry=[self.metadata] * len(df))
         df = df.reset_index().set_index(["datetime", "site"])
         self.validate_sensor_df(df)
+        df = self._convert_units(df, desired_units)
         return df
 
     def get_daily_data(self, start_date: datetime, end_date: datetime,
-                       variables: List[SensorDescription]):
+                       variables: List[SensorDescription],
+                       desired_units=None):
         return self._get_data(
-            start_date, end_date, variables, "day"
+            start_date, end_date, variables, "day",
+            desired_units=desired_units,
         )
 
     def get_hourly_data(self, start_date: datetime, end_date: datetime,
-                        variables: List[SensorDescription]):
+                        variables: List[SensorDescription],
+                        desired_units=None):
         return self._get_data(
-            start_date, end_date, variables, "hr"
+            start_date, end_date, variables, "hr",
+            desired_units=desired_units,
         )
 
     def get_snow_course_data(self, start_date: datetime, end_date: datetime,
