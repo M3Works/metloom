@@ -2,6 +2,10 @@
 metloom
 ========
 
+.. image:: docs/images/metloom-social-preview.png
+        :alt: metloom
+        :width: 100%
+
 
 .. image:: https://img.shields.io/pypi/v/metloom.svg
         :target: https://pypi.python.org/pypi/metloom
