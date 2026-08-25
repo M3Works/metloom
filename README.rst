@@ -18,6 +18,9 @@ metloom
 .. image:: https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/micah-prime/04da387b53bdb4a3aa31253789550a9f/raw/metloom__heads_main.json
         :target: https://github.com/M3Works/metloom
         :alt: Code Coverage
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.22102889.svg
+        :target: https://doi.org/10.5281/zenodo.22102889
+        :alt: DOI
 
 
 Location Oriented Observed Meteorology
