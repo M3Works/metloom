@@ -1,0 +1,35 @@
+# This CITATION.cff file provides citation metadata for metloom.
+# Learn more: https://citation-file-format.github.io
+#
+# Authorship is currently the organization (M3Works). To credit individual
+# contributors later, replace the single entity author below with entries like:
+#   - family-names: "Lastname"
+#     given-names: "Firstname"
+#     orcid: "https://orcid.org/0000-0000-0000-0000"
+#     affiliation: "M3Works"
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+title: metloom
+abstract: >-
+  Location Oriented Observed Meteorology (LOOM): a Python package for
+  retrieving point-based observed meteorology and snow data from networks
+  and services including SNOTEL, CDEC, MesoWest, USGS, Met Norway,
+  GeoSphere Austria, CUES, CSAS, SAIL, and SnowEx.
+type: software
+authors:
+  - name: "M3Works"
+    website: "https://m3works.io"
+    email: "info@m3works.io"
+version: 0.10.0
+date-released: "2026-07-30"
+license: BSD-3-Clause
+repository-code: "https://github.com/M3Works/metloom"
+url: "https://metloom.readthedocs.io"
+keywords:
+  - meteorology
+  - snow
+  - hydrology
+  - observed-data
+  - snotel
+  - cdec
+  - python

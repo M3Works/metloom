@@ -1,0 +1,33 @@
+{
+    "title": "metloom",
+    "description": "Location Oriented Observed Meteorology (LOOM): a Python package for retrieving point-based observed meteorology and snow data from networks and services including SNOTEL, CDEC, MesoWest, USGS, Met Norway, GeoSphere Austria, CUES, CSAS, SAIL, and SnowEx.",
+    "upload_type": "software",
+    "access_right": "open",
+    "license": "BSD-3-Clause",
+    "creators": [
+        {
+            "name": "M3Works"
+        }
+    ],
+    "keywords": [
+        "meteorology",
+        "snow",
+        "hydrology",
+        "observed-data",
+        "snotel",
+        "cdec",
+        "python"
+    ],
+    "related_identifiers": [
+        {
+            "identifier": "https://github.com/M3Works/metloom",
+            "relation": "isSupplementTo",
+            "scheme": "url"
+        },
+        {
+            "identifier": "https://pypi.org/project/metloom/",
+            "relation": "isIdenticalTo",
+            "scheme": "url"
+        }
+    ]
+}
