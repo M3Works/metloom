@@ -20,7 +20,7 @@ authors:
   - name: "M3Works"
     website: "https://m3works.io"
     email: "info@m3works.io"
-version: 0.10.0
+version: 0.10.1
 date-released: "2026-07-30"
 license: BSD-3-Clause
 repository-code: "https://github.com/M3Works/metloom"
