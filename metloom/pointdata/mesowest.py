@@ -91,7 +91,8 @@ class MesowestPointData(PointData):
                   start_date: datetime,
                   end_date: datetime,
                   variables: List[SensorDescription],
-                  interval='H'):
+                  interval='H',
+                  desired_units=None):
         """
         Make get request to Mesowest and return JSON
         Args:
@@ -100,6 +101,8 @@ class MesowestPointData(PointData):
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
             interval: String interval the resulting data is resampled to
+            desired_units: Optional pint-compatible unit conversion (see
+                PointData.get_daily_data)
         Returns:
             dictionary of response values
         """
@@ -136,6 +139,7 @@ class MesowestPointData(PointData):
             else:
                 df = None
         self.validate_sensor_df(df)
+        df = self._convert_units(df, desired_units)
         return df
 
     @staticmethod
@@ -244,6 +248,7 @@ class MesowestPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         Get hourly measurement data
@@ -262,7 +267,10 @@ class MesowestPointData(PointData):
             TestCDECStation.tny_daily_expected for example dataframe.
             Datetimes should be in UTC
         """
-        df = self._get_data(start_date, end_date, variables, interval='H')
+        df = self._get_data(
+            start_date, end_date, variables, interval='H',
+            desired_units=desired_units,
+        )
         return df
 
     def get_daily_data(
@@ -270,6 +278,7 @@ class MesowestPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         Get daily measurement data
@@ -288,7 +297,10 @@ class MesowestPointData(PointData):
             TestCDECStation.tny_daily_expected for example dataframe.
             Datetimes should be in UTC
         """
-        df = self._get_data(start_date, end_date, variables, interval='D')
+        df = self._get_data(
+            start_date, end_date, variables, interval='D',
+            desired_units=desired_units,
+        )
         return df
 
     @classmethod

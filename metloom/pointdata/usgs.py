@@ -269,7 +269,8 @@ class USGSPointData(PointData):
         end_date: datetime,
         variables: List[SensorDescription],
         duration_list: List[str],
-        resample_duration=None
+        resample_duration=None,
+        desired_units=None,
     ):
         """
         Args:
@@ -279,6 +280,8 @@ class USGSPointData(PointData):
                 from self.ALLOWED_VARIABLES
             duration_list: list of USGS duration code, "dv" or "iv"
             resample_duration: optional if we need to resample the data
+            desired_units: Optional pint-compatible unit conversion (see
+                PointData.get_daily_data)
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -329,6 +332,7 @@ class USGSPointData(PointData):
                 df = None
         self.validate_sensor_df(df)
 
+        df = self._convert_units(df, desired_units)
         return df
 
     def get_daily_data(
@@ -336,13 +340,14 @@ class USGSPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_daily_data
         """
         return self._get_data(
             start_date, end_date, variables, ["dv", "iv"],
-            resample_duration="24H"
+            resample_duration="24H", desired_units=desired_units,
         )
 
     def get_hourly_data(
@@ -350,9 +355,11 @@ class USGSPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         return self._get_data(
-            start_date, end_date, variables, ["iv"], resample_duration="h"
+            start_date, end_date, variables, ["iv"], resample_duration="h",
+            desired_units=desired_units,
         )
 
     def get_instantaneous_data(
@@ -360,11 +367,15 @@ class USGSPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         USGS 'instantaneous' data, which is generally 15 minutes.
         """
-        return self._get_data(start_date, end_date, variables, ["iv"])
+        return self._get_data(
+            start_date, end_date, variables, ["iv"],
+            desired_units=desired_units,
+        )
 
     @staticmethod
     def _get_url_response(url, params=None, parse='text'):
