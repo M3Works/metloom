@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from metloom.pointdata import SnotelPointData
+from metloom.pointdata.snotel_client import BaseSnotelClient
 from metloom.variables import SnotelVariables
 from tests.test_point_data import BasePointDataTest
 
@@ -260,6 +261,9 @@ class TestSnotelPointData(BasePointDataTest):
 
     @pytest.fixture
     def mock_zeep_client(self, mock_elements):
+        # the client is built once per url, so the mock must not meet a client
+        # built before the patch, nor outlive it
+        BaseSnotelClient._get_client.cache_clear()
         with patch("metloom.pointdata.snotel_client.zeep.Client") as mock_client:
             mock_service = MagicMock()
             # setup the individual services
@@ -272,6 +276,7 @@ class TestSnotelPointData(BasePointDataTest):
             # assign service to client
             mock_client.return_value.service = mock_service
             yield mock_client
+        BaseSnotelClient._get_client.cache_clear()
 
     def test_metadata(self, mock_zeep_client):
         obj = SnotelPointData("538:CO:SNTL", "eh")
@@ -280,6 +285,13 @@ class TestSnotelPointData(BasePointDataTest):
                 [-107.67552], [37.9339], z=[9800.0])[0]
         )
         assert obj.tzinfo == timezone(timedelta(hours=-8.0))
+
+    def test_one_client_serves_every_request(self, mock_zeep_client):
+        SnotelPointData("538:CO:SNTL", "eh").metadata
+        SnotelPointData("538:CO:SNTL", "eh").metadata
+        service = mock_zeep_client.return_value.service
+        assert service.getStationMetadata.call_count == 2
+        assert mock_zeep_client.call_count == 1
 
     @pytest.mark.parametrize(
         "station_id, dts, expected_dts, vals, d1, d2, fn_name",
