@@ -1,4 +1,4 @@
-setuptools==83.0.0
+setuptools==84.1.0
 sphinxcontrib-apidoc==0.3.0
 docutils<0.19
 nbsphinx==0.9.4
