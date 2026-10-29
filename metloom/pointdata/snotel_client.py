@@ -1,8 +1,7 @@
 from datetime import datetime
+from functools import lru_cache
 import pandas as pd
 import zeep
-
-from metloom.request_utils import no_ssl_verification
 
 
 class BaseSnotelClient:
@@ -64,18 +63,24 @@ class BaseSnotelClient:
             params.update({mapped_key: value})
         return params
 
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def _get_client(url):
+        """
+        One SOAP client per WSDL url, shared by every request. Building a
+        client downloads and parses the WSDL, which takes longer than most
+        requests.
+        """
+        return zeep.Client(url)
+
     @classmethod
     def _make_request(cls, **params):
         """
         Make the request to the SOAP client for the implemented service.
         """
-        with no_ssl_verification():
-            client = zeep.Client(
-                cls.URL,
-            )
-            service = getattr(client.service, cls.SERVICE_NAME)
-            response = service(**params)
-        return response
+        client = cls._get_client(cls.URL)
+        service = getattr(client.service, cls.SERVICE_NAME)
+        return service(**params)
 
     def get_data(self):
         """
