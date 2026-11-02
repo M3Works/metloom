@@ -142,6 +142,34 @@ To pull stations using CSAS::
 If you use these data, please use the `appropriate citations <https://snowstudies.org/data-use-policy/>`_ and give credit to the
 institution.
 
+Center for Western Weather and Water Extremes (CW3E)
+----------------------------------------------------
+CW3E maintains surface met stations across many western US watersheds and
+shares them on their `datashare <https://cw3e-datashare.ucsd.edu/CW3E_SurfaceMetObs/>`_.
+Metloom reads the hourly files, which are stored as one file per station per day
+in UTC. Each requested day is downloaded to a local cache (``./cache/CW3E/<station id>``)
+so repeat requests are fast. Files from the last couple days are re-downloaded
+since they may still be updating. Daily data is resampled from the hourly data on UTC days.
+
+Column layouts differ between stations and sometimes change through time, so
+metloom reads each station's hourly README to find the columns. Files with a column
+layout not described in the README are skipped with a warning. Not every station has
+every variable. These data have not been quality controlled by CW3E. Station locations
+come from the `CW3E site metadata <https://cw3e.ucsd.edu/metadata/sites>`_.
+
+To pull stations using CW3E::
+
+    from metloom.pointdata import CW3EPointData
+    from metloom.variables import CW3EVariables
+    from datetime import datetime
+
+    start = datetime(2024, 10, 1)
+    end = datetime(2025, 4, 1)
+    ski = CW3EPointData('SKI')
+    df = ski.get_daily_data(
+        start, end, [CW3EVariables.TEMP, CW3EVariables.SNOWDEPTH]
+    )
+
 SnowEx
 ------
 During the `NASA SnowEx campaign <https://snow.nasa.gov/campaigns/snowex>`_

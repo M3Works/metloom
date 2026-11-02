@@ -675,3 +675,103 @@ class SAILStationVariables(VariableBase):
             units="w/m^2",
         )
     )
+
+
+class CW3EVariables(VariableBase):
+    """
+    Variables for the CW3E surface met stations hourly data. Codes are the
+    column names from each station's hourly README with the units removed
+    and lower cased. Column layouts vary by station, so not every station has
+    every variable.
+    https://cw3e-datashare.ucsd.edu/CW3E_SurfaceMetObs/
+    """
+
+    TEMP = SensorDescription("temperature", "AIR TEMP", units="deg C")
+    RH = SensorDescription("relative humidity", "RELATIVE HUMIDITY", units="%")
+    PRESSURE = SensorDescription("pressure", "PRESSURE", units="hPa")
+    PRECIPITATION = SensorDescription(
+        "precipitation",
+        "PRECIPITATION",
+        accumulated=True,
+        units="mm",
+        description="Incremental precipitation",
+    )
+    WINDSPEED = SensorDescription("average wind speed", "WIND SPEED", units="m/s")
+    WINDSPEEDMAX = SensorDescription(
+        "maximum wind speed",
+        "MAX WIND SPEED",
+        units="m/s",
+        extra=dict(agg="max"),
+    )
+    WINDDIR = SensorDescription(
+        "wind direction",
+        "WIND DIRECTION",
+        units="degrees",
+        extra=dict(agg="circular"),
+    )
+    SOLARRAD = SensorDescription(
+        "solar radiation", "INCOMING SHORTWAVE RADIATION", units="w/m^2"
+    )
+    SNOWDEPTH = SensorDescription("snow depth", "SNOWDEPTH", units="meters")
+    FUELTEMP = SensorDescription("fuel temperature", "FUEL TEMPERATURE", units="deg C")
+    FUELMOISTURE = SensorDescription("fuel moisture", "FUEL MOISTURE", units="%")
+    TEMPGROUND5CM = SensorDescription(
+        "soil temperature - 5 cm", "GROUND TEMPERATURE -5CM", units="deg C"
+    )
+    TEMPGROUND10CM = SensorDescription(
+        "soil temperature - 10 cm", "GROUND TEMPERATURE -10CM", units="deg C"
+    )
+    TEMPGROUND15CM = SensorDescription(
+        "soil temperature - 15 cm", "GROUND TEMPERATURE -15CM", units="deg C"
+    )
+    TEMPGROUND20CM = SensorDescription(
+        "soil temperature - 20 cm", "GROUND TEMPERATURE -20CM", units="deg C"
+    )
+    TEMPGROUND30CM = SensorDescription(
+        "soil temperature - 30 cm", "GROUND TEMPERATURE -30CM", units="deg C"
+    )
+    TEMPGROUND50CM = SensorDescription(
+        "soil temperature - 50 cm", "GROUND TEMPERATURE -50CM", units="deg C"
+    )
+    TEMPGROUND58CM = SensorDescription(
+        "soil temperature - 58 cm", "GROUND TEMPERATURE -58CM", units="deg C"
+    )
+    TEMPGROUND60CM = SensorDescription(
+        "soil temperature - 60 cm", "GROUND TEMPERATURE -60CM", units="deg C"
+    )
+    TEMPGROUND90CM = SensorDescription(
+        "soil temperature - 90 cm", "GROUND TEMPERATURE -90CM", units="deg C"
+    )
+    TEMPGROUND100CM = SensorDescription(
+        "soil temperature - 100 cm", "GROUND TEMPERATURE -100CM", units="deg C"
+    )
+    SOILMOISTURE5CM = SensorDescription(
+        "soil moisture - 5 cm", "SOIL MOISTURE -5CM", units="fraction"
+    )
+    SOILMOISTURE10CM = SensorDescription(
+        "soil moisture - 10 cm", "SOIL MOISTURE -10CM", units="fraction"
+    )
+    SOILMOISTURE15CM = SensorDescription(
+        "soil moisture - 15 cm", "SOIL MOISTURE -15CM", units="fraction"
+    )
+    SOILMOISTURE20CM = SensorDescription(
+        "soil moisture - 20 cm", "SOIL MOISTURE -20CM", units="fraction"
+    )
+    SOILMOISTURE30CM = SensorDescription(
+        "soil moisture - 30 cm", "SOIL MOISTURE -30CM", units="fraction"
+    )
+    SOILMOISTURE50CM = SensorDescription(
+        "soil moisture - 50 cm", "SOIL MOISTURE -50CM", units="fraction"
+    )
+    SOILMOISTURE58CM = SensorDescription(
+        "soil moisture - 58 cm", "SOIL MOISTURE -58CM", units="fraction"
+    )
+    SOILMOISTURE60CM = SensorDescription(
+        "soil moisture - 60 cm", "SOIL MOISTURE -60CM", units="fraction"
+    )
+    SOILMOISTURE90CM = SensorDescription(
+        "soil moisture - 90 cm", "SOIL MOISTURE -90CM", units="fraction"
+    )
+    SOILMOISTURE100CM = SensorDescription(
+        "soil moisture - 100 cm", "SOIL MOISTURE -100CM", units="fraction"
+    )

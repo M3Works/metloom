@@ -102,6 +102,7 @@ Features
     * `MET NORWAY <https://frost.met.no/index.html>`_
     * `SNOWEX MET STATIONS <https://nsidc.org/data/snex_met/versions/1>`_
     * `CENTER FOR SNOW AND AVALANCHE STUDIES (CSAS) <https://snowstudies.org/csas-facilities/>`_
+    * `CENTER FOR WESTERN WEATHER AND WATER EXTREMES (CW3E) <https://cw3e-datashare.ucsd.edu/CW3E_SurfaceMetObs/>`_
 
 Requirements
 ------------
