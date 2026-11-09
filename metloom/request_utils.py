@@ -1,8 +1,10 @@
 """
 Taken from
 stackoverflow.com/questions/15445981/how-do-i-disable-the-security-certificate-check-in-python-requests
-This is necessary to make requests to Snotel without exceptions
-as we are not able to do the SSL verification
+This was necessary to make requests to Snotel without exceptions
+as we were not able to do the SSL verification.
+
+Deprecated: the Snotel endpoint now verifies, and metloom no longer uses this.
 """
 import warnings
 import contextlib
@@ -14,6 +16,15 @@ old_merge_environment_settings = requests.Session.merge_environment_settings
 
 @contextlib.contextmanager
 def no_ssl_verification():
+    warnings.warn(
+        "no_ssl_verification is deprecated and will be removed in a future "
+        "release: metloom no longer needs it for Snotel, and while it is "
+        "active it turns off SSL verification for every requests call in "
+        "the process, so it is not thread-safe.",
+        DeprecationWarning,
+        # past contextlib's __enter__ to the caller's with statement
+        stacklevel=3,
+    )
     opened_adapters = set()
 
     def merge_environment_settings(self, url, proxies, stream, verify, cert):
