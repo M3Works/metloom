@@ -146,6 +146,11 @@ class CSVPointData(PointData):
                             fp.write(line.decode('utf-8') + '\n')
         return filenames
 
+    def _read_files(self, files):
+        """Read the downloaded file(s) into a single dataframe"""
+        dfs = [pd.read_csv(f, index_col=False, low_memory=False) for f in files]
+        return pd.concat(dfs)
+
     def _get_one_variable(self, resp_df, period, variable: SensorDescription):
         """
         Retrieve a single variable and process it accordingly
@@ -187,8 +192,9 @@ class CSVPointData(PointData):
 
         # Download data if it doesn't exist locally.
         files = self._download(urls)
-        dfs = [pd.read_csv(f, index_col=False, low_memory=False) for f in files]
-        resp_df = pd.concat(dfs)
+        resp_df = self._read_files(files)
+        if resp_df is None:
+            return None
         resp_df = self._assign_datetime(resp_df)
 
         # use a predefined index to show nans in the event of patch data
@@ -203,10 +209,9 @@ class CSVPointData(PointData):
         isolated = resp_df.loc[ind, resp_df.columns]
         for i, variable in enumerate(variables):
             df_var = self._get_one_variable(isolated, period, variable)
-            if df_var is not None:
-                if not np.all(df_var.isnull()):
-                    df.loc[df_var.index, variable.name] = df_var
-                    df.loc[:, f"{variable.name}_units"] = variable.units
+            if df_var is not None and not np.all(df_var.isnull()):
+                df.loc[df_var.index, variable.name] = df_var
+                df.loc[:, f"{variable.name}_units"] = variable.units
             else:
                 df = df.drop(columns=[variable.name])
 
