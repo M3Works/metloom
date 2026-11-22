@@ -180,3 +180,42 @@ class TestCSASMet:
         # Assert it's a daily timeseries
         assert df.index.get_level_values('datetime').inferred_freq.lower() == 'h'
         assert df[variable.name].mean() == pytest.approx(expected_mean, abs=1e-5)
+
+    @pytest.mark.parametrize('station_id', ['SASP'])
+    def test_blank_cell_is_missing_data(self, station, station_id, cache_dir):
+        """
+        The published SASP 2010-2024 file has a cell that holds a single space
+        (PyUp_Unfilt_W, 2021 DOY 281 hour 1900), so pandas reads that whole
+        column as strings. A blank hour should be treated as a missing hour
+        instead of failing the request (issue #144)
+        """
+        variable = CSASVariables.DOWNWELLING_BROADBAND
+        blank_time = datetime(2023, 3, 6, 12)
+        hourly = station.get_hourly_data(DT_20230301, DT_20230315, [variable])
+        hourly = hourly.reset_index().set_index('datetime')[variable.name]
+        times = hourly.index.tz_localize(None)
+        same_day = times.normalize() == blank_time.replace(hour=0)
+        expected = hourly[same_day & (times != blank_time)].astype(float).mean()
+        untouched = station.get_daily_data(DT_20230301, DT_20230315, [variable])
+
+        # Blank out one cell in the cached file, 2023 DOY 65 hour 1200
+        cached = cache_dir.joinpath('SASP_1hr_2010-2024.csv')
+        lines = cached.read_text().splitlines()
+        column = lines[0].split(',').index(variable.code)
+        for i, line in enumerate(lines):
+            values = line.split(',')
+            if values[1:4] == ['2023', '65', '1200']:
+                values[column] = ' '
+                lines[i] = ','.join(values)
+        cached.write_text('\n'.join(lines) + '\n')
+
+        df = CSASMet(station_id, cache=cache_dir).get_daily_data(
+            DT_20230301, DT_20230315, [variable]
+        )
+        blank_day = df.index.get_level_values('datetime').tz_localize(
+            None) == blank_time.replace(hour=0)
+        assert blank_day.sum() == 1
+        assert df[variable.name][blank_day].iloc[0] == pytest.approx(expected)
+        # Every other day is unchanged
+        assert df[variable.name][~blank_day].equals(
+            untouched[variable.name][~blank_day])
