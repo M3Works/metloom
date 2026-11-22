@@ -152,7 +152,9 @@ class CSVPointData(PointData):
         """
         method = "sum" if variable.accumulated else "average"
         if self._verify_sensor(resp_df, variable):
-            isolated = resp_df[variable.code].loc[:]
+            # A single blank or text cell makes pandas read the whole column
+            # as strings, which can't be averaged. Treat those cells as missing
+            isolated = pd.to_numeric(resp_df[variable.code], errors="coerce")
 
             # TODO: This may only be true for SNOWEX
             isolated.loc[isolated == -9999] = np.nan
