@@ -172,6 +172,7 @@ class GeoSpherePointDataBase(PointData):
         end_date: datetime,
         variables: List[SensorDescription],
         desired_duration: str,
+        desired_units=None,
     ):
         """
 
@@ -181,6 +182,8 @@ class GeoSpherePointDataBase(PointData):
             variables: List of metloom.variables.SensorDescription object
                 from self.ALLOWED_VARIABLES
             desired_duration: duration code ['D', 'h']
+            desired_units: Optional pint-compatible unit conversion (see
+                PointData.get_daily_data)
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -212,6 +215,7 @@ class GeoSpherePointDataBase(PointData):
             else:
                 df = None
         self.validate_sensor_df(df)
+        df = self._convert_units(df, desired_units)
         return df
 
     @classmethod
@@ -346,6 +350,7 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_daily_data
@@ -354,19 +359,24 @@ class GeoSphereCurrentPointData(GeoSpherePointDataBase):
         tawes-v1-10min?parameters=TL&station_ids=11035
         """
         self._validate_dates(end_date)
-        return self._get_data(start_date, end_date, variables, "D")
+        return self._get_data(
+            start_date, end_date, variables, "D", desired_units=desired_units
+        )
 
     def get_hourly_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_hourly_data
         """
         self._validate_dates(end_date)
-        return self._get_data(start_date, end_date, variables, "h")
+        return self._get_data(
+            start_date, end_date, variables, "h", desired_units=desired_units
+        )
 
 
 class GeoSphereHistPointData(GeoSpherePointDataBase):
@@ -406,6 +416,7 @@ class GeoSphereHistPointData(GeoSpherePointDataBase):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_daily_data
@@ -413,4 +424,6 @@ class GeoSphereHistPointData(GeoSpherePointDataBase):
         https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-1d
         ?station_ids=11401&start=2023-04-12&end=2023-04-14&parameters=schnee
         """
-        return self._get_data(start_date, end_date, variables, None)
+        return self._get_data(
+            start_date, end_date, variables, None, desired_units=desired_units
+        )

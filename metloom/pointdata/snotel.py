@@ -112,6 +112,7 @@ class SnotelPointData(PointData):
                                   variables: List[SensorDescription],
                                   duration: str,
                                   include_measurement_date=False,
+                                  desired_units=None,
                                   ):
         result_map = {}
         for variable in variables:
@@ -121,15 +122,17 @@ class SnotelPointData(PointData):
                 result_map[variable] = data
             else:
                 LOG.warning(f"No {variable.name} found for {self.name}")
-        return self._snotel_response_to_df(
+        df = self._snotel_response_to_df(
             result_map, duration, include_measurement_date=include_measurement_date
         )
+        return self._convert_units(df, desired_units)
 
     def get_daily_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_daily_data
@@ -139,14 +142,16 @@ class SnotelPointData(PointData):
             begin_date=start_date,
             end_date=end_date,
         )
-        return self._fetch_data_for_variables(client, variables,
-                                              client.DURATION)
+        return self._fetch_data_for_variables(
+            client, variables, client.DURATION, desired_units=desired_units
+        )
 
     def get_hourly_data(
         self,
         start_date: datetime,
         end_date: datetime,
-        variables: List[SensorDescription]
+        variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_hourly_data
@@ -157,13 +162,16 @@ class SnotelPointData(PointData):
             begin_date=start_date,
             end_date=end_date,
         )
-        return self._fetch_data_for_variables(client, variables, "HOURLY")
+        return self._fetch_data_for_variables(
+            client, variables, "HOURLY", desired_units=desired_units
+        )
 
     def get_snow_course_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_snow_course_data
@@ -174,7 +182,8 @@ class SnotelPointData(PointData):
             end_date=end_date,
         )
         return self._fetch_data_for_variables(
-            client, variables, client.DURATION, include_measurement_date=True
+            client, variables, client.DURATION,
+            include_measurement_date=True, desired_units=desired_units,
         )
 
     def _get_all_metadata(self):

@@ -228,7 +228,8 @@ class CDECPointData(PointData):
         end_date: datetime,
         variables: List[SensorDescription],
         duration_list: List[str],
-        include_measurement_date=False
+        include_measurement_date=False,
+        desired_units=None,
     ):
         """
         Args:
@@ -240,6 +241,8 @@ class CDECPointData(PointData):
             include_measurement_date: boolean for including the
                 'measurmentDate' column in the resulting dataframe. This column
                 is only relevant for snow courses
+            desired_units: Optional pint-compatible unit conversion (see
+                PointData.get_daily_data)
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -280,6 +283,7 @@ class CDECPointData(PointData):
             else:
                 df = None
         self.validate_sensor_df(df)
+        df = self._convert_units(df, desired_units)
         return df
 
     def get_event_data(
@@ -287,14 +291,18 @@ class CDECPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
-        return self._get_data(start_date, end_date, variables, ["E"])
+        return self._get_data(
+            start_date, end_date, variables, ["E"], desired_units=desired_units
+        )
 
     def get_daily_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_daily_data
@@ -302,24 +310,32 @@ class CDECPointData(PointData):
         https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet?
         Stations=TNY&SensorNums=3&dur_code=D&Start=2021-05-16&End=2021-05-16
         """
-        return self._get_data(start_date, end_date, variables, ["D", "h", "E"])
+        return self._get_data(
+            start_date, end_date, variables, ["D", "h", "E"],
+            desired_units=desired_units,
+        )
 
     def get_hourly_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_hourly_data
         """
-        return self._get_data(start_date, end_date, variables, ["h", "E"])
+        return self._get_data(
+            start_date, end_date, variables, ["h", "E"],
+            desired_units=desired_units,
+        )
 
     def get_snow_course_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         See docstring for PointData.get_snow_course_data
@@ -327,7 +343,8 @@ class CDECPointData(PointData):
         if not self.is_partly_snow_course():
             raise ValueError(f"{self.id} is not a snow course")
         return self._get_data(
-            start_date, end_date, variables, ["M"], include_measurement_date=True
+            start_date, end_date, variables, ["M"],
+            include_measurement_date=True, desired_units=desired_units,
         )
 
     @staticmethod

@@ -212,6 +212,7 @@ class NWSForecastPointData(GenericPoint):
         self,
         variables: List[SensorDescription],
         desired_duration=None,
+        desired_units=None,
     ):
         """
         Args:
@@ -219,6 +220,8 @@ class NWSForecastPointData(GenericPoint):
                 from self.ALLOWED_VARIABLES
             desired_duration: desired resample duration ("D", "h"). Data is
                 hourly be default
+            desired_units: Optional pint-compatible unit conversion (see
+                PointData.get_daily_data)
         Returns:
             GeoDataFrame of data, indexed on datetime, site
         """
@@ -247,11 +250,13 @@ class NWSForecastPointData(GenericPoint):
             else:
                 df = None
         self.validate_sensor_df(df)
+        df = self._convert_units(df, desired_units)
         return df
 
     def get_daily_forecast(
         self,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         Get a geopandas dataframe with daily results for a 7 day forecast.
@@ -260,11 +265,14 @@ class NWSForecastPointData(GenericPoint):
         Args:
             variables: list of variables to return
         """
-        return self._get_data(variables, desired_duration="D")
+        return self._get_data(
+            variables, desired_duration="D", desired_units=desired_units
+        )
 
     def get_hourly_forecast(
         self,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         Get a geopandas dataframe with hourly results for a 7 day forecast.
@@ -273,11 +281,14 @@ class NWSForecastPointData(GenericPoint):
         Args:
             variables: list of variables to return
         """
-        return self._get_data(variables, desired_duration="h")
+        return self._get_data(
+            variables, desired_duration="h", desired_units=desired_units
+        )
 
     def get_forecast(
         self,
         variables: List[SensorDescription],
+        desired_units=None,
     ):
         """
         Get a geopandas dataframe with hourly results for a 7 day forecast.
@@ -287,4 +298,4 @@ class NWSForecastPointData(GenericPoint):
             variables: list of variables to return
         """
         # Do not resample
-        return self._get_data(variables)
+        return self._get_data(variables, desired_units=desired_units)

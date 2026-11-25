@@ -52,18 +52,26 @@ class SAILPointData(PointData):
         start_date: datetime,
         end_date: datetime,
         variables: list[SensorDescription],
+        desired_units=None,
     ):
         self._check_start_end_dates(start_date, end_date)
-        return self._download_sail_data(start_date, end_date, variables, interval="D")
+        return self._download_sail_data(
+            start_date, end_date, variables, interval="D",
+            desired_units=desired_units,
+        )
 
     def get_hourly_data(
         self,
         start_date: datetime,
         end_date: datetime,
         variables: list[SensorDescription],
+        desired_units=None,
     ):
         self._check_start_end_dates(start_date, end_date)
-        return self._download_sail_data(start_date, end_date, variables, interval="h")
+        return self._download_sail_data(
+            start_date, end_date, variables, interval="h",
+            desired_units=desired_units,
+        )
 
     def _download_sail_data(
         self,
@@ -71,6 +79,7 @@ class SAILPointData(PointData):
         end_date: datetime,
         variables: list[SensorDescription],
         interval: str,
+        desired_units=None,
     ) -> pd.DataFrame:
         """
         The ARM data is stored in a series of files based on the sensors at the location.
@@ -121,6 +130,7 @@ class SAILPointData(PointData):
             df["datasource"] = "ARM"
             df.reset_index(inplace=True)
             df = df.set_index(["datetime", "site"])
+            df = self._convert_units(df, desired_units)
             return df
         else:
             LOG.error(
